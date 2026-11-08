@@ -1,0 +1,11 @@
+{
+    "version":  "1.0.0",
+    "releasedAt":  "2026-11-08",
+    "downloadUrl":  "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.0.0.zip",
+    "sha256":  "51b504778fcb4f7148bd5dba1e3e0bc825e18580f890cc1f5dfd7c6f1c13aa0c",
+    "notes":  [
+                  "Added 1-click in-app updater with SHA-256 verification and automatic restart",
+                  "Added TCP Auto-Tuning \u0026 RSS gigabit download speed optimization",
+                  "Added Foreground Game CPU Quantum Priority (Win32PrioritySeparation) \u0026 RAM Working-Set Booster"
+              ]
+}
