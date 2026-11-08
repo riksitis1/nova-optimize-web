@@ -1,11 +1,11 @@
 {
-    "version":  "1.0.0",
+    "version":  "1.1.0",
     "releasedAt":  "2026-11-08",
-    "downloadUrl":  "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.0.0.zip",
-    "sha256":  "51b504778fcb4f7148bd5dba1e3e0bc825e18580f890cc1f5dfd7c6f1c13aa0c",
+    "downloadUrl":  "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.1.0.zip",
+    "sha256":  "2fa0e21f3342ce130bc30500497c792f2f4be83dd2b7f2a73f396986c9175f9b",
     "notes":  [
-                  "Added 1-click in-app updater with SHA-256 verification and automatic restart",
-                  "Added TCP Auto-Tuning \u0026 RSS gigabit download speed optimization",
-                  "Added Foreground Game CPU Quantum Priority (Win32PrioritySeparation) \u0026 RAM Working-Set Booster"
+                  "Added Game Settings page with per-setting FPS profiles for Fortnite, Counter-Strike 2, and Minecraft: Java Edition",
+                  "Added Pre-Game Boost modal (graceful background app closer, DNS cache flush, and RAM working-set trimmer)",
+                  "Added Exclusive Fullscreen optimization for older DirectX 9/11 games (18 total reversible system tweaks)"
               ]
 }

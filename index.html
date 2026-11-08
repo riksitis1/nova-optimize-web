@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Nova Optimize v1.0.0 — Free, local-first Windows 10/11 gaming performance, frame-time stability, and network latency suite. Every tweak backed up and reversible." />
+  <meta name="description" content="Nova Optimize v1.1.0 — Free, local-first Windows 10/11 gaming performance, per-game FPS profiles (Fortnite, CS2, Minecraft), and network latency suite." />
   <meta name="referrer" content="no-referrer" />
   <meta name="theme-color" content="#0a0d12" />
-  <title>Nova Optimize — Honest Windows 10/11 Gaming Performance Suite</title>
+  <title>Nova Optimize v1.1.0 — Honest Windows 10/11 Gaming Performance Suite</title>
   <link rel="icon" href="assets/nova.ico" sizes="any" />
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="styles.css" />
@@ -29,7 +29,7 @@
         <img src="assets/logo.svg" alt="Nova Optimize logo" class="brand-logo" width="38" height="38" />
         <div>
           <span class="brand-name">Nova Optimize</span>
-          <span class="brand-tag">v1.0.0 · Windows 10 &amp; 11</span>
+          <span class="brand-tag">v1.1.0 · Windows 10 &amp; 11</span>
         </div>
       </a>
       <nav class="nav-links" aria-label="Primary navigation">
@@ -40,7 +40,7 @@
         <a href="#legal">Legal &amp; Terms</a>
       </nav>
       <div class="nav-cta">
-        <a href="#download" class="btn btn-primary btn-sm">Download v1.0.0</a>
+        <a href="#download" class="btn btn-primary btn-sm">Download v1.1.0</a>
       </div>
     </div>
   </header>
@@ -51,20 +51,20 @@
       <div class="container hero-grid">
         <div class="hero-copy">
           <div class="eyebrow-row">
-            <span class="badge badge-good">v1.0.0 Stable Release</span>
-            <span class="badge badge-neutral">MIT Licensed</span>
+            <span class="badge badge-good">v1.1.0 Release · In-App Auto-Updater</span>
+            <span class="badge badge-neutral">Fortnite · CS2 · Minecraft Profiles</span>
             <span class="badge badge-info">Zero Dependencies</span>
           </div>
           <h1>The honest Windows gaming performance &amp; latency suite.</h1>
           <p class="hero-lead">
-            Built as the <strong>anti-booster</strong>. Nova Optimize inspects real Windows 10/11 bottlenecks, backs up every registry key, power plan, and DNS setting before changing it, and gives you a one-click <strong>Undo</strong> for every single tweak.
+            Built as the <strong>anti-booster</strong>. Nova Optimize inspects real Windows 10/11 bottlenecks, tunes per-game config files (<strong>Fortnite</strong>, <strong>Counter-Strike 2</strong>, and <strong>Minecraft</strong>), backs up every setting before changing it, and gives you a one-click <strong>Undo</strong> for every single tweak.
           </p>
 
           <!-- Download Box with Mandatory Legal Acknowledgment -->
           <div class="download-card" aria-labelledby="download-heading">
             <div class="download-card-head">
               <div>
-                <h2 id="download-heading">Download Nova Optimize v1.0.0</h2>
+                <h2 id="download-heading">Download Nova Optimize v1.1.0</h2>
                 <p>For Windows 10 &amp; Windows 11 (64-bit) · Requires <a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer">Node.js 18+ LTS</a></p>
               </div>
               <span class="price-pill">100% Free</span>
@@ -79,8 +79,8 @@
 
             <div class="download-actions">
               <a
-                href="downloads/Nova-Optimize-Setup-v1.0.0.cmd"
-                download="Nova-Optimize-Setup-v1.0.0.cmd"
+                href="downloads/Nova-Optimize-Setup-v1.1.0.cmd"
+                download="Nova-Optimize-Setup-v1.1.0.cmd"
                 class="btn btn-primary btn-lg download-btn is-disabled"
                 data-requires-consent="true"
                 aria-disabled="true"
@@ -88,13 +88,13 @@
                 <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <span>
                   <strong>Download Quick Setup (.cmd)</strong>
-                  <small>Self-extracting installer · 174.4 KB · Creates "NOVA" Desktop shortcut</small>
+                  <small>Self-extracting installer · 200.3 KB · Creates "NOVA" Desktop shortcut</small>
                 </span>
               </a>
 
               <a
-                href="downloads/Nova-Optimize-v1.0.0.zip"
-                download="Nova-Optimize-v1.0.0.zip"
+                href="downloads/Nova-Optimize-v1.1.0.zip"
+                download="Nova-Optimize-v1.1.0.zip"
                 class="btn btn-secondary btn-lg download-btn is-disabled"
                 data-requires-consent="true"
                 aria-disabled="true"
@@ -102,7 +102,7 @@
                 <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m4-5l5 5 5-5m-5 5V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <span>
                   <strong>Download Portable ZIP (.zip)</strong>
-                  <small>Full readable source + Install Nova.bat · 126.4 KB</small>
+                  <small>Full readable source + Install Nova.bat · 145.3 KB</small>
                 </span>
               </a>
             </div>
@@ -134,6 +134,7 @@
 
             <div class="preview-tabs" role="tablist" aria-label="Dashboard preview tabs">
               <button type="button" class="preview-tab active" role="tab" aria-selected="true" data-preview="overview">Overview</button>
+              <button type="button" class="preview-tab" role="tab" aria-selected="false" data-preview="games">Game Settings</button>
               <button type="button" class="preview-tab" role="tab" aria-selected="false" data-preview="tweaks">Gaming Tweaks</button>
               <button type="button" class="preview-tab" role="tab" aria-selected="false" data-preview="network">Network Lab</button>
             </div>
@@ -181,7 +182,34 @@
               </div>
             </div>
 
-            <!-- Tab 2: Gaming Tweaks -->
+            <!-- Tab 2: Game Settings -->
+            <div class="preview-panel" id="preview-games" role="tabpanel" hidden>
+              <div class="preview-list">
+                <div class="preview-item">
+                  <div>
+                    <strong>Fortnite · GameUserSettings.ini</strong>
+                    <span>Choose Shadows, Lumen GI, V-Sync, Frame Cap, View Distance &amp; 3D Res</span>
+                  </div>
+                  <span class="badge badge-good">13 Selectable · Backed up</span>
+                </div>
+                <div class="preview-item">
+                  <div>
+                    <strong>Counter-Strike 2 · cs2_video.txt</strong>
+                    <span>Shadow Quality, CMAA2 vs MSAA, NVIDIA Reflex, Ambient Occlusion &amp; V-Sync</span>
+                  </div>
+                  <span class="badge badge-good">All Steam Accounts · Reversible</span>
+                </div>
+                <div class="preview-item">
+                  <div>
+                    <strong>Minecraft: Java Edition · options.txt</strong>
+                    <span>Render &amp; Simulation Distance, Fast Graphics, Entity Shadows &amp; Biome Blend</span>
+                  </div>
+                  <span class="badge badge-good">Preserves Keybinds &amp; Packs</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 3: Gaming Tweaks -->
             <div class="preview-panel" id="preview-tweaks" role="tabpanel" hidden>
               <div class="preview-list">
                 <div class="preview-item">
@@ -375,30 +403,30 @@
         <div class="checksum-grid">
           <div class="checksum-card">
             <div class="checksum-top">
-              <strong>Nova-Optimize-Setup-v1.0.0.cmd</strong>
-              <span>174.4 KB · Self-Extracting Setup</span>
+              <strong>Nova-Optimize-Setup-v1.1.0.cmd</strong>
+              <span>200.3 KB · Self-Extracting Setup</span>
             </div>
             <div class="checksum-row">
-              <code id="hash-setup">cf5bb34cbc6b04ed9a13b419a4b39a045ae48356daab655154bd89c664ebb910</code>
-              <button type="button" class="btn btn-sm btn-secondary copy-btn" data-copy="cf5bb34cbc6b04ed9a13b419a4b39a045ae48356daab655154bd89c664ebb910">Copy Hash</button>
+              <code id="hash-setup">cccd5de1a055a95acb2e20808b00ec1f1852526b60846ca0342d2ab1bf8e65e0</code>
+              <button type="button" class="btn btn-sm btn-secondary copy-btn" data-copy="cccd5de1a055a95acb2e20808b00ec1f1852526b60846ca0342d2ab1bf8e65e0">Copy Hash</button>
             </div>
           </div>
 
           <div class="checksum-card">
             <div class="checksum-top">
-              <strong>Nova-Optimize-v1.0.0.zip</strong>
-              <span>126.4 KB · Portable Source Archive</span>
+              <strong>Nova-Optimize-v1.1.0.zip</strong>
+              <span>145.3 KB · Portable Source Archive</span>
             </div>
             <div class="checksum-row">
-              <code id="hash-zip">51b504778fcb4f7148bd5dba1e3e0bc825e18580f890cc1f5dfd7c6f1c13aa0c</code>
-              <button type="button" class="btn btn-sm btn-secondary copy-btn" data-copy="51b504778fcb4f7148bd5dba1e3e0bc825e18580f890cc1f5dfd7c6f1c13aa0c">Copy Hash</button>
+              <code id="hash-zip">2fa0e21f3342ce130bc30500497c792f2f4be83dd2b7f2a73f396986c9175f9b</code>
+              <button type="button" class="btn btn-sm btn-secondary copy-btn" data-copy="2fa0e21f3342ce130bc30500497c792f2f4be83dd2b7f2a73f396986c9175f9b">Copy Hash</button>
             </div>
           </div>
         </div>
 
         <div class="verify-cmd-box">
           <span>PowerShell verification command:</span>
-          <code>Get-FileHash .\Nova-Optimize-v1.0.0.zip -Algorithm SHA256</code>
+          <code>Get-FileHash .\Nova-Optimize-v1.1.0.zip -Algorithm SHA256</code>
         </div>
       </div>
     </section>

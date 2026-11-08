@@ -40,6 +40,7 @@
   const previewTabs = document.querySelectorAll('.preview-tab');
   const previewPanels = {
     overview: document.getElementById('preview-overview'),
+    games: document.getElementById('preview-games'),
     tweaks: document.getElementById('preview-tweaks'),
     network: document.getElementById('preview-network'),
   };
