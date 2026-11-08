@@ -1,14 +1,14 @@
 {
-  "version": "1.4.0",
-  "releasedAt": "2026-11-08",
-  "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.4.0.zip",
-  "sha256": "d000f2ac5b95680d03dcdf7042d9c915e693b9dceb17183aa030a5f0db39742b",
-  "notes": [
-    "Anti-Cheat-Safe Game CPU & Disk I/O Priority: Configured Windows kernel IFEO PerfOptions (High CPU & High Disk I/O) for competitive games (CS2, Fortnite, Roblox, Minecraft, Valorant, Apex, CoD) without anti-cheat blocks",
-    "Active DSCP 46 Expedited Forwarding Packet Tagging: Windows QoS policies now actively stamp game UDP packets with DSCP 46 priority and reload live with zero reboot required",
-    "NIC Hardware De-Jitter: Added adapter hardware control disabling IEEE 802.3az Energy-Efficient Ethernet (EEE), Green Ethernet micro-sleeps, and Flow Control pause frames",
-    "PCIe Message Signaled Interrupts (MSI Mode): Added hardware inspection and one-click enablement for GPU and PCIe NIC Message Signaled Interrupts to minimize DPC latency and eliminate IRQ conflicts",
-    "Deduplicated Shader Cache Architecture: Partitioned GPU shader cleanup into Stale (>30 days, 22.26 GB, Safe) and Active (last 30 days, 29.89 GB, Caution) for mathematically exact, non-overlapping size calculations",
-    "AMD Dual-CCD 3D V-Cache & Intel Hybrid Protections: Preserves 3D V-Cache core parking and Intel Thread Director QoS scheduling"
-  ]
+    "version":  "1.4.0",
+    "releasedAt":  "2026-11-08",
+    "downloadUrl":  "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.4.0.zip",
+    "sha256":  "0dfa5bee2814a12b17aa75f56557ea0c14148d95a07685e36f0d188a074a0a98",
+    "notes":  [
+                  "Anti-Cheat-Safe Game CPU \u0026 Disk I/O Priority: Configured Windows kernel IFEO PerfOptions (High CPU \u0026 High Disk I/O) for competitive games (CS2, Fortnite, Roblox, Minecraft, Valorant, Apex, CoD) without anti-cheat blocks",
+                  "Active DSCP 46 Expedited Forwarding Packet Tagging: Windows QoS policies now actively stamp game UDP packets with DSCP 46 priority and reload live with zero reboot required",
+                  "NIC Hardware De-Jitter: Added adapter hardware control disabling IEEE 802.3az Energy-Efficient Ethernet (EEE), Green Ethernet micro-sleeps, and Flow Control pause frames",
+                  "PCIe Message Signaled Interrupts (MSI Mode): Added hardware inspection and one-click enablement for GPU and PCIe NIC Message Signaled Interrupts to minimize DPC latency and eliminate IRQ conflicts",
+                  "Deduplicated Shader Cache Architecture: Partitioned GPU shader cleanup into Stale (\u003e30 days, 22.26 GB, Safe) and Active (last 30 days, 29.89 GB, Caution) for mathematically exact, non-overlapping size calculations",
+                  "AMD Dual-CCD 3D V-Cache \u0026 Intel Hybrid Protections: Preserves 3D V-Cache core parking and Intel Thread Director QoS scheduling"
+              ]
 }
