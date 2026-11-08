@@ -1,0 +1,14 @@
+{
+  "name": "nova-optimize-web",
+  "version": "1.0.0",
+  "description": "Official download and documentation portal for Nova Optimize — Free, local-first Windows 10/11 gaming performance suite.",
+  "license": "MIT",
+  "main": "server.js",
+  "scripts": {
+    "build": "echo \"Static assets ready\"",
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

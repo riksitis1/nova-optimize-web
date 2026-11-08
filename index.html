@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Nova Optimize v1.0.0 — Free, local-first Windows 10/11 gaming performance, frame-time stability, and network latency suite. Every tweak backed up and reversible." />
+  <meta name="referrer" content="no-referrer" />
+  <meta name="theme-color" content="#0a0d12" />
+  <title>Nova Optimize — Honest Windows 10/11 Gaming Performance Suite</title>
+  <link rel="icon" href="assets/nova.ico" sizes="any" />
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Top Legal & Zero-Telemetry Banner -->
+  <div class="top-banner" role="region" aria-label="Security and legal notice">
+    <div class="container top-banner-inner">
+      <span class="banner-pill">100% Local &amp; Open Source</span>
+      <span>Zero telemetry, zero ads, zero API keys. Provided <strong>"AS IS"</strong> under the MIT License — <a href="#legal">read full legal disclaimer</a>.</span>
+    </div>
+  </div>
+
+  <!-- Navigation Header -->
+  <header class="site-header">
+    <div class="container nav-inner">
+      <a href="#" class="brand" aria-label="Nova Optimize home">
+        <img src="assets/logo.svg" alt="Nova Optimize logo" class="brand-logo" width="38" height="38" />
+        <div>
+          <span class="brand-name">Nova Optimize</span>
+          <span class="brand-tag">v1.0.0 · Windows 10 &amp; 11</span>
+        </div>
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="#features">Features</a>
+        <a href="#anti-booster">Safety Guardrails</a>
+        <a href="#install">Install Guide</a>
+        <a href="#verify">SHA-256 Verify</a>
+        <a href="#legal">Legal &amp; Terms</a>
+      </nav>
+      <div class="nav-cta">
+        <a href="#download" class="btn btn-primary btn-sm">Download v1.0.0</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <!-- Hero & Download Section -->
+    <section class="hero" id="download">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow-row">
+            <span class="badge badge-good">v1.0.0 Stable Release</span>
+            <span class="badge badge-neutral">MIT Licensed</span>
+            <span class="badge badge-info">Zero Dependencies</span>
+          </div>
+          <h1>The honest Windows gaming performance &amp; latency suite.</h1>
+          <p class="hero-lead">
+            Built as the <strong>anti-booster</strong>. Nova Optimize inspects real Windows 10/11 bottlenecks, backs up every registry key, power plan, and DNS setting before changing it, and gives you a one-click <strong>Undo</strong> for every single tweak.
+          </p>
+
+          <!-- Download Box with Mandatory Legal Acknowledgment -->
+          <div class="download-card" aria-labelledby="download-heading">
+            <div class="download-card-head">
+              <div>
+                <h2 id="download-heading">Download Nova Optimize v1.0.0</h2>
+                <p>For Windows 10 &amp; Windows 11 (64-bit) · Requires <a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer">Node.js 18+ LTS</a></p>
+              </div>
+              <span class="price-pill">100% Free</span>
+            </div>
+
+            <label class="consent-box" for="legal-consent">
+              <input type="checkbox" id="legal-consent" />
+              <span>
+                I have read and agree to the <a href="#legal">Terms of Use, Assumption of Risk &amp; Limitation of Liability</a>. I understand that Nova Optimize modifies Windows settings at my own risk, is provided <strong>"AS IS" without warranty</strong>, and that I should create a Windows System Restore Point before applying system tweaks.
+              </span>
+            </label>
+
+            <div class="download-actions">
+              <a
+                href="downloads/Nova-Optimize-Setup-v1.0.0.cmd"
+                download="Nova-Optimize-Setup-v1.0.0.cmd"
+                class="btn btn-primary btn-lg download-btn is-disabled"
+                data-requires-consent="true"
+                aria-disabled="true"
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>
+                  <strong>Download Quick Setup (.cmd)</strong>
+                  <small>Self-extracting installer · 164.2 KB · Creates Desktop shortcut</small>
+                </span>
+              </a>
+
+              <a
+                href="downloads/Nova-Optimize-v1.0.0.zip"
+                download="Nova-Optimize-v1.0.0.zip"
+                class="btn btn-secondary btn-lg download-btn is-disabled"
+                data-requires-consent="true"
+                aria-disabled="true"
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m4-5l5 5 5-5m-5 5V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>
+                  <strong>Download Portable ZIP (.zip)</strong>
+                  <small>Full readable source + Install Nova.bat · 118.9 KB</small>
+                </span>
+              </a>
+            </div>
+
+            <p class="consent-hint" id="consent-hint" role="status">
+              Check the legal acknowledgment box above to unlock the download buttons.
+            </p>
+
+            <div class="download-meta">
+              <span><strong>Virus / Telemetry Scan:</strong> 100% plain-text JS &amp; PowerShell</span>
+              <span>·</span>
+              <a href="#verify">View SHA-256 Checksums</a>
+              <span>·</span>
+              <button type="button" class="link-btn" id="open-legal-modal">Read Full EULA &amp; Disclaimer</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive App Preview Mockup -->
+        <div class="hero-preview" aria-label="Interactive preview of the Nova Optimize interface">
+          <div class="preview-window">
+            <div class="preview-titlebar">
+              <div class="window-dots" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
+              <div class="window-title">Nova Optimize — 127.0.0.1 (Local Only)</div>
+              <span class="window-badge">Admin Ready</span>
+            </div>
+
+            <div class="preview-tabs" role="tablist" aria-label="Dashboard preview tabs">
+              <button type="button" class="preview-tab active" role="tab" aria-selected="true" data-preview="overview">Overview</button>
+              <button type="button" class="preview-tab" role="tab" aria-selected="false" data-preview="tweaks">Gaming Tweaks</button>
+              <button type="button" class="preview-tab" role="tab" aria-selected="false" data-preview="network">Network Lab</button>
+            </div>
+
+            <!-- Tab 1: Overview -->
+            <div class="preview-panel active" id="preview-overview" role="tabpanel">
+              <div class="preview-score-row">
+                <div class="score-circle">
+                  <span class="score-num">94</span>
+                  <span class="score-sub">Dialed in</span>
+                </div>
+                <div class="score-details">
+                  <h3>Your PC is dialed in for low-latency gaming</h3>
+                  <p>12 of 13 safe optimizations active · All changes backed up locally in <code>data/state.json</code>.</p>
+                  <div class="mini-bars">
+                    <div><span>Performance</span><strong>96/100</strong></div>
+                    <div><span>Gaming</span><strong>95/100</strong></div>
+                    <div><span>Network</span><strong>92/100</strong></div>
+                    <div><span>Security</span><strong>100/100</strong></div>
+                  </div>
+                </div>
+              </div>
+              <div class="preview-list">
+                <div class="preview-item">
+                  <div>
+                    <strong>Windows Game Mode &amp; Multimedia Scheduler</strong>
+                    <span>Prioritizes foreground game threads · Current: Enabled</span>
+                  </div>
+                  <span class="badge badge-good">Applied · Undo ready</span>
+                </div>
+                <div class="preview-item">
+                  <div>
+                    <strong>Mouse 1:1 Raw Response Curve</strong>
+                    <span>Disables Enhance Pointer Precision · Current: 6/11 (Linear)</span>
+                  </div>
+                  <span class="badge badge-good">Applied · Undo ready</span>
+                </div>
+                <div class="preview-item">
+                  <div>
+                    <strong>Windows Defender &amp; Firewall Status</strong>
+                    <span>Real-time protection active · Never disabled by Nova</span>
+                  </div>
+                  <span class="badge badge-info">Protected</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 2: Gaming Tweaks -->
+            <div class="preview-panel" id="preview-tweaks" role="tabpanel" hidden>
+              <div class="preview-list">
+                <div class="preview-item">
+                  <div>
+                    <strong>Disable Game DVR Background Recording</strong>
+                    <span>Stops background video encoding overhead on GPU/VRAM</span>
+                  </div>
+                  <span class="badge badge-good">Safe · Backed up</span>
+                </div>
+                <div class="preview-item">
+                  <div>
+                    <strong>Optimizations for Windowed Games (DX10/11)</strong>
+                    <span>Upgrades legacy borderless games to flip-model presentation</span>
+                  </div>
+                  <span class="badge badge-good">Safe · Backed up</span>
+                </div>
+                <div class="preview-item">
+                  <div>
+                    <strong>Nova Gaming Power Plan</strong>
+                    <span>Duplicates High Performance scheme &amp; deletes temp plan on Undo</span>
+                  </div>
+                  <span class="badge badge-good">Safe · Reversible</span>
+                </div>
+                <div class="preview-item">
+                  <div>
+                    <strong>Hardware-Accelerated GPU Scheduling (HAGS)</strong>
+                    <span>Separated under Situational Tweaks with honest VRAM note</span>
+                  </div>
+                  <span class="badge badge-warn">Situational · Reboot</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 3: Network Lab -->
+            <div class="preview-panel" id="preview-network" role="tabpanel" hidden>
+              <div class="preview-list">
+                <div class="preview-item">
+                  <div>
+                    <strong>Active Bufferbloat &amp; Latency Under Load</strong>
+                    <span>Idle: 11.4 ms · Download Load: 14.8 ms · Upload Load: 16.1 ms</span>
+                  </div>
+                  <span class="badge badge-good">Grade A (+3.8 ms)</span>
+                </div>
+                <div class="preview-item">
+                  <div>
+                    <strong>Multi-Resolver DNS Benchmark</strong>
+                    <span>Cloudflare (1.1.1.1), Quad9, Google, OpenDNS &amp; Current ISP</span>
+                  </div>
+                  <span class="badge badge-info">One-Click DHCP Restore</span>
+                </div>
+                <div class="preview-item">
+                  <div>
+                    <strong>NIC Power-Saving Prevention</strong>
+                    <span>Prevents Windows from putting active Ethernet/Wi-Fi adapters to sleep</span>
+                  </div>
+                  <span class="badge badge-good">Reversible</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- What It Does (Features) -->
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section-head">
+          <span class="badge badge-info">Engineering &amp; Capabilities</span>
+          <h2>Everything inside Nova Optimize</h2>
+          <p>No mystery binaries, no fake "RAM defragmenters," and no placebo sliders. Every tool uses documented Windows APIs and PowerShell cmdlets.</p>
+        </div>
+
+        <div class="cards-grid">
+          <article class="feature-card">
+            <div class="feature-icon">01</div>
+            <h3>13 Documented Gaming Tweaks</h3>
+            <p>Configure Windows Game Mode, Game DVR capture, Flip-Model Windowed Optimizations, Multimedia Class Scheduler (`Games` priority), 1:1 linear mouse response, power plans, and network throttling index — each showing its live Windows registry value.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">02</div>
+            <h3>Automatic Backups &amp; 1-Click Undo</h3>
+            <p>Before Nova writes a single registry value, power plan, startup item, or DNS server, it snapshots your exact prior state into <code>data/state.json</code>. Click <strong>Undo</strong> on any card or <strong>Undo all Nova tweaks</strong> at any time.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">03</div>
+            <h3>Bufferbloat &amp; DNS Network Lab</h3>
+            <p>Measure real packet jitter across regional endpoints, benchmark public DNS resolvers against real gaming domains, and test latency under active download and upload load to diagnose router bufferbloat.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">04</div>
+            <h3>Safe Cache Cleanup</h3>
+            <p>Scans only documented temporary cache locations (Windows Temp, DirectX Shader Cache, NVIDIA/AMD shader caches, and Chromium/Firefox browser caches). Your <code>Documents</code>, <code>Desktop</code>, and <code>Downloads</code> folders are never scanned or touched.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">05</div>
+            <h3>Protected Startup Manager</h3>
+            <p>Inspect startup apps across Registry Run keys and Startup folders with impact ratings. Critical security, input (`ctfmon`), audio, graphics, and anti-cheat entries (such as Riot Vanguard) are locked from accidental disabling.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">06</div>
+            <h3>Hardware &amp; OS Advisories</h3>
+            <p>Detects high memory pressure, low boot-SSD free space, outdated GPU drivers, Wi-Fi vs. Ethernet link state, base JEDEC RAM clocks (unenabled XMP/EXPO), and Windows Security status without nagging or fear-mongering.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- The Anti-Booster Guardrails -->
+    <section class="section section-alt" id="anti-booster">
+      <div class="container">
+        <div class="section-head">
+          <span class="badge badge-good">Safety First</span>
+          <h2>What Nova Optimize refuses to do</h2>
+          <p>Many "PC booster" utilities break Windows updates, trip anti-cheat software, or disable critical security layers. Nova is architected with strict safety boundaries:</p>
+        </div>
+
+        <div class="guardrail-grid">
+          <div class="guardrail-card">
+            <h3>Never disables Windows Security</h3>
+            <p>Nova never disables Windows Defender Antivirus, Windows Firewall, SmartScreen, User Account Control (UAC), Core Isolation / HVCI, or Windows Update. Instead, it alerts you if your security protections are turned off.</p>
+          </div>
+          <div class="guardrail-card">
+            <h3>Never touches game files or memory</h3>
+            <p>Nova never injects DLLs, never reads or writes game process memory, and never modifies game installation directories — keeping it clean alongside kernel anti-cheats (Vanguard, Easy Anti-Cheat, BattlEye, RICOCHET).</p>
+          </div>
+          <div class="guardrail-card">
+            <h3>Never deletes personal files</h3>
+            <p>Cleanup paths are strictly hardcoded to temporary OS, shader, and browser caches. Personal directories (`Documents`, `Desktop`, `Downloads`, `Pictures`, saved passwords, and browser cookies) are never touched.</p>
+          </div>
+          <div class="guardrail-card">
+            <h3>Zero telemetry, zero cloud, zero keys</h3>
+            <p>The desktop app binds strictly to <code>127.0.0.1</code> with a per-launch random session token. Nothing is uploaded to any server, and there are zero hidden API keys or analytics trackers.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Installation & SmartScreen Guide -->
+    <section class="section" id="install">
+      <div class="container">
+        <div class="section-head">
+          <span class="badge badge-neutral">Quick Start</span>
+          <h2>How to install &amp; run in 60 seconds</h2>
+          <p>Nova Optimize runs on standard Node.js (v18 or newer) and Windows PowerShell 5.1 with zero third-party `npm` dependencies.</p>
+        </div>
+
+        <div class="steps-grid">
+          <div class="step-card">
+            <span class="step-num">Step 1</span>
+            <h3>Install Node.js 18+ LTS</h3>
+            <p>If you don't already have Node.js installed, download the official Windows LTS installer from <a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer">nodejs.org</a> (or let <code>Install Nova.bat</code> install it via Windows <code>winget</code>).</p>
+          </div>
+          <div class="step-card">
+            <span class="step-num">Step 2</span>
+            <h3>Run Setup or Extract ZIP</h3>
+            <p>Run <code>Nova-Optimize-Setup-v1.0.0.cmd</code> to automatically extract to <code>%LOCALAPPDATA%\Programs\Nova-Optimize</code> and create a Desktop shortcut, or unzip <code>Nova-Optimize-v1.0.0.zip</code> anywhere you like and double-click <code>Install Nova.bat</code>.</p>
+          </div>
+          <div class="step-card">
+            <span class="step-num">Step 3</span>
+            <h3>Create a Restore Point First</h3>
+            <p>When Nova opens, click <strong>Restore point</strong> in the top-right toolbar (requires Administrator) before applying optimizations so you have both Nova's internal backup and a Windows System Restore checkpoint.</p>
+          </div>
+        </div>
+
+        <div class="smartscreen-note">
+          <div>
+            <strong>Why does Windows SmartScreen show "Windows protected your PC"?</strong>
+            <p>
+              Because Nova Optimize is 100% free and open-source, we do not pay $400+/year for a commercial EV code-signing certificate. Unlike compiled <code>.exe</code> binaries that hide what they do, every file in Nova Optimize (<code>.bat</code>, <code>.ps1</code>, <code>.js</code>) is plain text that you can open in Notepad and inspect before running. If SmartScreen appears, click <strong>More info</strong> &rarr; <strong>Run anyway</strong> after verifying the SHA-256 checksum below.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SHA-256 Verification Section -->
+    <section class="section section-alt" id="verify">
+      <div class="container">
+        <div class="section-head">
+          <span class="badge badge-info">Integrity Verification</span>
+          <h2>Verify your download (SHA-256)</h2>
+          <p>Confirm that your downloaded file matches the official release bit-for-bit using Windows PowerShell.</p>
+        </div>
+
+        <div class="checksum-grid">
+          <div class="checksum-card">
+            <div class="checksum-top">
+              <strong>Nova-Optimize-Setup-v1.0.0.cmd</strong>
+              <span>164.2 KB · Self-Extracting Setup</span>
+            </div>
+            <div class="checksum-row">
+              <code id="hash-setup">9e72772212366d0239995f831e0079ae3b48cb286a005a88748f45263d8c9ce3</code>
+              <button type="button" class="btn btn-sm btn-secondary copy-btn" data-copy="9e72772212366d0239995f831e0079ae3b48cb286a005a88748f45263d8c9ce3">Copy Hash</button>
+            </div>
+          </div>
+
+          <div class="checksum-card">
+            <div class="checksum-top">
+              <strong>Nova-Optimize-v1.0.0.zip</strong>
+              <span>118.9 KB · Portable Source Archive</span>
+            </div>
+            <div class="checksum-row">
+              <code id="hash-zip">aec6046bf74d8c639e9a335a24ce10df3e2c7e5dcd2ace4f4dd1ad42c82b666e</code>
+              <button type="button" class="btn btn-sm btn-secondary copy-btn" data-copy="aec6046bf74d8c639e9a335a24ce10df3e2c7e5dcd2ace4f4dd1ad42c82b666e">Copy Hash</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="verify-cmd-box">
+          <span>PowerShell verification command:</span>
+          <code>Get-FileHash .\Nova-Optimize-v1.0.0.zip -Algorithm SHA256</code>
+        </div>
+      </div>
+    </section>
+
+    <!-- Comprehensive Legal & Liability Protection Section -->
+    <section class="section" id="legal" aria-labelledby="legal-heading">
+      <div class="container">
+        <div class="section-head">
+          <span class="badge badge-warn">Legal Notice, Terms of Use &amp; Disclaimers</span>
+          <h2 id="legal-heading">Terms of Use, Limitation of Liability &amp; Warranty Disclaimer</h2>
+          <p>Please read these terms carefully before downloading or using Nova Optimize.</p>
+        </div>
+
+        <div class="legal-grid">
+          <article class="legal-card">
+            <h3>1. "AS IS" Warranty Disclaimer</h3>
+            <p>
+              NOVA OPTIMIZE AND ALL RELATED SCRIPTS, DOCUMENTATION, AND DOWNLOADS ARE PROVIDED <strong>"AS IS"</strong> AND <strong>"AS AVAILABLE"</strong> WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. THE ENTIRE RISK AS TO THE QUALITY, SAFETY, AND PERFORMANCE OF THE SOFTWARE IS WITH YOU.
+            </p>
+          </article>
+
+          <article class="legal-card">
+            <h3>2. Assumption of Risk &amp; System Modifications</h3>
+            <p>
+              Nova Optimize modifies Microsoft Windows configuration settings, including Registry keys (<code>HKCU</code> and <code>HKLM</code>), Windows Power Schemes (<code>powercfg</code>), network adapter properties, DNS resolver settings, startup entries, and temporary cache files. <strong>You voluntarily assume all risks</strong> associated with applying system tweaks or deleting cache files. Always back up important personal data and create a Windows System Restore Point prior to use.
+            </p>
+          </article>
+
+          <article class="legal-card">
+            <h3>3. Limitation of Liability</h3>
+            <p>
+              TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE AUTHORS, DEVELOPERS, CONTRIBUTORS, OR COPYRIGHT HOLDERS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, WITHOUT LIMITATION, DATA LOSS, OPERATING SYSTEM OR DRIVER INSTABILITY, HARDWARE MALFUNCTION, LOSS OF PROFITS, OR GAME ACCOUNT PENALTIES) ARISING OUT OF OR RELATED TO THE USE OR INABILITY TO USE THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+            </p>
+          </article>
+
+          <article class="legal-card">
+            <h3>4. No Performance or Latency Guarantee</h3>
+            <p>
+              Computer hardware, graphics drivers, Windows builds, game engines, and ISP routing vary significantly across systems. All diagnostic scores, bufferbloat grades, and optimization descriptions are provided for informational purposes only. No specific frame-rate (FPS) increase, frame-time improvement, or network ping reduction is promised or guaranteed.
+            </p>
+          </article>
+
+          <article class="legal-card">
+            <h3>5. Anti-Cheat &amp; Third-Party Software Notice</h3>
+            <p>
+              Nova Optimize operates strictly on standard Windows system settings and never hooks, injects into, or modifies game files or game memory. However, third-party game publishers and anti-cheat vendors enforce their own terms of service. You are solely responsible for ensuring compliance with the rules of any online game or platform you use.
+            </p>
+          </article>
+
+          <article class="legal-card">
+            <h3>6. Non-Affiliation, Trademarks &amp; Privacy</h3>
+            <p>
+              Nova Optimize is an independent open-source project and is <strong>not affiliated with, endorsed by, or sponsored by</strong> Microsoft Corporation, Riot Games, Valve Corporation, Epic Games, Electronic Arts, Activision Blizzard, NVIDIA, AMD, Intel, Cloudflare, or Google. Windows and PowerShell are registered trademarks of Microsoft Corporation. Neither this website nor the Nova Optimize application collects, stores, or transmits personal data, cookies, or telemetry.
+            </p>
+          </article>
+        </div>
+
+        <div class="mit-box">
+          <div class="mit-head">
+            <strong>MIT License (Full Text)</strong>
+            <a href="LEGAL.md" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-secondary">Open Printable LEGAL.md</a>
+          </div>
+          <pre class="mit-pre">Copyright (c) 2026 Nova Optimize Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <img src="assets/logo.svg" alt="" width="28" height="28" />
+        <span><strong>Nova Optimize v1.0.0</strong> · Free &amp; Open-Source under the MIT License</span>
+      </div>
+      <div class="footer-links">
+        <a href="#download">Download</a>
+        <a href="#verify">SHA-256 Checksums</a>
+        <a href="#legal">Disclaimer &amp; Terms</a>
+        <a href="LEGAL.md" target="_blank" rel="noopener noreferrer">LEGAL.md</a>
+        <a href="LICENSE" target="_blank" rel="noopener noreferrer">LICENSE</a>
+      </div>
+      <p class="footer-copy">
+        Not affiliated with Microsoft Corporation or any game publisher. Windows 10 and Windows 11 are trademarks of Microsoft Corporation. Zero cookies · Zero telemetry · Zero API keys.
+      </p>
+    </div>
+  </footer>
+
+  <!-- Full Legal Modal -->
+  <div class="modal-backdrop" id="legal-modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2 id="modal-title">End-User License Agreement (EULA), Terms of Use &amp; Disclaimers</h2>
+        <button type="button" class="btn btn-sm btn-secondary" id="close-legal-modal">Close (Esc)</button>
+      </div>
+      <div class="modal-body">
+        <p><strong>1. Binding Agreement:</strong> By downloading, installing, or using Nova Optimize ("the Software"), you agree to be bound by these Terms of Use and the MIT License. If you do not agree, do not download or run the Software.</p>
+        <p><strong>2. Provided "AS IS" Without Warranty:</strong> The Software is provided strictly "AS IS", without warranty of any kind, express or implied, including without limitation the warranties of merchantability, fitness for a particular purpose, and non-infringement.</p>
+        <p><strong>3. System Modification Risk &amp; User Responsibility:</strong> The Software modifies Windows Registry keys, power schemes, startup items, network adapter properties, and DNS settings, and deletes temporary cache files. You assume full and sole responsibility for verifying compatibility with your system, creating a Windows System Restore Point, and maintaining backups of all important files.</p>
+        <p><strong>4. Limitation of Liability:</strong> To the fullest extent permitted by law, in no event shall the authors, developers, or copyright holders be liable for any claim, damages, data loss, OS malfunction, hardware issue, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the Software or the use or other dealings in the Software.</p>
+        <p><strong>5. Privacy &amp; Zero Data Collection:</strong> Neither this website nor the Software collects, stores, or transmits personal data, telemetry, or analytics.</p>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-primary" id="accept-from-modal">I Understand &amp; Agree to These Terms</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="nova-gradient" x1="10" y1="8" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d9ff66"/>
+      <stop offset="0.52" stop-color="#b8ff3d"/>
+      <stop offset="1" stop-color="#5de7ff"/>
+    </linearGradient>
+    <linearGradient id="nova-shine" x1="20" y1="10" x2="48" y2="52" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff" stop-opacity=".32"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="#0a0d12" stroke="#ffffff" stroke-opacity=".12"/>
+  <path d="M18 46V18h8.6l10.8 15.1V18H46v28h-8.6L26.6 30.9V46H18Z" fill="url(#nova-gradient)"/>
+  <path d="M18 46V18h8.6l10.8 15.1V18H46v28h-8.6L26.6 30.9V46H18Z" fill="none" stroke="url(#nova-shine)" stroke-width="1"/>
+  <path d="M45.5 9.5 39 22h5.2l-3.2 9.2 10.3-13.7h-5.4l3.1-8Z" fill="#071014" opacity=".9"/>
+  <circle cx="51" cy="13" r="3" fill="#b8ff3d"/>
+</svg>
