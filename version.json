@@ -1,14 +1,15 @@
 {
-  "version": "1.3.0",
+  "version": "1.4.0",
   "releasedAt": "2026-11-08",
-  "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.3.0.zip",
-  "sha256": "4eba359a98561066d5003dbd74bae31e9bc8aaad0ea9fe1b8cdd93d2606684d8",
+  "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.4.0.zip",
+  "sha256": "86e5f39511138e365472a46cd48a973911b7ed729c919584aee7120cd6322bc1",
   "notes": [
-    "Elite FPS Boost: Nova Gaming power plan now unparks 100% of CPU cores, locks 100% minimum processor clocks, disables PCIe ASPM power saving, and disables disk spindown to eliminate 1% low FPS frame drops and micro-stutter",
-    "Ping Reducer Engine: Enabled AFD Fast Datagram Transmit (FastSendDatagramThreshold=1500) to bypass kernel buffer queues and deliver multiplayer UDP game packets directly to the NIC hardware interface",
-    "Network QoS Prioritization: Enabled DSCP/TOS priority headers (DisableUserTOSSetting=0) so gaming routers prioritize game packets over background household downloads and video streams",
-    "MMCSS Audio Low Latency: Set Audio task priority to High (GPU Priority 8, Priority 6) to eliminate DPC audio latency spikes and sound thread stutter",
-    "Multimedia Network Throttling Disabled & Foreground App Focus moved to 1-click safe optimizations",
-    "Pre-Game Boost expanded to politely suspend Windows 11 Widgets, Phone Link, and background telemetry before gaming"
+    "AMD Dual-CCD 3D V-Cache Protection: Automatically detects 7900X3D, 7950X3D, 9900X3D, and 9950X3D processors and preserves core parking to keep game threads locked on the 3D V-Cache CCD",
+    "Multiplane Overlay (MPO) Bypass: Added advanced control (OverlayTestMode = 5) to eliminate VRR/G-Sync flicker, micro-stutters, and black screen driver freezes during Alt-Tabbing",
+    "Windowed Game Optimizations: Enabled Windows DirectFlip (SwapEffectUpgradeEnable) to bypass Desktop Window Manager (DWM) composition latency in borderless windowed mode",
+    "GPU Shader Cache Safety & Audit: Shifted shader cache cleaning to Caution with recompilation stutter warnings, strictly scoped to compiled driver cache directories",
+    "Safe EmptyWorkingSet Filtering: Pre-Game Boost now protects active games, the foreground application window, and critical system/audio processes from RAM trimming",
+    "Read-Only Game Config Handling: Config optimizer and restore seamlessly handle write-protected files without error or permission failures",
+    "UI/UX Polish: Current → Target value pills with human-readable labels, friendly startup display names, live telemetry subtitles, and high-contrast icons"
   ]
 }
