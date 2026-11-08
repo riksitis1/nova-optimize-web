@@ -2,9 +2,9 @@
     "version":  "1.1.0",
     "releasedAt":  "2026-11-08",
     "downloadUrl":  "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.1.0.zip",
-    "sha256":  "2fa0e21f3342ce130bc30500497c792f2f4be83dd2b7f2a73f396986c9175f9b",
+    "sha256":  "27d4a3a3fafb41e9ce8c41cbed94a1b37951e1f812ac4e868137e90e2c84159f",
     "notes":  [
-                  "Added Game Settings page with per-setting FPS profiles for Fortnite, Counter-Strike 2, and Minecraft: Java Edition",
+                  "Added Game Settings page with per-setting FPS profiles and 1-click per-setting or full-game Restore for Fortnite, Counter-Strike 2, and Minecraft: Java Edition",
                   "Added Pre-Game Boost modal (graceful background app closer, DNS cache flush, and RAM working-set trimmer)",
                   "Added Exclusive Fullscreen optimization for older DirectX 9/11 games (18 total reversible system tweaks)"
               ]
