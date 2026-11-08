@@ -2,10 +2,10 @@
     "version":  "1.1.0",
     "releasedAt":  "2026-11-08",
     "downloadUrl":  "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.1.0.zip",
-    "sha256":  "029d2529350931a4051620b0f053603981880decb79661618c27d1eaef54c59f",
+    "sha256":  "56472c1cbb14aef4f653e8bb7d66f05c0b0e26bc227ae2aeba81091731456611",
     "notes":  [
+                  "Cut startup \u0026 system scan time by 15x (~0.7s vs ~11s) by replacing slow CDXML module loads with direct WMI/Registry queries and server boot pre-warming",
                   "Added 1-click Disable All and Enable All buttons on the Startup page and simplified all app views",
-                  "Added Game Settings workbench with 2-column per-setting FPS profiles and 1-click per-setting or full-game Restore for Fortnite, Counter-Strike 2, and Minecraft: Java Edition",
-                  "Added Pre-Game Boost modal (graceful background app closer, DNS cache flush, and RAM working-set trimmer)"
+                  "Added Game Settings workbench with 2-column per-setting FPS profiles and 1-click per-setting or full-game Restore for Fortnite, Counter-Strike 2, and Minecraft: Java Edition"
               ]
 }
