@@ -2,7 +2,7 @@
     "version":  "1.1.0",
     "releasedAt":  "2026-11-08",
     "downloadUrl":  "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.1.0.zip",
-    "sha256":  "56472c1cbb14aef4f653e8bb7d66f05c0b0e26bc227ae2aeba81091731456611",
+    "sha256":  "cd4b07ab6dd2b1a2de28dd380047dc22f04ed236aa3cf091e82fcaab55875f2d",
     "notes":  [
                   "Cut startup \u0026 system scan time by 15x (~0.7s vs ~11s) by replacing slow CDXML module loads with direct WMI/Registry queries and server boot pre-warming",
                   "Added 1-click Disable All and Enable All buttons on the Startup page and simplified all app views",
