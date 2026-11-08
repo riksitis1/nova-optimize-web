@@ -18,3 +18,4 @@ You can deploy this repository on Render in two ways:
 
 ## Legal Notice
 See [`LEGAL.md`](./LEGAL.md) and [`LICENSE`](./LICENSE) for the full "AS-IS" Warranty Disclaimer, Assumption of Risk, Limitation of Liability, Privacy Policy, and MIT License.
+
