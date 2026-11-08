@@ -2,7 +2,7 @@
   "version": "1.4.0",
   "releasedAt": "2026-11-08",
   "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.4.0.zip",
-  "sha256": "86e5f39511138e365472a46cd48a973911b7ed729c919584aee7120cd6322bc1",
+  "sha256": "4f9b96afb154d4e5a284a6fab59f645d452c2abb56dedc6726458f9590274882",
   "notes": [
     "AMD Dual-CCD 3D V-Cache Protection: Automatically detects 7900X3D, 7950X3D, 9900X3D, and 9950X3D processors and preserves core parking to keep game threads locked on the 3D V-Cache CCD",
     "Multiplane Overlay (MPO) Bypass: Added advanced control (OverlayTestMode = 5) to eliminate VRR/G-Sync flicker, micro-stutters, and black screen driver freezes during Alt-Tabbing",
