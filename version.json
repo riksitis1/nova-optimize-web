@@ -1,11 +1,11 @@
 {
-    "version":  "1.1.0",
-    "releasedAt":  "2026-11-08",
-    "downloadUrl":  "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.1.0.zip",
-    "sha256":  "cd4b07ab6dd2b1a2de28dd380047dc22f04ed236aa3cf091e82fcaab55875f2d",
-    "notes":  [
-                  "Cut startup \u0026 system scan time by 15x (~0.7s vs ~11s) by replacing slow CDXML module loads with direct WMI/Registry queries and server boot pre-warming",
-                  "Added 1-click Disable All and Enable All buttons on the Startup page and simplified all app views",
-                  "Added Game Settings workbench with 2-column per-setting FPS profiles and 1-click per-setting or full-game Restore for Fortnite, Counter-Strike 2, and Minecraft: Java Edition"
-              ]
+  "version": "1.2.0",
+  "releasedAt": "2026-11-08",
+  "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.2.0.zip",
+  "sha256": "29341f632806fa4fc2eae3a8b65c24becbf8df5a4f9bf917aca8465f8b2b2f22",
+  "notes": [
+    "Removed update button when already on the latest version and fixed UI CSS hidden specificity",
+    "Added 6 new safe FPS & latency boosts: Kernel Locked in RAM (DisablePagingExecutive), Clean Kernel Reboots (Disable Fast Startup), USB Polling Rate Stabilization (Disable Selective Suspend), GPU Shader Crash Protection (TdrDelay), Background Telemetry Stutter Blocker, and Instant Alt-Tab Animation Bypass",
+    "Upgraded in-app auto-update system with reliable self-restart and port handoff"
+  ]
 }
