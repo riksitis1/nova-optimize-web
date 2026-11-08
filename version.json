@@ -2,10 +2,10 @@
   "version": "1.4.0",
   "releasedAt": "2026-11-08",
   "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.4.0.zip",
-  "sha256": "030b0b04c4cce3efa2dc510e9960e2a7c2b566250678286c939c2e72d0dd069b",
+  "sha256": "d000f2ac5b95680d03dcdf7042d9c915e693b9dceb17183aa030a5f0db39742b",
   "notes": [
     "Anti-Cheat-Safe Game CPU & Disk I/O Priority: Configured Windows kernel IFEO PerfOptions (High CPU & High Disk I/O) for competitive games (CS2, Fortnite, Roblox, Minecraft, Valorant, Apex, CoD) without anti-cheat blocks",
-    "Active DSCP 46 Expedited Forwarding Packet Tagging: Windows QoS policies now actively stamp game UDP packets with DSCP 46 priority and remove the 20% QoS reserve bandwidth",
+    "Active DSCP 46 Expedited Forwarding Packet Tagging: Windows QoS policies now actively stamp game UDP packets with DSCP 46 priority and reload live with zero reboot required",
     "NIC Hardware De-Jitter: Added adapter hardware control disabling IEEE 802.3az Energy-Efficient Ethernet (EEE), Green Ethernet micro-sleeps, and Flow Control pause frames",
     "PCIe Message Signaled Interrupts (MSI Mode): Added hardware inspection and one-click enablement for GPU and PCIe NIC Message Signaled Interrupts to minimize DPC latency and eliminate IRQ conflicts",
     "Deduplicated Shader Cache Architecture: Partitioned GPU shader cleanup into Stale (>30 days, 22.26 GB, Safe) and Active (last 30 days, 29.89 GB, Caution) for mathematically exact, non-overlapping size calculations",
