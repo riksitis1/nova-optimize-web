@@ -2,14 +2,13 @@
   "version": "1.4.0",
   "releasedAt": "2026-11-08",
   "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.4.0.zip",
-  "sha256": "6807ce94cd0ef9f1186d1eddf7f6a110ab971c9183588738ca791229fdf161ec",
+  "sha256": "030b0b04c4cce3efa2dc510e9960e2a7c2b566250678286c939c2e72d0dd069b",
   "notes": [
-    "AMD Dual-CCD 3D V-Cache Protection: Automatically detects 7900X3D, 7950X3D, 9900X3D, and 9950X3D processors and preserves core parking to keep game threads locked on the 3D V-Cache CCD",
-    "Multiplane Overlay (MPO) Bypass: Added advanced control (OverlayTestMode = 5) to eliminate VRR/G-Sync flicker, micro-stutters, and black screen driver freezes during Alt-Tabbing",
-    "Windowed Game Optimizations: Enabled Windows DirectFlip (SwapEffectUpgradeEnable) to bypass Desktop Window Manager (DWM) composition latency in borderless windowed mode",
-    "Smart GPU Shader Cache Cleanup: Added safe (>30 days) target to reclaim ~22+ GB of stale shaders from old games while protecting recently played games from compilation stutters",
-    "Safe EmptyWorkingSet Filtering: Pre-Game Boost now protects active games, the foreground application window, and critical system/audio processes from RAM trimming",
-    "Read-Only Game Config Handling: Config optimizer and restore seamlessly handle write-protected files without error or permission failures",
-    "UI/UX Polish: Current → Target value pills with human-readable labels, friendly startup display names, live telemetry subtitles, and high-contrast icons"
+    "Anti-Cheat-Safe Game CPU & Disk I/O Priority: Configured Windows kernel IFEO PerfOptions (High CPU & High Disk I/O) for competitive games (CS2, Fortnite, Roblox, Minecraft, Valorant, Apex, CoD) without anti-cheat blocks",
+    "Active DSCP 46 Expedited Forwarding Packet Tagging: Windows QoS policies now actively stamp game UDP packets with DSCP 46 priority and remove the 20% QoS reserve bandwidth",
+    "NIC Hardware De-Jitter: Added adapter hardware control disabling IEEE 802.3az Energy-Efficient Ethernet (EEE), Green Ethernet micro-sleeps, and Flow Control pause frames",
+    "PCIe Message Signaled Interrupts (MSI Mode): Added hardware inspection and one-click enablement for GPU and PCIe NIC Message Signaled Interrupts to minimize DPC latency and eliminate IRQ conflicts",
+    "Deduplicated Shader Cache Architecture: Partitioned GPU shader cleanup into Stale (>30 days, 22.26 GB, Safe) and Active (last 30 days, 29.89 GB, Caution) for mathematically exact, non-overlapping size calculations",
+    "AMD Dual-CCD 3D V-Cache & Intel Hybrid Protections: Preserves 3D V-Cache core parking and Intel Thread Director QoS scheduling"
   ]
 }
