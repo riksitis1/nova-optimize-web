@@ -13,8 +13,8 @@
     });
     if (consentHint) {
       consentHint.textContent = agreed
-        ? 'Thank you — downloads are unlocked. Remember to create a Windows Restore Point before applying tweaks.'
-        : 'Check the legal acknowledgment box above to unlock the download buttons.';
+        ? 'Downloads unlocked. Create a Windows System Restore Point before applying system-wide changes.'
+        : 'Accept the legal terms above to enable the download links.';
       consentHint.classList.toggle('is-ready', agreed);
     }
   }
