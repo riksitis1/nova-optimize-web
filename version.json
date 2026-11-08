@@ -2,12 +2,12 @@
   "version": "1.4.0",
   "releasedAt": "2026-11-08",
   "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.4.0.zip",
-  "sha256": "4f9b96afb154d4e5a284a6fab59f645d452c2abb56dedc6726458f9590274882",
+  "sha256": "6807ce94cd0ef9f1186d1eddf7f6a110ab971c9183588738ca791229fdf161ec",
   "notes": [
     "AMD Dual-CCD 3D V-Cache Protection: Automatically detects 7900X3D, 7950X3D, 9900X3D, and 9950X3D processors and preserves core parking to keep game threads locked on the 3D V-Cache CCD",
     "Multiplane Overlay (MPO) Bypass: Added advanced control (OverlayTestMode = 5) to eliminate VRR/G-Sync flicker, micro-stutters, and black screen driver freezes during Alt-Tabbing",
     "Windowed Game Optimizations: Enabled Windows DirectFlip (SwapEffectUpgradeEnable) to bypass Desktop Window Manager (DWM) composition latency in borderless windowed mode",
-    "GPU Shader Cache Safety & Audit: Shifted shader cache cleaning to Caution with recompilation stutter warnings, strictly scoped to compiled driver cache directories",
+    "Smart GPU Shader Cache Cleanup: Added safe (>30 days) target to reclaim ~22+ GB of stale shaders from old games while protecting recently played games from compilation stutters",
     "Safe EmptyWorkingSet Filtering: Pre-Game Boost now protects active games, the foreground application window, and critical system/audio processes from RAM trimming",
     "Read-Only Game Config Handling: Config optimizer and restore seamlessly handle write-protected files without error or permission failures",
     "UI/UX Polish: Current → Target value pills with human-readable labels, friendly startup display names, live telemetry subtitles, and high-contrast icons"
