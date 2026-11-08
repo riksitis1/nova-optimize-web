@@ -1,11 +1,14 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "releasedAt": "2026-11-08",
-  "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.2.0.zip",
-  "sha256": "29341f632806fa4fc2eae3a8b65c24becbf8df5a4f9bf917aca8465f8b2b2f22",
+  "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.3.0.zip",
+  "sha256": "4eba359a98561066d5003dbd74bae31e9bc8aaad0ea9fe1b8cdd93d2606684d8",
   "notes": [
-    "Removed update button when already on the latest version and fixed UI CSS hidden specificity",
-    "Added 6 new safe FPS & latency boosts: Kernel Locked in RAM (DisablePagingExecutive), Clean Kernel Reboots (Disable Fast Startup), USB Polling Rate Stabilization (Disable Selective Suspend), GPU Shader Crash Protection (TdrDelay), Background Telemetry Stutter Blocker, and Instant Alt-Tab Animation Bypass",
-    "Upgraded in-app auto-update system with reliable self-restart and port handoff"
+    "Elite FPS Boost: Nova Gaming power plan now unparks 100% of CPU cores, locks 100% minimum processor clocks, disables PCIe ASPM power saving, and disables disk spindown to eliminate 1% low FPS frame drops and micro-stutter",
+    "Ping Reducer Engine: Enabled AFD Fast Datagram Transmit (FastSendDatagramThreshold=1500) to bypass kernel buffer queues and deliver multiplayer UDP game packets directly to the NIC hardware interface",
+    "Network QoS Prioritization: Enabled DSCP/TOS priority headers (DisableUserTOSSetting=0) so gaming routers prioritize game packets over background household downloads and video streams",
+    "MMCSS Audio Low Latency: Set Audio task priority to High (GPU Priority 8, Priority 6) to eliminate DPC audio latency spikes and sound thread stutter",
+    "Multimedia Network Throttling Disabled & Foreground App Focus moved to 1-click safe optimizations",
+    "Pre-Game Boost expanded to politely suspend Windows 11 Widgets, Phone Link, and background telemetry before gaming"
   ]
 }
