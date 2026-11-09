@@ -20,14 +20,14 @@ export async function openBoostModal() {
           <span class="boost-app-name">${escapeHtml(app.label)}</span>
           <span class="boost-app-mem mono">${formatBytes(app.memory)}</span>
         </label>`).join('')
-    : '<p class="small muted" style="margin:0">None of the optional background apps are running right now. Nova will still flush DNS and trim idle RAM.</p>';
+    : '<p class="small muted" style="margin:0">None of the optional background apps are running right now. Nexa will still flush DNS and trim idle RAM.</p>';
 
   openModal({
     title: 'Pre-game boost',
     body: `
-      <p>Before you play, Nova will flush the DNS cache and give back RAM that idle background programs are holding. You can also ask these apps to close like pressing their X button. Nothing is force-killed, so unsaved work can still prompt you.</p>
+      <p>Before you play, Nexa will flush the DNS cache and give back RAM that idle background programs are holding. You can also ask these apps to close like pressing their X button. Nothing is force-killed, so unsaved work can still prompt you.</p>
       <div class="boost-list" id="boost-apps">${rows}</div>
-      <p class="small muted" style="margin:12px 0 0">Microsoft Edge is never on this list because Nova runs in it.</p>`,
+      <p class="small muted" style="margin:12px 0 0">Microsoft Edge is never on this list because Nexa runs in it.</p>`,
     confirmLabel: 'Boost now',
     onConfirm: async () => {
       const closeApps = Array.from(document.querySelectorAll('#boost-apps input:checked')).map((input) => input.value);

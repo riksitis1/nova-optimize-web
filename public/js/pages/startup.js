@@ -95,6 +95,15 @@ function startupRow(item) {
 }
 
 export function renderStartup() {
+  if (state.startupError) {
+    return `
+      <div class="empty-state" style="margin:40px auto;max-width:480px;text-align:center">
+        <div class="empty-icon">${icon('alert', 24)}</div>
+        <h3 style="margin:12px 0 6px">Could not load startup items</h3>
+        <p style="color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:18px">${escapeHtml(state.startupError)}</p>
+        <button class="button button-primary" id="retry-startup-btn" type="button">${icon('refresh')} Retry scan</button>
+      </div>`;
+  }
   if (!state.startup) {
     return '<div class="page-loading"><div class="loading-orbit"></div><p>Reading startup apps…</p></div>';
   }
@@ -234,6 +243,18 @@ async function refreshStartup(button) {
 }
 
 export function bindStartup() {
+  document.getElementById('retry-startup-btn')?.addEventListener('click', async () => {
+    state.startupError = null;
+    state.startup = null;
+    requestRender();
+    try {
+      const data = await api('/api/startup');
+      state.startup = data.startup;
+    } catch (err) {
+      state.startupError = err.message;
+    }
+    requestRender();
+  });
   document.querySelectorAll('[data-startup-toggle]').forEach((button) => {
     button.addEventListener('click', () => toggleStartup(button));
   });

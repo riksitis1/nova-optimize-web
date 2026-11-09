@@ -9,7 +9,7 @@ import {
   applyBodyPreferences,
   undoAll,
   requestRender,
-  quitNova,
+  quitNexa,
   copyText,
   checkForUpdates,
   promptAndInstallUpdate,
@@ -49,11 +49,11 @@ function accessCard() {
   const admin = state.snapshot?.admin === true;
   return `
     <div class="card card-pad">
-      <div class="card-header"><div><h2>Access</h2><p>Nova works without admin, but system-wide fixes need it.</p></div></div>
+      <div class="card-header"><div><h2>Access</h2><p>Nexa works without admin, but system-wide fixes need it.</p></div></div>
       <div class="setting-row">
         <div class="setting-copy">
           <strong>${admin ? 'Administrator session' : 'Standard user session'}</strong>
-          <p>${admin ? 'Every Nova fix is available. Changes still require your confirmation.' : 'User-level fixes work now. Windows-wide settings, DNS and system cleanup need an elevated session.'}</p>
+          <p>${admin ? 'Every Nexa fix is available. Changes still require your confirmation.' : 'User-level fixes work now. Windows-wide settings, DNS and system cleanup need an elevated session.'}</p>
         </div>
         <div class="setting-control">
           ${admin
@@ -76,8 +76,8 @@ function accessCard() {
 function experienceCard() {
   return `
     <div class="card card-pad">
-      <div class="card-header"><div><h2>Experience</h2><p>Make Nova feel right for you.</p></div></div>
-      ${toggleRow('runInBackground', 'Run in the background', 'Keeps Nova active in the background when unfocused or closed, and auto-trims idle RAM under high load. Turn off to pause when unfocused and stop Nova when you close the window.')}
+      <div class="card-header"><div><h2>Experience</h2><p>Make Nexa feel right for you.</p></div></div>
+      ${toggleRow('runInBackground', 'Run in the background', 'Keeps Nexa active in the background when unfocused or closed, and auto-trims idle RAM under high load. Turn off to pause when unfocused and stop Nexa when you close the window.')}
       ${toggleRow('reduceMotion', 'Reduce motion', 'Turns off ambient animation and smooth transitions. Useful for motion sensitivity or older hardware.')}
       ${toggleRow('compactMode', 'Compact layout', 'Tightens spacing so more information fits on screen.')}
       ${toggleRow('showAdvanced', 'Show the Advanced page', 'Keeps expert-level, higher-risk tweaks in the sidebar. Safe mode stays the default.')}
@@ -89,8 +89,8 @@ function safetyCard() {
   const counts = [5, 10, 15, 20];
   return `
     <div class="card card-pad">
-      <div class="card-header"><div><h2>Scans & safety</h2><p>Control how Nova measures and protects your setup.</p></div></div>
-      ${toggleRow('autoRestorePoint', 'Create a restore point before applying fixes', 'When Nova is elevated, it asks Windows for a restore point before the first batch of changes. This can take a little while.')}
+      <div class="card-header"><div><h2>Scans & safety</h2><p>Control how Nexa measures and protects your setup.</p></div></div>
+      ${toggleRow('autoRestorePoint', 'Create a restore point before applying fixes', 'When Nexa is elevated, it asks Windows for a restore point before the first batch of changes. This can take a little while.')}
       <div class="setting-row">
         <div class="setting-copy">
           <strong>Ping samples per test</strong>
@@ -110,9 +110,9 @@ function dataCard() {
   const update = state.updateInfo;
   return `
     <div class="card card-pad">
-      <div class="card-header"><div><h2>Data, updates & reports</h2><p>Everything Nova knows lives on this PC. Update in place anytime without reinstalling.</p></div></div>
+      <div class="card-header"><div><h2>Data, updates & reports</h2><p>Everything Nexa knows lives on this PC. Update in place anytime without reinstalling.</p></div></div>
       <div class="kv-list settings-about">
-        ${metricRow('Installed version', `Nova Optimize v${state.version}`)}
+        ${metricRow('Installed version', `Nexa Optimize v${state.version}`)}
         ${metricRow('Update status', update ? (update.updateAvailable ? `v${update.latestVersion} available` : `Up to date (v${update.currentVersion})`) : 'Not checked yet')}
         ${metricRow('Session', admin ? 'Administrator' : 'Standard user')}
         ${metricRow('Local port', state.port ? String(state.port) : '—')}
@@ -135,11 +135,11 @@ function dangerCard() {
   const applied = Object.keys(state.applied || {}).length;
   return `
     <div class="card card-pad danger-zone">
-      <div class="card-header"><div><h2>Reset & maintenance</h2><p>Undo Nova changes, restore default preferences or stop the app.</p></div></div>
+      <div class="card-header"><div><h2>Reset & maintenance</h2><p>Undo Nexa changes, restore default preferences or stop the app.</p></div></div>
       <div class="setting-row">
         <div class="setting-copy">
-          <strong>Undo every Nova change</strong>
-          <p>${applied ? `${applied} backed-up change${applied === 1 ? '' : 's'} can be restored.` : 'No Nova changes are currently active.'}</p>
+          <strong>Undo every Nexa change</strong>
+          <p>${applied ? `${applied} backed-up change${applied === 1 ? '' : 's'} can be restored.` : 'No Nexa changes are currently active.'}</p>
         </div>
         <div class="setting-control">
           <button class="button button-small button-danger" type="button" data-action="undo-all" ${applied ? '' : 'disabled'}>${icon('undo')} Undo all</button>
@@ -147,7 +147,7 @@ function dangerCard() {
       </div>
       <div class="setting-row">
         <div class="setting-copy">
-          <strong>Reset Nova preferences</strong>
+          <strong>Reset Nexa preferences</strong>
           <p>Restores the default appearance, scan and advanced-page settings. It does not touch Windows settings or your activity log.</p>
         </div>
         <div class="setting-control">
@@ -156,7 +156,7 @@ function dangerCard() {
       </div>
       <div class="setting-row">
         <div class="setting-copy">
-          <strong>Quit Nova</strong>
+          <strong>Quit Nexa</strong>
           <p>Stops the local server. Applied Windows changes remain until you undo them.</p>
         </div>
         <div class="setting-control">
@@ -223,19 +223,19 @@ function createRestorePoint(button) {
 function undoEverything() {
   const applied = Object.keys(state.applied || {}).length;
   if (!applied) {
-    toast('info', 'Nothing to undo', 'Nova has no active changes with backups.');
+    toast('info', 'Nothing to undo', 'Nexa has no active changes with backups.');
     return;
   }
   openModal({
-    title: 'Undo every Nova change?',
-    body: '<p>Nova will restore every setting it backed up. Some changes need a reboot or reconnect to fully revert.</p>',
+    title: 'Undo every Nexa change?',
+    body: '<p>Nexa will restore every setting it backed up. Some changes need a reboot or reconnect to fully revert.</p>',
     confirmLabel: 'Undo all changes',
     danger: true,
     onConfirm: async () => {
       const response = await undoAll();
       const failed = (response.results || []).filter((result) => !result.ok);
       if (failed.length) toast('warn', 'Some changes could not be undone', failed.map((item) => item.error).join(' · '));
-      else toast('success', 'All Nova changes undone');
+      else toast('success', 'All Nexa changes undone');
       requestRender();
     },
   });
@@ -243,7 +243,7 @@ function undoEverything() {
 
 function resetSettings() {
   openModal({
-    title: 'Reset Nova preferences?',
+    title: 'Reset Nexa preferences?',
     body: '<p>This restores default appearance and scan preferences. Windows settings and the activity log are not affected.</p>',
     confirmLabel: 'Reset preferences',
     onConfirm: async () => {
@@ -302,7 +302,7 @@ export function bindSettings() {
       const nicMsi = (state.msiMode || []).find((m) => m.deviceType === 'Network')?.msiSupported ? 'Supported' : 'Standard';
 
       const title = encodeURIComponent(`[Review]: ${cpu} + ${gpu} (Score: ${score})`);
-      const specs = `CPU: ${cpu}\nGPU: ${gpu}\nRAM: ${ram}\nNova Readiness Score: ${score}\nActive NIC MSI Mode: ${nicMsi}\nNova Version: ${version}`;
+      const specs = `CPU: ${cpu}\nGPU: ${gpu}\nRAM: ${ram}\nNexa Readiness Score: ${score}\nActive NIC MSI Mode: ${nicMsi}\nNexa Version: ${version}`;
       
       const issueUrl = `https://github.com/riksitis1/nova-optimize-web/issues/new?template=review.yml&title=${title}&specs=${encodeURIComponent(specs)}`;
       window.open(issueUrl, '_blank');
@@ -326,6 +326,6 @@ export function bindSettings() {
     button.addEventListener('click', resetSettings);
   });
   document.querySelectorAll('[data-action="quit"]').forEach((button) => {
-    button.addEventListener('click', quitNova);
+    button.addEventListener('click', quitNexa);
   });
 }

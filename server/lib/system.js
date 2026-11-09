@@ -6,7 +6,9 @@ const os = require('node:os');
 const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const { runBridge } = require('./ps');
+const path = require('node:path');
 const {
+  DATA_DIR,
   STARTUP_BACKUP_DIR,
   addDisabledStartup,
   getDisabledStartup,
@@ -14,11 +16,43 @@ const {
 } = require('./store');
 
 const execFileAsync = promisify(execFile);
+const SNAPSHOT_CACHE_FILE = path.join(DATA_DIR, 'snapshot-cache.json');
 
 let snapshotCache = null;
 let snapshotCacheAt = 0;
 let inFlightSnapshot = null;
 const SNAPSHOT_TTL = 60_000;
+
+function loadSnapshotCache() {
+  try {
+    if (fs.existsSync(SNAPSHOT_CACHE_FILE)) {
+      const raw = fs.readFileSync(SNAPSHOT_CACHE_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.os && parsed.computer && parsed.state) {
+        snapshotCache = parsed;
+        snapshotCacheAt = Date.now();
+        return parsed;
+      }
+    }
+  } catch {
+    // Non-fatal
+  }
+  return null;
+}
+
+function saveSnapshotCache(snapshot) {
+  try {
+    if (snapshot && snapshot.os && snapshot.computer) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+      fs.writeFileSync(SNAPSHOT_CACHE_FILE, JSON.stringify(snapshot), 'utf8');
+    }
+  } catch {
+    // Non-fatal
+  }
+}
+
+// Warm cache from disk immediately on module load
+loadSnapshotCache();
 
 function getCachedSnapshot() {
   return snapshotCache;
@@ -28,6 +62,23 @@ async function getSnapshot(force = false) {
   if (!force && snapshotCache && Date.now() - snapshotCacheAt < SNAPSHOT_TTL) {
     return snapshotCache;
   }
+  // Stale-while-revalidate: if we have any valid cached snapshot and force is false,
+  // return the cached snapshot immediately and trigger background refresh so the UI never blocks.
+  if (!force && snapshotCache) {
+    if (!inFlightSnapshot) {
+      inFlightSnapshot = runBridge('snapshot', {}, { timeout: 60_000 })
+        .then((snapshot) => {
+          snapshotCache = snapshot;
+          snapshotCacheAt = Date.now();
+          saveSnapshotCache(snapshot);
+          return snapshot;
+        })
+        .finally(() => {
+          inFlightSnapshot = null;
+        });
+    }
+    return snapshotCache;
+  }
   if (!force && inFlightSnapshot) {
     return inFlightSnapshot;
   }
@@ -35,6 +86,7 @@ async function getSnapshot(force = false) {
     .then((snapshot) => {
       snapshotCache = snapshot;
       snapshotCacheAt = Date.now();
+      saveSnapshotCache(snapshot);
       return snapshot;
     })
     .finally(() => {
@@ -47,6 +99,13 @@ async function getSnapshot(force = false) {
 function invalidateSnapshot() {
   snapshotCache = null;
   snapshotCacheAt = 0;
+  try {
+    if (fs.existsSync(SNAPSHOT_CACHE_FILE)) {
+      fs.unlinkSync(SNAPSHOT_CACHE_FILE);
+    }
+  } catch {
+    // Non-fatal
+  }
 }
 
 function startupId(entry) {
@@ -127,7 +186,7 @@ async function toggleStartup(id, enabled) {
   const startup = await getStartup();
   const active = startup.active.find((item) => item.id === id);
   if (!active) throw new Error('That startup item was not found.');
-  if (active.protected) throw new Error('Nova protects security and core system startup entries.');
+  if (active.protected) throw new Error('Nexa protects security and core system startup entries.');
   const result = await runBridge(
     'startup.disable',
     { entry: active.entry, backupDir: STARTUP_BACKUP_DIR },
@@ -195,8 +254,29 @@ async function toggleAllStartup(enabled, isAdmin = false) {
   return { ok: true, enabled: false, count: names.length, skippedAdmin, names };
 }
 
-async function getCleanupScan() {
-  return runBridge('cleanup.scan', {}, { timeout: 60_000 });
+let cleanupScanCache = null;
+let cleanupScanCacheAt = 0;
+let inFlightCleanupScan = null;
+const CLEANUP_SCAN_TTL = 30_000;
+
+async function getCleanupScan(force = false) {
+  if (!force && cleanupScanCache && Date.now() - cleanupScanCacheAt < CLEANUP_SCAN_TTL) {
+    return cleanupScanCache;
+  }
+  if (!force && inFlightCleanupScan) {
+    return inFlightCleanupScan;
+  }
+  const promise = runBridge('cleanup.scan', {}, { timeout: 60_000 })
+    .then((result) => {
+      cleanupScanCache = result;
+      cleanupScanCacheAt = Date.now();
+      return result;
+    })
+    .finally(() => {
+      if (inFlightCleanupScan === promise) inFlightCleanupScan = null;
+    });
+  inFlightCleanupScan = promise;
+  return promise;
 }
 
 async function runCleanup(ids, snapshot) {
@@ -205,14 +285,36 @@ async function runCleanup(ids, snapshot) {
   const selected = known.filter((item) => ids.includes(item.id));
   if (!selected.length) throw new Error('No valid cleanup categories were selected.');
   if (!snapshot.admin && selected.some((item) => item.requiresAdmin)) {
-    throw new Error('Run Nova as administrator to clean Windows system files.');
+    throw new Error('Run Nexa as administrator to clean Windows system files.');
   }
   const results = await runBridge('cleanup.run', { ids: selected.map((item) => item.id) }, { timeout: 120_000 });
+  cleanupScanCache = null;
   return { results, selected };
 }
 
-async function getProcesses() {
-  return runBridge('processes', {}, { timeout: 30_000 });
+let processCache = null;
+let processCacheAt = 0;
+let inFlightProcesses = null;
+const PROCESS_TTL = 3_500;
+
+async function getProcesses(force = false) {
+  if (!force && processCache && Date.now() - processCacheAt < PROCESS_TTL) {
+    return processCache;
+  }
+  if (!force && inFlightProcesses) {
+    return inFlightProcesses;
+  }
+  const promise = runBridge('processes', {}, { timeout: 30_000 })
+    .then((result) => {
+      processCache = result;
+      processCacheAt = Date.now();
+      return result;
+    })
+    .finally(() => {
+      if (inFlightProcesses === promise) inFlightProcesses = null;
+    });
+  inFlightProcesses = promise;
+  return promise;
 }
 
 async function createRestorePoint() {

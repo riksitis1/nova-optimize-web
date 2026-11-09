@@ -37,9 +37,10 @@ async function fetchManifest(manifestUrl = DEFAULT_MANIFEST_URL) {
   if (url.protocol !== 'https:') {
     throw new Error('Update manifest must use HTTPS.');
   }
+  url.searchParams.set('_t', Date.now().toString());
   const response = await fetch(url.toString(), {
     headers: {
-      'User-Agent': 'Nova-Optimize-Updater/1.0',
+      'User-Agent': 'Nexa-Optimize-Updater/1.0',
       'Cache-Control': 'no-cache',
     },
     signal: AbortSignal.timeout(12_000),
@@ -87,7 +88,7 @@ async function downloadAndStageUpdate(currentVersion) {
   }
 
   const response = await fetch(manifest.downloadUrl, {
-    headers: { 'User-Agent': 'Nova-Optimize-Updater/1.0' },
+    headers: { 'User-Agent': 'Nexa-Optimize-Updater/1.0' },
     signal: AbortSignal.timeout(60_000),
   });
   if (!response.ok) {
@@ -119,7 +120,7 @@ async function downloadAndStageUpdate(currentVersion) {
     $dest = ${psQuote(ROOT)}
     New-Item -ItemType Directory -Path $stage -Force | Out-Null
     Expand-Archive -LiteralPath $zip -DestinationPath $stage -Force
-    $inner = Join-Path $stage 'Nova-Optimize'
+    $inner = Join-Path $stage 'Nexa-Optimize'
     $sourceRoot = if (Test-Path -LiteralPath $inner) { $inner } else { $stage }
     Get-ChildItem -LiteralPath $sourceRoot -Force | ForEach-Object {
       if ($_.Name -eq 'data' -or $_.Name -eq '.git' -or $_.Name -eq 'website') { return }

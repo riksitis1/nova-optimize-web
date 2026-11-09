@@ -17,6 +17,7 @@ import {
   elevate,
   api,
 } from '../core.js';
+import { applySafe } from './optimize.js';
 import {
   scoreRing,
   statCard,
@@ -40,6 +41,11 @@ function heroHeadline(score) {
 }
 
 function heroHtml(scan) {
+  const safeCandidates = (scan.actions || []).filter(
+    (action) => action.applicable && action.risk === 'safe' && !action.optimized && !action.appliedByNexa,
+  );
+  const unappliedCount = safeCandidates.length;
+
   return `
     <section class="card dashboard-hero">
       <div class="hero-copy">
@@ -47,10 +53,12 @@ function heroHtml(scan) {
         <h1>${heroHeadline(scan.score)}</h1>
         <p>${escapeHtml(scan.summary)}</p>
         <div class="hero-actions">
-          <button class="button button-primary button-large" type="button" data-action="scan">${icon('scan')} Scan system</button>
-          <button class="button button-large" type="button" data-nav="games">${icon('gamepad')} Game settings</button>
+          ${unappliedCount > 0
+            ? `<button class="button button-primary button-large" type="button" data-action="apply-safe" style="background:var(--lime);color:#0a0d14;font-weight:700;box-shadow:0 0 24px rgba(184,249,54,0.35);padding:11px 22px">${icon('zap')} One-Click Optimize (${unappliedCount} safe fixes)</button>`
+            : `<button class="button button-large" type="button" data-action="scan" style="border-color:var(--lime);color:var(--lime)">${icon('check')} System Fully Optimized · Re-scan</button>`}
+          <button class="button button-large" type="button" data-nav="optimize">${icon('sliders')} Review tweaks</button>
           <button class="button button-large" type="button" data-action="trim-ram">${icon('zap')} Pre-game boost</button>
-          <button class="button button-large" type="button" data-nav="network">${icon('pulse')} Network lab</button>
+          <button class="button button-large" type="button" data-nav="games">${icon('gamepad')} Game settings</button>
         </div>
         <div class="hero-note">${icon('shield')} Automatic registry &amp; config backups · ${state.settings.runInBackground !== false ? 'Runs in the background (toggle in sidebar)' : 'Background mode off (exits when closed)'}</div>
       </div>
@@ -60,7 +68,7 @@ function heroHtml(scan) {
 
 function quickWinsHtml(scan) {
   if (!scan.quickWins.length) {
-    return emptyState('check', 'Nothing urgent on the list', 'Nova did not find any safe configuration wins. Check the advanced page if you want to go deeper.');
+    return emptyState('check', 'Nothing urgent on the list', 'Nexa did not find any safe configuration wins. Check the advanced page if you want to go deeper.');
   }
   const isSingle = scan.quickWins.length === 1;
   return `<div class="quick-wins ${isSingle ? 'single-win' : ''}">${scan.quickWins.map((finding) => {
@@ -256,7 +264,7 @@ function profileHtml() {
   const ramSpeed = snapshot.memoryModules?.find((item) => item.speed)?.speed;
   return `
     <div class="card card-pad">
-      <div class="card-header"><div><h2>System profile</h2><p>What Nova sees on this machine.</p></div></div>
+      <div class="card-header"><div><h2>System profile</h2><p>What Nexa sees on this machine.</p></div></div>
       <div class="kv-list">
         ${metricRow('Windows', `${snapshot.os.caption} · build ${snapshot.os.build}`)}
         ${metricRow('CPU', snapshot.cpu?.name?.trim() || 'Unknown')}
@@ -270,12 +278,12 @@ function profileHtml() {
 }
 
 function appliedHtml() {
-  const appliedActions = (state.scan?.actions || []).filter((action) => action.appliedByNova);
+  const appliedActions = (state.scan?.actions || []).filter((action) => action.appliedByNexa);
   if (!appliedActions.length) return '';
   return `
     <div class="card card-pad">
       <div class="card-header">
-        <div><h2>Nova changes on this PC</h2><p>Every change below has a backup and can be undone.</p></div>
+        <div><h2>Nexa changes on this PC</h2><p>Every change below has a backup and can be undone.</p></div>
         <div class="card-actions"><button class="button button-small" type="button" data-action="undo-all">${icon('undo')} Undo all</button></div>
       </div>
       <div class="chip-row">${appliedActions.map((action) => `<span class="badge lime">${icon('check')} ${escapeHtml(action.name)}</span>`).join('')}</div>
@@ -285,7 +293,15 @@ function appliedHtml() {
 export function renderOverview() {
   if (!state.scan) {
     return `
-      <div class="page-loading"><div class="loading-orbit"></div><p>Building your readiness score…</p></div>`;
+      <div class="page-loading">
+        <div class="loading-orbit"></div>
+        <p id="loading-status-text">Building your readiness score…</p>
+        <div style="margin-top:16px">
+          <button class="button button-small button-ghost" type="button" data-action="cancel-scan" style="display:inline-flex;align-items:center;gap:6px">
+            ${icon('x')} Stop scan
+          </button>
+        </div>
+      </div>`;
   }
   const scan = state.scan;
   return `
@@ -304,7 +320,7 @@ export function renderOverview() {
       ${profileHtml()}
     </div>
     ${appliedHtml()}
-    <p class="small muted" style="margin-top:26px;line-height:1.6">Nova is free and local-first. It never uploads system data, never disables Windows Security, and never installs drivers or overclocks hardware. Tweak, DNS and startup changes are backed up; temp file cleanup is permanent.</p>
+    <p class="small muted" style="margin-top:26px;line-height:1.6">Nexa is free and local-first. It never uploads system data, never disables Windows Security, and never installs drivers or overclocks hardware. Tweak, DNS and startup changes are backed up; temp file cleanup is permanent.</p>
   `;
 }
 
@@ -378,7 +394,7 @@ async function refreshProcesses(button) {
   button.innerHTML = `${icon('refresh')} Reading…`;
   button.classList.add('spinning');
   try {
-    const data = await api('/api/processes');
+    const data = await api('/api/processes?force=1');
     state.processes = data.processes;
     requestRender();
   } catch (error) {
@@ -395,7 +411,7 @@ function applyQuickWin(id) {
   if (action.requiresAdmin && !state.snapshot?.admin) {
     openModal({
       title: 'Administrator access needed',
-      body: `<p>${escapeHtml(action.name)} changes a system-wide setting. Restart Nova with administrator rights to apply it.</p>`,
+      body: `<p>${escapeHtml(action.name)} changes a system-wide setting. Restart Nexa with administrator rights to apply it.</p>`,
       confirmLabel: 'Restart as administrator',
       onConfirm: elevate,
     });
@@ -403,7 +419,7 @@ function applyQuickWin(id) {
   }
   openModal({
     title: action.name,
-    body: `<p>${escapeHtml(action.description)}</p><ul class="modal-list"><li>${escapeHtml(action.note)}</li><li>Nova records a backup before changing anything.</li>${action.requiresReboot ? '<li>A reboot is required for this change to fully apply.</li>' : ''}</ul>`,
+    body: `<p>${escapeHtml(action.description)}</p><ul class="modal-list"><li>${escapeHtml(action.note)}</li><li>Nexa records a backup before changing anything.</li>${action.requiresReboot ? '<li>A reboot is required for this change to fully apply.</li>' : ''}</ul>`,
     confirmLabel: 'Apply fix',
     danger: action.risk !== 'safe',
     onConfirm: async () => {
@@ -416,6 +432,9 @@ function applyQuickWin(id) {
 }
 
 export function bindOverview() {
+  document.querySelectorAll('[data-action="apply-safe"]').forEach((button) => {
+    button.addEventListener('click', applySafe);
+  });
   document.querySelectorAll('[data-action="scan"]').forEach((button) => {
     button.addEventListener('click', () => runScan(button));
   });
@@ -428,15 +447,15 @@ export function bindOverview() {
   document.querySelectorAll('[data-action="undo-all"]').forEach((button) => {
     button.addEventListener('click', () => {
       openModal({
-        title: 'Undo every Nova change?',
-        body: '<p>Nova will restore the settings it backed up. Some changes need a reboot or reconnect to fully revert.</p>',
+        title: 'Undo every Nexa change?',
+        body: '<p>Nexa will restore the settings it backed up. Some changes need a reboot or reconnect to fully revert.</p>',
         confirmLabel: 'Undo all changes',
         danger: true,
         onConfirm: async () => {
           const response = await undoAll();
           const failed = (response.results || []).filter((result) => !result.ok);
           if (failed.length) toast('warn', 'Some changes could not be undone', failed.map((item) => item.error).join(' · '));
-          else toast('success', 'All Nova changes undone');
+          else toast('success', 'All Nexa changes undone');
         },
       });
     });

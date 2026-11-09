@@ -45,7 +45,7 @@ function cleanBoostApps(value) {
   const names = [];
   for (const raw of value.slice(0, 30)) {
     const app = typeof raw === 'string' ? BY_NAME.get(raw.toLowerCase()) : null;
-    if (!app) throw new Error('That app is not on the Nova pre-game list.');
+    if (!app) throw new Error('That app is not on the Nexa pre-game list.');
     if (!names.includes(app.name)) names.push(app.name);
   }
   return names;

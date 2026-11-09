@@ -1,56 +1,56 @@
 const ICONS = {
   grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
-  spark: '<path d="m12 2 1.7 5.3L19 9l-5.3 1.7L12 16l-1.7-5.3L5 9l5.3-1.7L12 2Z"/><path d="m19 14 .9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9L19 14Z"/><path d="m5 15 .7 2.3L8 18l-2.3.7L5 21l-.7-2.3L2 18l2.3-.7L5 15Z"/>',
-  pulse: '<path d="M3 12h4l2.5-7 5 14L17 12h4"/>',
+  spark: '<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/>',
+  pulse: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
   broom: '<path d="m19 3-5.5 5.5"/><path d="m14 7-8 8 3 3 8-8"/><path d="m6 15-3 6 6-3"/><path d="m9 18 3 3"/>',
-  rocket: '<path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2"/><path d="M9 15 5 11c2.5-5.5 7-8 14-8 0 7-2.5 11.5-8 14l-2-2Z"/><circle cx="15" cy="9" r="1.5"/><path d="M9 15 5 11l-1 4 3 1 1 3 4-1"/>',
+  rocket: '<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>',
   sliders: '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="8" cy="18" r="2"/>',
-  history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>',
+  history: '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
-  power: '<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/>',
-  menu: '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
-  refresh: '<path d="M20 7v5h-5"/><path d="M4 17v-5h5"/><path d="M6.1 9A7 7 0 0 1 18.7 7.3L20 12"/><path d="M17.9 15A7 7 0 0 1 5.3 16.7L4 12"/>',
-  scan: '<path d="M4 8V5a1 1 0 0 1 1-1h3"/><path d="M16 4h3a1 1 0 0 1 1 1v3"/><path d="M20 16v3a1 1 0 0 1-1 1h-3"/><path d="M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M7 12h10"/>',
-  shield: '<path d="M12 3 4.5 6v5.5c0 4.4 3.2 7.9 7.5 9.5 4.3-1.6 7.5-5.1 7.5-9.5V6L12 3Z"/><path d="m9 12 2 2 4-4"/>',
-  cpu: '<rect x="7" y="7" width="10" height="10" rx="2"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 20v3"/><path d="M15 20v3"/><path d="M1 9h3"/><path d="M1 15h3"/><path d="M20 9h3"/><path d="M20 15h3"/><rect x="10" y="10" width="4" height="4" rx="1"/>',
-  gpu: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="9" cy="12" r="2.5"/><circle cx="16" cy="12" r="2.5"/><path d="M7 18v3"/><path d="M17 18v3"/>',
-  memory: '<path d="M3 8h18v8H3z"/><path d="M6 8V5"/><path d="M10 8V5"/><path d="M14 8V5"/><path d="M18 8V5"/><path d="M6 16v3"/><path d="M10 16v3"/><path d="M14 16v3"/><path d="M18 16v3"/><path d="M7 12h2"/><path d="M12 12h2"/><path d="M17 12h.01"/>',
-  disk: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
-  wifi: '<path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><path d="M12 20h.01"/><path d="M2 9a15 15 0 0 1 20 0"/>',
-  ethernet: '<rect x="5" y="9" width="14" height="10" rx="2"/><path d="M8 9V5h8v4"/><path d="M9 14h1"/><path d="M14 14h1"/><path d="M12 19v3"/>',
-  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-  check: '<path d="m5 12 4 4L19 6"/>',
-  alert: '<path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5"/><path d="M12 17h.01"/>',
-  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/>',
-  x: '<path d="m6 6 12 12"/><path d="m18 6-12 12"/>',
-  chevron: '<path d="m9 18 6-6-6-6"/>',
-  external: '<path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/>',
-  lock: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
-  zap: '<path d="M13 2 3 14h8l-1 8 10-12h-8l1-8Z"/>',
-  download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/>',
-  upload: '<path d="M12 21V9"/><path d="m7 14 5-5 5 5"/><path d="M4 3h16"/>',
-  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.5 4 5.6 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.6-4-9s1.5-6.5 4-9Z"/>',
-  server: '<rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/><path d="M7 6.5h.01"/><path d="M7 17.5h.01"/><path d="M11 6.5h6"/><path d="M11 17.5h6"/>',
-  play: '<path d="m8 5 11 7-11 7V5Z"/>',
-  stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
-  trash: '<path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 14h10l1-14"/><path d="M9 7V4h6v3"/>',
-  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h9a7 7 0 1 1 0 14h-1"/>',
-  arrow: '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
-  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
-  copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
-  folder: '<path d="M3 6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6Z"/>',
-  gauge: '<path d="M4.5 19a9 9 0 1 1 15 0"/><path d="M12 13 16 9"/><path d="M12 20h.01"/>',
-  thermometer: '<path d="M10 13V5a2 2 0 1 1 4 0v8a4 4 0 1 1-4 0Z"/><path d="M12 9v7"/>',
-  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
-  key: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="m11 12 9-9"/><path d="m17 6 3 3"/><path d="m14 9 3 3"/>',
-  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
-  target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/>',
-  activity: '<path d="M3 12h4l2-7 4 14 2-7h6"/>',
-  monitor: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>',
-  beaker: '<path d="M9 3h6"/><path d="M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 14h9"/>',
+  power: '<path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>',
+  menu: '<line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/>',
+  refresh: '<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/>',
+  scan: '<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>',
+  cpu: '<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 20v3"/><path d="M15 20v3"/><path d="M20 9h3"/><path d="M20 14h3"/><path d="M1 9h3"/><path d="M1 14h3"/>',
+  gpu: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 19v2"/><path d="M10 19v2"/><path d="M14 19v2"/><circle cx="8" cy="12" r="2.5"/><circle cx="16" cy="12" r="2.5"/>',
+  memory: '<rect x="2" y="7" width="20" height="10" rx="1.5"/><path d="M6 7V4"/><path d="M10 7V4"/><path d="M14 7V4"/><path d="M18 7V4"/><path d="M6 17v3"/><path d="M10 17v3"/><path d="M14 17v3"/><path d="M18 17v3"/><circle cx="6.5" cy="12" r="1"/><circle cx="11.5" cy="12" r="1"/><circle cx="16.5" cy="12" r="1"/>',
+  disk: '<line x1="22" x2="2" y1="12" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" x2="6.01" y1="16" y2="16"/><line x1="10" x2="10.01" y1="16" y2="16"/>',
+  wifi: '<path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><line x1="12" y1="20" x2="12.01" y2="20"/><path d="M2 8.5a15 15 0 0 1 20 0"/>',
+  ethernet: '<rect x="5" y="9" width="14" height="10" rx="2"/><path d="M8 9V5h8v4"/><line x1="9" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="15" y2="14"/><line x1="12" y1="19" x2="12" y2="22"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/>',
+  check: '<polyline points="20 6 9 17 4 12"/>',
+  alert: '<path d="M12 3 2.8 20h18.4L12 3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  info: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+  x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  chevron: '<polyline points="9 18 15 12 9 6"/>',
+  external: '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+  globe: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+  server: '<rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>',
+  play: '<polygon points="5 3 19 12 5 21 5 3"/>',
+  stop: '<rect x="4" y="4" width="16" height="16" rx="2"/>',
+  trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
+  undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>',
+  arrow: '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>',
+  search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  copy: '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  folder: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+  gauge: '<path d="M12 2a10 10 0 1 0 10 10H12V2z"/><circle cx="12" cy="12" r="10"/>',
+  thermometer: '<path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>',
+  user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  key: '<path d="m21 2-2 2m-1.5 1.5L16 7l-1.5-1.5-1.5 1.5 1.5 1.5L13 10l-1.5-1.5L10 10l-1.5-1.5L7 10"/><circle cx="7.5" cy="16.5" r="4.5"/>',
+  plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  activity: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+  monitor: '<rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>',
+  beaker: '<path d="M4.5 3h15"/><path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"/><line x1="6" y1="14" x2="18" y2="14"/>',
   star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
-  list: '<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
-  gamepad: '<rect x="2" y="6" width="20" height="12" rx="4"/><path d="M6 12h4"/><path d="M8 10v4"/><circle cx="15" cy="11" r="1"/><circle cx="17" cy="13" r="1"/>',
+  list: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+  gamepad: '<line x1="6" x2="10" y1="12" y2="12"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="15" x2="15.01" y1="13" y2="13"/><line x1="18" x2="18.01" y1="11" y2="11"/><rect width="20" height="12" x="2" y="6" rx="3"/>',
 };
 
 export const DEFAULT_TARGETS = [
@@ -71,7 +71,10 @@ export const DEFAULT_TARGETS = [
 ];
 
 export const state = {
-  token: document.querySelector('meta[name="nova-token"]')?.getAttribute('content') || '',
+  token:
+    new URLSearchParams(window.location.search).get('token') ||
+    document.querySelector('meta[name="nexa-token"]')?.getAttribute('content') ||
+    '',
   version: '1.4.0',
   port: null,
   dataDir: '',
@@ -112,7 +115,7 @@ export const state = {
 
 export function icon(name, size = 18) {
   const path = ICONS[name] || ICONS.info;
-  return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true">${path}</svg>`;
+  return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${path}</svg>`;
 }
 
 export function hydrateIcons(root = document) {
@@ -210,21 +213,60 @@ export function titleCase(value) {
 }
 
 export async function api(path, options = {}) {
+  if (!state.token && path !== '/api/health') {
+    try {
+      const hRes = await fetch('/api/health');
+      if (hRes.ok) {
+        const hData = await hRes.json();
+        if (hData?.token) state.token = hData.token;
+      }
+    } catch {
+      // offline or server starting
+    }
+  }
   const headers = {
-    'x-nova-token': state.token,
+    'x-nexa-token': state.token,
     ...(options.body ? { 'Content-Type': 'application/json' } : {}),
     ...(options.headers || {}),
   };
-  const response = await fetch(path, {
-    ...options,
-    headers,
-    body: options.body && typeof options.body !== 'string' ? JSON.stringify(options.body) : options.body,
-  });
+  let response;
+  try {
+    response = await fetch(path, {
+      ...options,
+      headers,
+      body: options.body && typeof options.body !== 'string' ? JSON.stringify(options.body) : options.body,
+    });
+  } catch (netErr) {
+    if (!options._retried && path !== '/api/health') {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      try {
+        const hRes = await fetch('/api/health');
+        if (hRes.ok) {
+          const hData = await hRes.json();
+          if (hData?.token) state.token = hData.token;
+          return await api(path, { ...options, _retried: true });
+        }
+      } catch {}
+    }
+    throw netErr;
+  }
   let data = null;
   try {
     data = await response.json();
   } catch {
     data = null;
+  }
+  if (response.status === 403 && !options._retried && path !== '/api/health') {
+    try {
+      const hRes = await fetch('/api/health');
+      if (hRes.ok) {
+        const hData = await hRes.json();
+        if (hData?.token) {
+          state.token = hData.token;
+          return await api(path, { ...options, _retried: true });
+        }
+      }
+    } catch {}
   }
   if (!response.ok) {
     const message = data?.error || `Request failed (${response.status}).`;
@@ -399,9 +441,48 @@ export function updateAdminUI() {
   }
 }
 
+export function createFallbackSnapshot() {
+  return {
+    generatedAt: new Date().toISOString(),
+    admin: false,
+    hostname: 'Local PC',
+    username: 'User',
+    os: { caption: 'Microsoft Windows', version: '10.0', build: 19045, architecture: '64-bit' },
+    computer: { manufacturer: 'PC', model: 'Desktop', isLaptop: false, totalRam: 16 * 1024 ** 3, freeRam: 8 * 1024 ** 3, memoryUsagePercent: 50 },
+    cpu: { name: 'Processor', manufacturer: 'Windows PC', cores: 8, threads: 16, maxClockMhz: 3600 },
+    gpus: [],
+    adapters: [],
+    state: {},
+  };
+}
+
+export function cancelScan() {
+  if (state.scanAbortController) {
+    try { state.scanAbortController.abort(); } catch {}
+    state.scanAbortController = null;
+  }
+  state.scanLoading = null;
+  if (!state.snapshot) {
+    state.snapshot = createFallbackSnapshot();
+  }
+  if (!state.scan) {
+    state.scan = {
+      score: 75,
+      potentialScore: 100,
+      summary: 'Scan stopped by user. Click "Run scan" anytime.',
+      quickWins: [],
+      actions: [],
+      counts: { issues: 0, applied: 0 },
+    };
+  }
+  updateAdminUI();
+}
+
 export async function loadScan(force = false) {
   if (state.scanLoading) return state.scanLoading;
-  state.scanLoading = api(`/api/scan${force ? '?force=1' : ''}`)
+  const controller = new AbortController();
+  state.scanAbortController = controller;
+  state.scanLoading = api(`/api/scan${force ? '?force=1' : ''}`, { signal: controller.signal })
     .then((data) => {
       state.snapshot = data.snapshot;
       state.scan = data.scan;
@@ -409,8 +490,16 @@ export async function loadScan(force = false) {
       updateAdminUI();
       return data;
     })
+    .catch((err) => {
+      if (err.name === 'AbortError') {
+        cancelScan();
+        return { snapshot: state.snapshot, scan: state.scan, applied: state.applied };
+      }
+      throw err;
+    })
     .finally(() => {
       state.scanLoading = null;
+      if (state.scanAbortController === controller) state.scanAbortController = null;
     });
   return state.scanLoading;
 }
@@ -421,20 +510,138 @@ export async function ensureScan() {
 }
 
 export async function applyActions(ids) {
-  const response = await api('/api/actions/apply', { method: 'POST', body: { ids } });
-  if (response.snapshot) state.snapshot = response.snapshot;
-  if (response.scan) state.scan = response.scan;
-  if (response.applied) {
-    state.applied = response.applied;
-  } else {
-    for (const result of response.results || []) {
-      if (result.ok && !result.skipped) state.applied[result.id] = new Date().toISOString();
+  if (!Array.isArray(ids) || ids.length === 0) return { ok: true, results: [] };
+
+  if (ids.length === 1) {
+    const response = await api('/api/actions/apply', { method: 'POST', body: { ids } });
+    if (response.snapshot) state.snapshot = response.snapshot;
+    if (response.scan) state.scan = response.scan;
+    if (response.applied) {
+      state.applied = response.applied;
+    } else {
+      for (const result of response.results || []) {
+        if (result.ok && !result.skipped) state.applied[result.id] = new Date().toISOString();
+      }
     }
+    state.history = null;
+    updateAdminUI();
+    requestRender();
+    return response;
   }
+
+  const modalRoot = document.getElementById('modal-root');
+  const allActions = state.scan?.actions || [];
+  const actionNameMap = new Map(allActions.map((a) => [a.id, a.name]));
+
+  if (modalRoot) {
+    modalRoot.innerHTML = `
+      <div class="modal-backdrop">
+        <div class="modal progress-modal" role="dialog" aria-modal="true" aria-labelledby="pm-title">
+          <div class="progress-modal-header">
+            <span class="progress-modal-badge">${icon('activity', 12)} Applying Optimizations</span>
+            <h2 id="pm-title" class="progress-modal-title">Tuning System Performance</h2>
+            <p id="pm-sub" class="progress-modal-subtitle">Starting configuration pass...</p>
+          </div>
+          <div class="progress-track-wrap">
+            <div class="progress-bar-track">
+              <div id="pm-bar" class="progress-bar-fill" style="width: 0%"></div>
+            </div>
+            <div class="progress-meta-row">
+              <span id="pm-count" class="progress-meta-count">0 / ${ids.length} completed</span>
+              <span id="pm-pct" class="progress-meta-pct">0%</span>
+            </div>
+          </div>
+          <div id="pm-log" class="progress-stream-log"></div>
+        </div>
+      </div>`;
+  }
+
+  const barEl = document.getElementById('pm-bar');
+  const countEl = document.getElementById('pm-count');
+  const pctEl = document.getElementById('pm-pct');
+  const subEl = document.getElementById('pm-sub');
+  const logEl = document.getElementById('pm-log');
+
+  const addLog = (text, status = 'done') => {
+    if (!logEl) return;
+    const item = document.createElement('div');
+    item.className = `progress-stream-item ${status}`;
+    item.innerHTML = `<span class="progress-stream-icon">${status === 'done' ? icon('check', 13) : status === 'active' ? icon('refresh', 13) : icon('alert', 13)}</span><span>${escapeHtml(text)}</span>`;
+    logEl.prepend(item);
+  };
+
+  const updateProgress = (appliedCount, currentActionName) => {
+    const pct = Math.min(100, Math.round((appliedCount / ids.length) * 100));
+    if (barEl) barEl.style.width = `${pct}%`;
+    if (countEl) countEl.textContent = `${appliedCount} / ${ids.length} completed`;
+    if (pctEl) pctEl.textContent = `${pct}%`;
+    if (subEl && currentActionName) subEl.textContent = currentActionName;
+  };
+
+  const CHUNK_SIZE = 3;
+  const chunks = [];
+  for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+    chunks.push(ids.slice(i, i + CHUNK_SIZE));
+  }
+
+  const accumulatedResults = [];
+  let appliedSoFar = 0;
+  let finalResponse = null;
+
+  try {
+    for (let c = 0; c < chunks.length; c++) {
+      const chunk = chunks[c];
+      const isFirst = c === 0;
+      const isLast = c === chunks.length - 1;
+
+      const chunkNames = chunk.map((id) => actionNameMap.get(id) || id).join(', ');
+      updateProgress(appliedSoFar, `Applying: ${chunkNames}...`);
+
+      const resp = await api('/api/actions/apply', {
+        method: 'POST',
+        body: {
+          ids: chunk,
+          skipRestorePoint: !isFirst,
+          skipSnapshot: !isLast,
+        },
+      });
+
+      if (resp.applied) {
+        state.applied = { ...state.applied, ...resp.applied };
+      }
+      for (const res of resp.results || []) {
+        accumulatedResults.push(res);
+        if (res.ok && !res.skipped) state.applied[res.id] = new Date().toISOString();
+        const aName = actionNameMap.get(res.id) || res.id;
+        addLog(res.ok ? aName : `Failed: ${aName}`, res.ok ? 'done' : 'error');
+      }
+
+      appliedSoFar += chunk.length;
+      updateProgress(appliedSoFar, isLast ? 'Finalizing optimizations...' : `Applied ${appliedSoFar} of ${ids.length}`);
+
+      if (isLast) {
+        finalResponse = resp;
+        if (resp.snapshot) state.snapshot = resp.snapshot;
+        if (resp.scan) state.scan = resp.scan;
+      }
+    }
+
+    if (finalResponse) {
+      finalResponse.results = accumulatedResults;
+      finalResponse.ok = accumulatedResults.every((r) => r.ok);
+    }
+
+    updateProgress(ids.length, 'All safe optimizations active!');
+    if (subEl) subEl.textContent = 'All safe optimizations active!';
+    await new Promise((r) => setTimeout(r, 650));
+  } finally {
+    closeModal();
+  }
+
   state.history = null;
   updateAdminUI();
   requestRender();
-  return response;
+  return finalResponse || { ok: accumulatedResults.every((r) => r.ok), results: accumulatedResults };
 }
 
 export async function undoAction(id) {
@@ -499,7 +706,7 @@ export async function elevate() {
           applyBodyPreferences();
           updateAdminUI();
           if (overlay) overlay.hidden = true;
-          toast('success', 'Administrator access enabled', 'Reloading Nova with every fix available.');
+          toast('success', 'Administrator access enabled', 'Reloading Nexa with every fix available.');
           state.elevatePolling = false;
           setTimeout(() => window.location.reload(), 900);
           return;
@@ -509,7 +716,7 @@ export async function elevate() {
       }
       if (status) status.textContent = `Waiting for the elevated instance… ${attempt + 1}s`;
     }
-    throw new Error('Nova did not reconnect. Close this window and start Nova again.');
+    throw new Error('Nexa did not reconnect. Close this window and start Nexa again.');
   } catch (error) {
     if (overlay) overlay.hidden = true;
     if (!cancelled) toast('error', 'Could not elevate', error.message);
@@ -519,11 +726,11 @@ export async function elevate() {
   }
 }
 
-export function quitNova() {
+export function quitNexa() {
   openModal({
-    title: 'Quit Nova?',
+    title: 'Quit Nexa?',
     body: '<p>The local server will stop and this window can be closed. Any applied Windows changes stay applied until you undo them.</p>',
-    confirmLabel: 'Quit Nova',
+    confirmLabel: 'Quit Nexa',
     danger: true,
     onConfirm: async () => {
       try {
@@ -534,13 +741,14 @@ export function quitNova() {
       document.body.innerHTML = `
         <div class="quit-screen">
           <div class="quit-mark">N</div>
-          <h1>Nova has stopped</h1>
+          <h1>Nexa has stopped</h1>
           <p>The local server is off. You can close this window now.</p>
         </div>`;
       setTimeout(() => window.close(), 600);
     },
   });
 }
+export const quitNova = quitNexa;
 
 export async function copyText(text) {
   const value = String(text ?? '');
@@ -599,7 +807,7 @@ export async function checkForUpdates({ silent = false } = {}) {
         toast('info', `Update v${info.latestVersion} available`, 'Click the Update button in the top bar to install and restart.');
       }
     } else if (!silent) {
-      toast('success', 'Nova is up to date', `You are running the latest version (v${info.currentVersion}).`);
+      toast('success', 'Nexa is up to date', `You are running the latest version (v${info.currentVersion}).`);
     }
     return info;
   } catch (error) {
@@ -621,9 +829,9 @@ export function promptAndInstallUpdate() {
     ? `<ul class="modal-list">${info.notes.map((n) => `<li>${escapeHtml(n)}</li>`).join('')}</ul>`
     : '';
   openModal({
-    title: `Update Nova to v${info.latestVersion}?`,
+    title: `Update Nexa to v${info.latestVersion}?`,
     body: `
-      <p>Nova will download <strong>v${escapeHtml(info.latestVersion)}</strong>, verify its SHA-256 checksum (<code>${escapeHtml(String(info.sha256 || '').slice(0, 16))}…</code>), update in place while keeping all your backups and settings, and restart automatically.</p>
+      <p>Nexa will download <strong>v${escapeHtml(info.latestVersion)}</strong>, verify its SHA-256 checksum (<code>${escapeHtml(String(info.sha256 || '').slice(0, 16))}…</code>), update in place while keeping all your backups and settings, and restart automatically.</p>
       ${notesHtml}`,
     confirmLabel: `Update to v${info.latestVersion} & restart`,
     onConfirm: async () => {
@@ -640,14 +848,14 @@ async function runInPlaceUpdate(targetVersion) {
   const oldHeading = heading ? heading.textContent : '';
   const oldCopy = copy ? copy.textContent : '';
 
-  if (heading) heading.textContent = `Updating Nova to v${targetVersion}`;
-  if (copy) copy.textContent = 'Downloading package, verifying SHA-256 checksum, and restarting Nova…';
+  if (heading) heading.textContent = `Updating Nexa to v${targetVersion}`;
+  if (copy) copy.textContent = 'Downloading package, verifying SHA-256 checksum, and restarting Nexa…';
   if (status) status.textContent = 'Downloading & verifying update…';
   if (overlay) overlay.hidden = false;
 
   try {
     await api('/api/update/install', { method: 'POST', body: {} });
-    if (status) status.textContent = 'Update installed. Waiting for Nova to restart…';
+    if (status) status.textContent = 'Update installed. Waiting for Nexa to restart…';
     for (let attempt = 0; attempt < 35; attempt += 1) {
       await new Promise((resolve) => setTimeout(resolve, 900));
       try {

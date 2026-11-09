@@ -291,7 +291,7 @@ async function handleApi(req, res, url) {
     }
     const settings = getSettings();
     const pending = ids.filter((id) => !getApplied()[id]);
-    if (settings.autoRestorePoint === true && snapshot.admin && pending.length) {
+    if (settings.autoRestorePoint === true && snapshot.admin && pending.length && !body.skipRestorePoint) {
       try {
         await createRestorePoint();
         addActivity({ type: 'system', title: 'Created a restore point before applying fixes' });
@@ -326,7 +326,7 @@ async function handleApi(req, res, url) {
         results.push({ id, ok: false, error: error.message });
       }
     }
-    const fresh = await getSnapshot(true);
+    const fresh = body.skipSnapshot ? snapshot : await getSnapshot(true);
     const applied = getApplied();
     sendJson(res, 200, { ok: results.every((result) => result.ok), results, snapshot: fresh, scan: analyze(fresh, applied), applied });
     return;
@@ -440,7 +440,8 @@ async function handleApi(req, res, url) {
   }
 
   if (method === 'GET' && pathname === '/api/cleanup/scan') {
-    sendJson(res, 200, { ok: true, categories: await getCleanupScan(), admin: (await getSnapshot()).admin });
+    const force = url.searchParams.get('force') === '1';
+    sendJson(res, 200, { ok: true, categories: await getCleanupScan(force), admin: (await getSnapshot()).admin });
     return;
   }
 
@@ -803,9 +804,19 @@ const server = http.createServer((req, res) => {
 
 function findEdge() {
   const candidates = [
+    // Microsoft Edge (Standard on Windows 10/11)
     path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Microsoft\\Edge\\Application\\msedge.exe'),
     path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Microsoft\\Edge\\Application\\msedge.exe'),
+    path.join(process.env.ProgramW6432 || '', 'Microsoft\\Edge\\Application\\msedge.exe'),
     path.join(process.env.LOCALAPPDATA || '', 'Microsoft\\Edge\\Application\\msedge.exe'),
+    // Chrome fallback (supports --app= window mode seamlessly)
+    path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Google\\Chrome\\Application\\chrome.exe'),
+    path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'Google\\Chrome\\Application\\chrome.exe'),
+    path.join(process.env.ProgramW6432 || '', 'Google\\Chrome\\Application\\chrome.exe'),
+    path.join(process.env.LOCALAPPDATA || '', 'Google\\Chrome\\Application\\chrome.exe'),
+    // Brave fallback (supports --app= window mode)
+    path.join(process.env.ProgramFiles || 'C:\\Program Files', 'BraveSoftware\\Brave-Browser\\Application\\brave.exe'),
+    path.join(process.env.LOCALAPPDATA || '', 'BraveSoftware\\Brave-Browser\\Application\\brave.exe'),
   ];
   return candidates.find((candidate) => candidate && fs.existsSync(candidate));
 }
@@ -849,7 +860,7 @@ async function elevate() {
   const node = process.execPath;
   const serverPath = path.join(__dirname, 'server.js');
   const psString = (value) => `'${String(value).replaceAll("'", "''")}'`;
-  const args = ['--max-old-space-size=96', serverPath, '--no-open', '--elevated', `--token=${TOKEN}`];
+  const args = [serverPath, '--no-open', '--elevated', `--token=${TOKEN}`];
   const argList = args.map(psString).join(',');
   const command = `Start-Process -FilePath ${psString(node)} -ArgumentList @(${argList}) -WorkingDirectory ${psString(ROOT)} -Verb RunAs -WindowStyle Hidden`;
   await runPowerShell(command, { timeout: 30_000 });
@@ -858,7 +869,7 @@ async function elevate() {
 function restartSelf() {
   const node = process.execPath;
   const serverPath = path.join(__dirname, 'server.js');
-  const args = ['--max-old-space-size=96', serverPath, '--no-open', `--token=${TOKEN}`, '--restarted'];
+  const args = [serverPath, '--no-open', `--token=${TOKEN}`, '--restarted'];
   if (IS_ELEVATED) args.push('--elevated');
   const child = spawn(node, args, {
     cwd: ROOT,

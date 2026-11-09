@@ -197,7 +197,7 @@ function dnsTab() {
         ` : emptyState('gauge', 'No benchmark yet', 'Run a benchmark to compare your ISP resolver with Cloudflare, Google, Quad9 and AdGuard.')}
       </div>
     </div>
-    <div class="callout" style="margin-top:14px">${icon('info')}<div><strong>DNS is not a ping fix.</strong> It speeds up name lookups and can make browsing feel snappier, but it cannot lower the route latency to a game server. Nova will never pretend otherwise.</div></div>
+    <div class="callout" style="margin-top:14px">${icon('info')}<div><strong>DNS is not a ping fix.</strong> It speeds up name lookups and can make browsing feel snappier, but it cannot lower the route latency to a game server. Nexa will never pretend otherwise.</div></div>
   `;
 }
 
@@ -396,7 +396,7 @@ function applyDns(result) {
   if (!state.snapshot?.admin) {
     openModal({
       title: 'Administrator access needed',
-      body: '<p>Changing DNS servers requires administrator rights. Nova will restart with an elevated session.</p>',
+      body: '<p>Changing DNS servers requires administrator rights. Nexa will restart with an elevated session.</p>',
       confirmLabel: 'Restart as administrator',
       onConfirm: elevate,
     });
@@ -411,7 +411,7 @@ function applyDns(result) {
   }
   openModal({
     title: `Use ${result.name}?`,
-    body: `<p>Nova will set DNS servers on ${ifIndexes.length} active adapter${ifIndexes.length === 1 ? '' : 's'}. Your original DNS configuration is saved for one-click reset.</p><ul class="modal-list"><li>${escapeHtml((result.servers || []).join(' · '))}</li><li>This changes name lookups, not in-game ping.</li></ul>`,
+    body: `<p>Nexa will set DNS servers on ${ifIndexes.length} active adapter${ifIndexes.length === 1 ? '' : 's'}. Your original DNS configuration is saved for one-click reset.</p><ul class="modal-list"><li>${escapeHtml((result.servers || []).join(' · '))}</li><li>This changes name lookups, not in-game ping.</li></ul>`,
     confirmLabel: 'Apply DNS',
     onConfirm: async () => {
       const response = await api('/api/network/dns/apply', {
@@ -438,7 +438,7 @@ function resetDns() {
   }
   openModal({
     title: 'Reset DNS to the original configuration?',
-    body: '<p>Nova will restore the DNS settings it backed up, or return the adapter to automatic DNS if no backup exists.</p>',
+    body: '<p>Nexa will restore the DNS settings it backed up, or return the adapter to automatic DNS if no backup exists.</p>',
     confirmLabel: 'Reset DNS',
     danger: true,
     onConfirm: async () => {

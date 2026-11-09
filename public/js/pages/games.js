@@ -179,6 +179,15 @@ function gameCard(game) {
 }
 
 export function renderGames() {
+  if (state.gamesError) {
+    return `
+      <div class="empty-state" style="margin:40px auto;max-width:480px;text-align:center">
+        <div class="empty-icon">${icon('alert', 24)}</div>
+        <h3 style="margin:12px 0 6px">Could not load game profiles</h3>
+        <p style="color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:18px">${escapeHtml(state.gamesError)}</p>
+        <button class="button button-primary" id="retry-games-btn" type="button">${icon('refresh')} Retry scan</button>
+      </div>`;
+  }
   if (!Array.isArray(state.games)) {
     return '<div class="page-loading"><div class="loading-orbit"></div><p>Scanning game configurations…</p></div>';
   }
@@ -312,6 +321,17 @@ export async function loadGames() {
 }
 
 export function bindGames() {
+  document.getElementById('retry-games-btn')?.addEventListener('click', async () => {
+    state.gamesError = null;
+    state.games = null;
+    requestRender();
+    try {
+      await loadGames();
+    } catch (err) {
+      state.gamesError = err.message;
+    }
+    requestRender();
+  });
   document.querySelectorAll('[data-game-filter]').forEach((button) => {
     button.addEventListener('click', () => {
       state.gameFilter = button.getAttribute('data-game-filter') || 'all';

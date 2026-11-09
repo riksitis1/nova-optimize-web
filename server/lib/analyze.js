@@ -2,7 +2,17 @@
 
 const { actions, serializeAction } = require('./actions');
 
-const SEVERITY_POINTS = { high: 14, medium: 7, low: 2.5, info: 0 };
+const SEVERITY_POINTS = { high: 14, medium: 7, low: 3, info: 0 };
+const SYSTEM_SEVERITY_POINTS = { high: 14, medium: 7, low: 3, info: 0 };
+const ACTION_SEVERITY_POINTS = { high: 1.8, medium: 1.0, low: 0.5, info: 0 };
+
+function getFindingDeduction(finding) {
+  if (!finding.scored || finding.severity === 'info') return 0;
+  if (finding.actionId) {
+    return ACTION_SEVERITY_POINTS[finding.severity] || 0;
+  }
+  return SYSTEM_SEVERITY_POINTS[finding.severity] || 0;
+}
 const CATEGORY_LABELS = {
   Performance: 'Performance',
   Gaming: 'Gaming',
@@ -108,30 +118,32 @@ function analyze(snapshot, applied = {}) {
     }
   }
 
-  if (snapshot.computer.totalRam > 0 && snapshot.computer.totalRam < 16 * 1024 ** 3) {
+  const computer = snapshot.computer || {};
+  if (computer.totalRam > 0 && computer.totalRam < 16 * 1024 ** 3) {
     addFinding(findings, {
       id: 'ram-capacity',
       severity: 'info',
       category: 'Performance',
-      title: `${Math.round(snapshot.computer.totalRam / 1024 ** 3)} GB of RAM installed`,
+      title: `${Math.round(computer.totalRam / 1024 ** 3)} GB of RAM installed`,
       description: '16 GB is the comfortable baseline for modern gaming. 32 GB helps with heavy multitasking and some sims.',
-      detail: 'Nova will not pretend a registry tweak can add RAM.',
+      detail: 'Nexa will not pretend a registry tweak can add RAM.',
       scored: false,
     });
   }
 
-  if (snapshot.computer.memoryUsagePercent >= 90) {
+  if (computer.memoryUsagePercent >= 90) {
     addFinding(findings, {
       id: 'ram-pressure',
       severity: 'low',
       category: 'Performance',
       title: 'Memory is almost full',
-      description: `Windows reports ${snapshot.computer.memoryUsagePercent}% memory in use.`,
+      description: `Windows reports ${computer.memoryUsagePercent}% memory in use.`,
       detail: 'Close heavy background apps or restart if memory stays pinned.',
     });
   }
 
-  if (snapshot.os.uptimeSeconds > 7 * 86_400) {
+  const os = snapshot.os || {};
+  if (os.uptimeSeconds > 7 * 86_400) {
     addFinding(findings, {
       id: 'uptime',
       severity: 'low',
@@ -249,7 +261,7 @@ function analyze(snapshot, applied = {}) {
         category: 'Security',
         title: 'Antivirus protection is disabled',
         description: 'Windows reports that its antivirus engine is off.',
-        detail: 'Nova never disables security software. Turn protection back on in Windows Security.',
+        detail: 'Nexa never disables security software. Turn protection back on in Windows Security.',
         scored: true,
       });
     } else if (defender && defender.realTimeProtectionEnabled === false) {
@@ -332,14 +344,14 @@ function analyze(snapshot, applied = {}) {
   for (const category of Object.keys(CATEGORY_LABELS)) {
     const deductions = scoredFindings
       .filter((finding) => finding.category === category)
-      .reduce((sum, finding) => sum + (SEVERITY_POINTS[finding.severity] || 0), 0);
+      .reduce((sum, finding) => sum + getFindingDeduction(finding), 0);
     categoryScores[category] = Math.max(0, Math.round(100 - deductions));
   }
-  const totalDeduction = scoredFindings.reduce((sum, finding) => sum + (SEVERITY_POINTS[finding.severity] || 0), 0);
+  const totalDeduction = scoredFindings.reduce((sum, finding) => sum + getFindingDeduction(finding), 0);
   const score = Math.max(10, Math.min(100, Math.round(100 - totalDeduction)));
   const potentialDeduction = scoredFindings
     .filter((finding) => finding.actionId || finding.page === 'cleanup' || finding.page === 'startup')
-    .reduce((sum, finding) => sum + (SEVERITY_POINTS[finding.severity] || 0), 0);
+    .reduce((sum, finding) => sum + getFindingDeduction(finding), 0);
   const potentialScore = Math.max(score, Math.min(100, Math.round(100 - totalDeduction + potentialDeduction)));
 
   const rank =

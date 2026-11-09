@@ -32,6 +32,14 @@
   box-sizing: border-box;
 }
 
+svg:not(.score-ring-svg):not(.score-ring-track):not(.score-ring-progress) {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 [hidden] {
   display: none !important;
 }
@@ -769,9 +777,13 @@ select:focus-visible,
 }
 
 .hero-note svg {
-  width: 13px;
-  height: 13px;
-  color: var(--green);
+  width: 14px;
+  height: 14px;
+  color: var(--lime);
+  fill: none;
+  stroke: var(--lime);
+  stroke-width: 2;
+  flex-shrink: 0;
 }
 
 .hero-score {
@@ -837,12 +849,9 @@ select:focus-visible,
 
 .score-ring svg {
   position: absolute;
-  top: -24px;
-  left: -24px;
-  right: -24px;
-  bottom: -24px;
-  width: calc(100% + 48px);
-  height: calc(100% + 48px);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   transform: rotate(-90deg);
   overflow: visible;
   pointer-events: none;
@@ -854,18 +863,36 @@ select:focus-visible,
   stroke-width: 7;
 }
 
+.score-ring-ambient {
+  fill: none;
+  stroke: var(--lime);
+  stroke-linecap: round;
+  stroke-width: 24;
+  opacity: 0.12;
+  transition: stroke-dashoffset 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.score-ring-bloom {
+  fill: none;
+  stroke: var(--lime);
+  stroke-linecap: round;
+  stroke-width: 14;
+  opacity: 0.28;
+  transition: stroke-dashoffset 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 .score-ring-progress {
   fill: none;
   stroke: var(--lime);
   stroke-linecap: round;
   stroke-width: 7;
-  filter: drop-shadow(0 0 10px rgba(184, 249, 54, 0.42));
   transition: stroke-dashoffset 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+.score-ring-ambient.cyan,
+.score-ring-bloom.cyan,
 .score-ring-progress.cyan {
   stroke: var(--cyan);
-  filter: drop-shadow(0 0 10px rgba(76, 201, 240, 0.42));
 }
 
 .score-center {
@@ -931,18 +958,23 @@ select:focus-visible,
 
 .stat-icon {
   display: grid;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   place-items: center;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(184, 249, 54, 0.22);
   border-radius: 8px;
   color: var(--lime);
-  background: rgba(199, 255, 74, 0.055);
+  background: rgba(184, 249, 54, 0.08);
 }
 
 .stat-icon svg {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .stat-value {
@@ -1009,9 +1041,15 @@ select:focus-visible,
 }
 
 .badge.lime {
-  border-color: rgba(199, 255, 74, 0.22);
+  border-color: rgba(184, 249, 54, 0.25);
   background: var(--lime-soft);
   color: var(--lime);
+}
+
+.badge.lime svg {
+  fill: none;
+  stroke: var(--lime);
+  stroke-width: 2.5;
 }
 
 .badge.cyan {
@@ -1500,16 +1538,19 @@ select:focus-visible,
 .action-foot .action-status {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   margin-left: auto;
-  color: var(--green);
-  font-size: 10px;
+  color: var(--lime);
+  font-size: 11px;
   font-weight: 650;
 }
 
 .action-foot .action-status svg {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: var(--lime);
+  stroke-width: 2.5;
 }
 
 .action-foot .lock-note {
@@ -2170,20 +2211,27 @@ select:focus-visible,
   place-items: center;
   border: 1px solid var(--line-strong);
   border-radius: 5px;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.25);
   color: transparent;
   cursor: pointer;
+  transition: all 130ms ease;
 }
 
 .check.checked {
   border-color: var(--lime);
-  background: var(--lime);
-  color: #071014;
+  background: rgba(184, 249, 54, 0.16);
+  color: var(--lime);
+  box-shadow: 0 0 10px rgba(184, 249, 54, 0.25);
 }
 
 .check svg {
   width: 12px;
   height: 12px;
+  fill: none;
+  stroke: var(--lime);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .cleanup-info {
@@ -3402,8 +3450,8 @@ body.compact .card-pad {
 
 .game-check {
   display: grid;
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
   margin-top: 1px;
   place-items: center;
   flex-shrink: 0;
@@ -3416,8 +3464,19 @@ body.compact .card-pad {
 
 .game-setting input[type="checkbox"]:checked + .game-check {
   border-color: var(--lime);
-  background: var(--lime);
-  color: #081006;
+  background: rgba(184, 249, 54, 0.16);
+  color: var(--lime);
+  box-shadow: 0 0 10px rgba(184, 249, 54, 0.25);
+}
+
+.game-check svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: var(--lime);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .game-setting-main {
@@ -3501,6 +3560,14 @@ body.compact .card-pad {
   gap: 4px;
   color: var(--lime);
   font-weight: 600;
+}
+
+.game-ok svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: var(--lime);
+  stroke-width: 2.5;
 }
 
 .game-launch {
@@ -3597,4 +3664,147 @@ body.compact .card-pad {
   color: var(--cyan);
   font-size: 11px;
 }
+
+/* Apply Fixes Real-Time Progress Modal */
+.progress-modal {
+  width: min(540px, 100%);
+  padding: 24px 28px;
+  border: 1px solid rgba(184, 249, 54, 0.25);
+  border-radius: 20px;
+  background: linear-gradient(155deg, #151d28 0%, #0d121a 100%);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(184, 249, 54, 0.08);
+}
+
+.progress-modal-header {
+  margin-bottom: 20px;
+}
+
+.progress-modal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: 99px;
+  background: rgba(184, 249, 54, 0.12);
+  border: 1px solid rgba(184, 249, 54, 0.28);
+  color: var(--lime);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.progress-modal-title {
+  margin: 12px 0 6px;
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+.progress-modal-subtitle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.progress-track-wrap {
+  margin: 18px 0 14px;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 9px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #4cc9f0, #b8f936);
+  border-radius: 99px;
+  box-shadow: 0 0 16px rgba(184, 249, 54, 0.6);
+  transition: width 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.progress-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  font-size: 11px;
+}
+
+.progress-meta-count {
+  color: #fff;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-meta-pct {
+  color: var(--lime);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-stream-log {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.32);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  max-height: 140px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.progress-stream-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  animation: fadeIn 150ms ease both;
+}
+
+.progress-stream-item.active {
+  color: #fff;
+  font-weight: 550;
+}
+
+.progress-stream-item.done {
+  color: #e2e8f0;
+}
+
+.progress-stream-item.error {
+  color: #f87171;
+}
+
+.progress-stream-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-stream-item.done .progress-stream-icon {
+  color: var(--lime);
+}
+
+.progress-stream-item.active .progress-stream-icon {
+  color: var(--cyan);
+}
+
+.progress-stream-item.error .progress-stream-icon {
+  color: #f87171;
+}
+
 

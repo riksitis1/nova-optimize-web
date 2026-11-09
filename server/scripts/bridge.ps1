@@ -115,7 +115,7 @@ function Delete-RegValue {
   }
   try {
     $path = [string]$Spec.path
-    if ($path -match '(?i)(SOFTWARE\\Policies\\Microsoft\\Windows\\QoS\\NovaQoS_|SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\.+?\\PerfOptions)') {
+    if ($path -match '(?i)(SOFTWARE\\Policies\\Microsoft\\Windows\\QoS\\NexaQoS_|SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\.+?\\PerfOptions)') {
       $k = $root.OpenSubKey($path, $false)
       if ($null -ne $k) {
         $valCount = @($k.GetValueNames()).Count
@@ -546,6 +546,9 @@ function Reset-DnsServers {
 
 function Invoke-Ping {
   param([string]$HostName, [int]$Count)
+  if ([string]::IsNullOrWhiteSpace($HostName) -or $HostName -notmatch '^[a-zA-Z0-9.-]+$') {
+    throw "Invalid host name for ping"
+  }
   $count = [Math]::Min(20, [Math]::Max(1, $Count))
   $ping = New-Object System.Net.NetworkInformation.Ping
   $times = New-Object System.Collections.Generic.List[object]
@@ -594,7 +597,7 @@ function Get-ProcessSnapshot {
     try { $first[[int]$process.Id] = [double]$process.CPU } catch { }
   }
   $sw = [System.Diagnostics.Stopwatch]::StartNew()
-  Start-Sleep -Milliseconds 300
+  Start-Sleep -Milliseconds 120
   $sw.Stop()
   $elapsed = [Math]::Max(0.001, $sw.Elapsed.TotalSeconds)
 
@@ -876,7 +879,7 @@ function Get-Snapshot {
       $allGamePriority
     )
     dscpPolicies = $(
-      $qosExes = @('NovaQoS_CS2', 'NovaQoS_Fortnite', 'NovaQoS_Roblox', 'NovaQoS_Minecraft', 'NovaQoS_Valorant', 'NovaQoS_Apex')
+      $qosExes = @('NexaQoS_CS2', 'NexaQoS_Fortnite', 'NexaQoS_Roblox', 'NexaQoS_Minecraft', 'NexaQoS_Valorant', 'NexaQoS_Apex')
       $allQosPolicies = $true
       foreach ($qName in $qosExes) {
         $p = "SOFTWARE\Policies\Microsoft\Windows\QoS\$qName"
@@ -914,9 +917,9 @@ function Get-Snapshot {
       }
       $nicMsiVal = $null
       $nicMsiOk = $false
-      $pciNic = @(Get-NetAdapter -Physical -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' -and $_.PnPDeviceID -like 'PCI\*' } | Select-Object -First 1)
-      if ($pciNic.Count -gt 0 -and $pciNic[0].PnPDeviceID) {
-        $nicMsiReg = Read-RegValue @{ hive = 'HKLM'; path = "SYSTEM\CurrentControlSet\Enum\$($pciNic[0].PnPDeviceID)\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"; name = 'MSISupported' }
+      $pciNic = @($wmiAdapters | Where-Object { ($_.State -eq 2 -or $_.OperationalStatus -eq 1) -and $_.PnpDeviceID -like 'PCI\*' } | Select-Object -First 1)
+      if ($pciNic.Count -gt 0 -and $pciNic[0].PnpDeviceID) {
+        $nicMsiReg = Read-RegValue @{ hive = 'HKLM'; path = "SYSTEM\CurrentControlSet\Enum\$($pciNic[0].PnpDeviceID)\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties"; name = 'MSISupported' }
         if ($nicMsiReg.exists) {
           $nicMsiVal = [int]$nicMsiReg.value
           $nicMsiOk = ($nicMsiVal -eq 1)
@@ -1030,28 +1033,35 @@ function Get-Snapshot {
   }
 }
 
-function Activate-NovaPowerPlan {
+function Activate-NexaPowerPlan {
   $original = Get-PowerPlan
   $list = (& powercfg /list 2>$null | Out-String)
   $novaGuid = $null
   $lines = @($list -split "`r?`n")
   foreach ($line in $lines) {
-    if ($line -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\s+\(Nova Gaming\)') {
+    if ($line -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\s+\(Nexa Gaming\)') {
       $novaGuid = $Matches[1].ToLowerInvariant()
       break
     }
   }
   $created = $false
   if (-not $novaGuid) {
-    $highPerformance = '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
-    $output = (& powercfg -duplicatescheme $highPerformance 2>$null | Out-String)
-    if ($output -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})') {
-      $novaGuid = $Matches[1].ToLowerInvariant()
-      $created = $true
-      & powercfg -changename $novaGuid 'Nova Gaming' 'High performance plan created by Nova Optimize' 2>$null | Out-Null
+    $schemesToTry = @(
+      '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c', # High Performance
+      'e9a42b02-d5df-448d-aa00-03f14749eb61', # Ultimate Performance
+      '381b4222-f694-41f0-9685-ff5bb260df2e'  # Balanced (standard on all Windows versions)
+    )
+    foreach ($scheme in $schemesToTry) {
+      $output = (& powercfg -duplicatescheme $scheme 2>$null | Out-String)
+      if ($output -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})') {
+        $novaGuid = $Matches[1].ToLowerInvariant()
+        $created = $true
+        & powercfg -changename $novaGuid 'Nexa Gaming' 'High performance plan created by Nexa Optimize' 2>$null | Out-Null
+        break
+      }
     }
   }
-  if (-not $novaGuid) { throw 'Could not create the Nova Gaming power plan.' }
+  if (-not $novaGuid) { throw 'Could not create the Nexa Gaming power plan.' }
   # Check for dual-CCD AMD 3D V-Cache CPUs (7900X3D, 7950X3D, 9900X3D, 9950X3D).
   # On dual-CCD X3D chips, the AMD PPM driver and Windows Game Mode require core parking
   # to park the standard frequency CCD and keep game threads scheduled on the 3D V-Cache CCD.
@@ -1063,29 +1073,32 @@ function Activate-NovaPowerPlan {
     }
   } catch { }
 
+  $setPowerVal = {
+    param($subgroup, $setting, $val)
+    try {
+      & powercfg -setacvalueindex $novaGuid $subgroup $setting $val 2>$null | Out-Null
+      & powercfg -setdcvalueindex $novaGuid $subgroup $setting $val 2>$null | Out-Null
+    } catch { }
+  }
+
   if (-not $isDualCcdX3D) {
     # 1. Unpark 100% of CPU cores (min and max unparked cores on AC and DC)
-    & powercfg -setacvalueindex $novaGuid 54533251-82be-4824-96c1-47b60b740d00 0cc5b647-c1df-4637-891a-dec35c318583 100 2>$null | Out-Null
-    & powercfg -setdcvalueindex $novaGuid 54533251-82be-4824-96c1-47b60b740d00 0cc5b647-c1df-4637-891a-dec35c318583 100 2>$null | Out-Null
-    & powercfg -setacvalueindex $novaGuid 54533251-82be-4824-96c1-47b60b740d00 ea062031-0e34-4ff1-9b6d-eb10593ac08f 100 2>$null | Out-Null
-    & powercfg -setdcvalueindex $novaGuid 54533251-82be-4824-96c1-47b60b740d00 ea062031-0e34-4ff1-9b6d-eb10593ac08f 100 2>$null | Out-Null
+    & $setPowerVal '54533251-82be-4824-96c1-47b60b740d00' '0cc5b647-c1df-4637-891a-dec35c318583' 100
+    & $setPowerVal '54533251-82be-4824-96c1-47b60b740d00' 'ea062031-0e34-4ff1-9b6d-eb10593ac08f' 100
   }
   # 2. Set min processor state to 5% to preserve idle C-states and thermal boost headroom, max to 100%
-  & powercfg -setacvalueindex $novaGuid 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec 5 2>$null | Out-Null
-  & powercfg -setdcvalueindex $novaGuid 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec 5 2>$null | Out-Null
-  & powercfg -setacvalueindex $novaGuid 54533251-82be-4824-96c1-47b60b740d00 893dee8e-2bef-41e0-89c6-b55d0929964c 100 2>$null | Out-Null
-  & powercfg -setdcvalueindex $novaGuid 54533251-82be-4824-96c1-47b60b740d00 893dee8e-2bef-41e0-89c6-b55d0929964c 100 2>$null | Out-Null
+  & $setPowerVal '54533251-82be-4824-96c1-47b60b740d00' 'bc5038f7-23e0-4960-96da-33abaf5935ec' 5
+  & $setPowerVal '54533251-82be-4824-96c1-47b60b740d00' '893dee8e-2bef-41e0-89c6-b55d0929964c' 100
   # 3. Disable PCI Express Active State Power Management (ASPM) - stops GPU bus sleep latency
-  & powercfg -setacvalueindex $novaGuid 501a4d13-42af-4429-9e56-424f202b8e20 ee12f906-d277-404b-b6da-e5fa1a576df5 0 2>$null | Out-Null
-  & powercfg -setdcvalueindex $novaGuid 501a4d13-42af-4429-9e56-424f202b8e20 ee12f906-d277-404b-b6da-e5fa1a576df5 0 2>$null | Out-Null
+  & $setPowerVal '501a4d13-42af-4429-9e56-424f202b8e20' 'ee12f906-d277-404b-b6da-e5fa1a576df5' 0
   # 4. Disable storage disk spin-down idle timeout (stops asset loading hitches)
-  & powercfg -setacvalueindex $novaGuid 0012ee47-9041-4b5d-9b77-535fba8b1442 6738e2c4-e8a5-4142-f12e-a0e487c195e7 0 2>$null | Out-Null
-  & powercfg -setdcvalueindex $novaGuid 0012ee47-9041-4b5d-9b77-535fba8b1442 6738e2c4-e8a5-4142-f12e-a0e487c195e7 0 2>$null | Out-Null
+  & $setPowerVal '0012ee47-9041-4b5d-9b77-535fba8b1442' '6738e2c4-e8a5-4142-f12e-a0e487c195e7' 0
   # 5. Aggressive processor performance increase threshold (10% load triggers instant max clocks)
-  & powercfg -setacvalueindex $novaGuid 54533251-82be-4824-96c1-47b60b740d00 060244e2-f31e-4e64-a494-b1a11f3739d4 10 2>$null | Out-Null
-  & powercfg -setdcvalueindex $novaGuid 54533251-82be-4824-96c1-47b60b740d00 060244e2-f31e-4e64-a494-b1a11f3739d4 10 2>$null | Out-Null
+  & $setPowerVal '54533251-82be-4824-96c1-47b60b740d00' '060244e2-f31e-4e64-a494-b1a11f3739d4' 10
+
+  $global:LASTEXITCODE = 0
   & powercfg /setactive $novaGuid 2>$null | Out-Null
-  if ($LASTEXITCODE -ne 0) { throw 'Windows refused to activate the Nova Gaming power plan. Run Nova as administrator.' }
+  if ($LASTEXITCODE -ne 0) { throw 'Windows refused to activate the Nexa Gaming power plan. Run Nexa as administrator.' }
   $active = Get-PowerPlan
   return [ordered]@{
     original = $original
@@ -1130,7 +1143,7 @@ function Invoke-MemoryTrim {
   $cs = @"
 using System;
 using System.Runtime.InteropServices;
-public static class NovaMem {
+public static class NexaMem {
   [DllImport("psapi.dll")]
   public static extern bool EmptyWorkingSet(IntPtr hProcess);
   [DllImport("user32.dll")]
@@ -1150,7 +1163,7 @@ public static class NovaMem {
   $osBefore = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
   $beforeFree = if ($osBefore) { [int64]$osBefore.FreePhysicalMemory * 1024 } else { 0 }
   $fgPid = 0
-  try { $fgPid = [NovaMem]::GetForegroundProcessId() } catch { }
+  try { $fgPid = [NexaMem]::GetForegroundProcessId() } catch { }
   $skip = @(
     'Idle','System','Registry','smss','csrss','wininit','services','lsass','svchost','dwm','explorer',
     'Memory Compression','audiodg','MsMpEng','NisSrv','SecurityHealthService','vgc','vgtray',
@@ -1164,7 +1177,7 @@ public static class NovaMem {
       if ($fgPid -gt 0 -and $proc.Id -eq $fgPid) { continue }
       if ($skip -contains $proc.ProcessName) { continue }
       if ($proc.WorkingSet64 -lt 15MB) { continue }
-      if ($proc.Handle -and [NovaMem]::EmptyWorkingSet($proc.Handle)) {
+      if ($proc.Handle -and [NexaMem]::EmptyWorkingSet($proc.Handle)) {
         $trimmed++
       }
     } catch { }
@@ -1399,7 +1412,7 @@ try {
     }
     'qos.reload' { Send-Result (Reload-QoSPolicies) }
     'power.get' { Send-Result (Get-PowerPlan) }
-    'power.activateNova' { Send-Result (Activate-NovaPowerPlan) }
+    'power.activateNexa' { Send-Result (Activate-NexaPowerPlan) }
     'power.setActive' {
       if ([string]$p.guid -notmatch '^[0-9a-fA-F-]{36}$') { throw 'Invalid power plan.' }
       & powercfg /setactive ([string]$p.guid) 2>$null | Out-Null
@@ -1545,13 +1558,13 @@ try {
       $heuristics = if ($p.scalingHeuristics) { [string]$p.scalingHeuristics } else { 'disabled' }
       $rss = if ($p.rss) { [string]$p.rss } else { 'enabled' }
       & netsh interface tcp set global autotuninglevel=$level 2>$null | Out-Null
-      if ($LASTEXITCODE -ne 0) { throw 'Could not update TCP Auto-Tuning level. Run Nova as administrator.' }
+      if ($LASTEXITCODE -ne 0) { throw 'Could not update TCP Auto-Tuning level. Run Nexa as administrator.' }
       & netsh interface tcp set heuristics $heuristics 2>$null | Out-Null
       & netsh interface tcp set global rss=$rss 2>$null | Out-Null
       Send-Result ([ordered]@{ before = $before; after = Get-TcpGlobalState })
     }
     'restorePoint' {
-      Checkpoint-Computer -Description 'Nova Optimize' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop
+      Checkpoint-Computer -Description 'Nexa Optimize' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop
       Send-Result ([ordered]@{ ok = $true; time = (Get-Date).ToUniversalTime().ToString('o') })
     }
     'net.nicDejitterDisable' { Send-Result (Set-NicLowJitter) }

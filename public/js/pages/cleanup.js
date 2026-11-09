@@ -52,6 +52,15 @@ function resultsHtml() {
 }
 
 export function renderCleanup() {
+  if (state.cleanupError) {
+    return `
+      <div class="empty-state" style="margin:40px auto;max-width:480px;text-align:center">
+        <div class="empty-icon">${icon('alert', 24)}</div>
+        <h3 style="margin:12px 0 6px">Could not measure temporary files</h3>
+        <p style="color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:18px">${escapeHtml(state.cleanupError)}</p>
+        <button class="button button-primary" id="retry-cleanup-btn" type="button">${icon('refresh')} Retry scan</button>
+      </div>`;
+  }
   if (!state.cleanup) {
     return '<div class="page-loading"><div class="loading-orbit"></div><p>Measuring temporary files…</p></div>';
   }
@@ -162,6 +171,18 @@ function toggleCategory(id) {
 }
 
 export function bindCleanup() {
+  document.getElementById('retry-cleanup-btn')?.addEventListener('click', async () => {
+    state.cleanupError = null;
+    state.cleanup = null;
+    requestRender();
+    try {
+      const fresh = await api('/api/cleanup/scan');
+      state.cleanup = fresh.categories;
+    } catch (err) {
+      state.cleanupError = err.message;
+    }
+    requestRender();
+  });
   document.querySelectorAll('[data-cleanup-toggle]').forEach((button) => {
     button.addEventListener('click', (event) => {
       event.stopPropagation();

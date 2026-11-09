@@ -13,11 +13,11 @@ import {
 import { emptyState, sectionHead } from '../ui.js';
 
 function appliedSection() {
-  const applied = (state.scan?.actions || []).filter((action) => action.appliedByNova);
+  const applied = (state.scan?.actions || []).filter((action) => action.appliedByNexa);
   if (!applied.length) {
     return `
       <div class="card card-pad">
-        ${emptyState('check', 'No Nova changes are active', 'When you apply a fix, its backup and undo button appear here.')}
+        ${emptyState('check', 'No Nexa changes are active', 'When you apply a fix, its backup and undo button appear here.')}
       </div>`;
   }
   return `
@@ -86,7 +86,7 @@ function timeline() {
 
 function buildReport() {
   return {
-    app: 'Nova Optimize',
+    app: 'Nexa Optimize',
     version: state.version,
     exportedAt: new Date().toISOString(),
     system: state.snapshot,
@@ -115,7 +115,7 @@ export async function downloadReport() {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = `nova-report-${new Date().toISOString().slice(0, 10)}.json`;
+  anchor.download = `nexa-report-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
@@ -165,15 +165,15 @@ export function bindActivity() {
   document.querySelectorAll('[data-action="undo-all"]').forEach((button) => {
     button.addEventListener('click', () => {
       openModal({
-        title: 'Undo every Nova change?',
-        body: '<p>Nova will restore every backed-up setting. A reboot or reconnect may be needed for some changes.</p>',
+        title: 'Undo every Nexa change?',
+        body: '<p>Nexa will restore every backed-up setting. A reboot or reconnect may be needed for some changes.</p>',
         confirmLabel: 'Undo all changes',
         danger: true,
         onConfirm: async () => {
           const response = await undoAll();
           const failed = (response.results || []).filter((result) => !result.ok);
           if (failed.length) toast('warn', 'Some changes could not be undone', failed.map((item) => item.error).join(' · '));
-          else toast('success', 'All Nova changes undone');
+          else toast('success', 'All Nexa changes undone');
           await reloadHistory();
           requestRender();
         },
@@ -186,7 +186,7 @@ export function bindActivity() {
       const action = state.scan?.actions?.find((item) => item.id === id);
       openModal({
         title: `Undo ${action?.name || 'change'}?`,
-        body: '<p>Nova will restore the value it backed up before applying this change.</p>',
+        body: '<p>Nexa will restore the value it backed up before applying this change.</p>',
         confirmLabel: 'Undo change',
         danger: true,
         onConfirm: async () => {

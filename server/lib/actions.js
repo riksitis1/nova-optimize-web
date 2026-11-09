@@ -128,12 +128,12 @@ const COMPETITIVE_GAMES = [
 ];
 
 const QOS_GAMES = [
-  { name: 'NovaQoS_CS2', exe: 'cs2.exe' },
-  { name: 'NovaQoS_Fortnite', exe: 'FortniteClient-Win64-Shipping.exe' },
-  { name: 'NovaQoS_Roblox', exe: 'RobloxPlayerBeta.exe' },
-  { name: 'NovaQoS_Minecraft', exe: 'javaw.exe' },
-  { name: 'NovaQoS_Valorant', exe: 'VALORANT-Win64-Shipping.exe' },
-  { name: 'NovaQoS_Apex', exe: 'r5apex.exe' },
+  { name: 'NexaQoS_CS2', exe: 'cs2.exe' },
+  { name: 'NexaQoS_Fortnite', exe: 'FortniteClient-Win64-Shipping.exe' },
+  { name: 'NexaQoS_Roblox', exe: 'RobloxPlayerBeta.exe' },
+  { name: 'NexaQoS_Minecraft', exe: 'javaw.exe' },
+  { name: 'NexaQoS_Valorant', exe: 'VALORANT-Win64-Shipping.exe' },
+  { name: 'NexaQoS_Apex', exe: 'r5apex.exe' },
 ];
 
 function qosPolicyWrites(policyName, exe) {
@@ -414,7 +414,7 @@ const actions = [
   }),
   {
     id: 'power-plan',
-    name: 'Activate the Nova Gaming power plan',
+    name: 'Activate the Nexa Gaming power plan',
     category: 'Performance',
     description: 'Creates a high-performance Windows power plan and makes it active. Your original plan is remembered.',
     note: 'On laptops this increases power use and heat. Plug in for the best experience.',
@@ -425,9 +425,10 @@ const actions = [
     kind: 'power',
     appliesTo: () => true,
     isOptimized: (snapshot) => {
-      const name = String(snapshot.power.name || '').toLowerCase();
-      const guid = String(snapshot.power.guid || '').toLowerCase();
+      const name = String(snapshot.power?.name || '').toLowerCase();
+      const guid = String(snapshot.power?.guid || '').toLowerCase();
       return (
+        name.includes('nexa gaming') ||
         name.includes('nova gaming') ||
         name.includes('high performance') ||
         name.includes('ultimate performance') ||
@@ -437,7 +438,7 @@ const actions = [
     },
     currentValue: (snapshot) => snapshot.power?.name || 'Balanced',
     async apply(ctx) {
-      const result = await ctx.ps('power.activateNova');
+      const result = await ctx.ps('power.activateNexa');
       return {
         kind: 'power',
         originalGuid: result.original.guid,
@@ -1049,15 +1050,16 @@ function serializeAction(action, snapshot, applied = {}) {
   let optimized = false;
   let applicable = true;
   let currentValue = null;
+  const isAppliedByNexa = Boolean(applied && applied[action.id]);
   try {
     applicable = action.appliesTo(snapshot) !== false;
   } catch {
     applicable = true;
   }
   try {
-    optimized = applicable && action.isOptimized(snapshot) === true;
+    optimized = applicable && (action.isOptimized(snapshot) === true || isAppliedByNexa);
   } catch {
-    optimized = false;
+    optimized = isAppliedByNexa;
   }
   try {
     if (typeof action.currentValue === 'function') {
@@ -1079,7 +1081,8 @@ function serializeAction(action, snapshot, applied = {}) {
     kind: action.kind,
     applicable,
     optimized,
-    appliedByNova: !!applied[action.id],
+    appliedByNexa: isAppliedByNexa,
+    appliedByNova: isAppliedByNexa,
     currentValue,
   };
 }

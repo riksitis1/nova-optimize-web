@@ -1,13 +1,13 @@
 {
-    "version": "1.4.3",
+    "version": "1.4.4",
     "releasedAt": "2026-11-09",
-    "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v1.4.3.zip",
-    "sha256": "41f3e5659cf61fa38a5341557acb26beffaf8e57191fe5c0c571febc87b01671",
+    "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v1.4.4.zip",
+    "sha256": "b109cbbec8389fd660bb2f55dbeedb58daa4d3fd11ea5205e059e56478caf83a",
     "notes": [
-        "Automatic Administrator Elevation: Prompts Windows UAC so all 25 performance optimizations apply without permission blocks",
-        "Interactive Real-Time Progress Bar: Applying safe optimizations features live progress tracking, percentage feedback, and per-tweak verification",
-        "Calibrated Precision Scoring Engine: Balanced system readiness calculations so healthy Windows PCs score accurately (70+ stock, 95+ tuned, 100 dialed in)",
-        "Desktop Shortcut RunAs Integration: Desktop icon automatically runs elevated for one-click access",
-        "Resilient Hardware Compatibility: Safe multi-scheme power plan generation for laptops, desktops, and modern standby PCs"
+        "Eliminated Score Glow Box Border: Replaced raster drop-shadow filters with mathematical layered vector bloom for perfectly smooth, artifact-free circular glow on all displays",
+        "Streamlined One-Click Optimization: Direct front-page 'One-Click Optimize' action instantly applies all safe tweaks with live progress tracking",
+        "Network & Service Resilience: Automatic transient retry and fail-soft inline retry cards for Startup, Cleanup, and Games pages (eliminating infinite spinners)",
+        "Intelligent Request Deduplication & Caching: Rapid tab switching is instant with disk scanning cache and shared in-flight promises",
+        "Automatic Administrator Elevation: Prompts Windows UAC on launch so all 25 performance optimizations apply without permission blocks"
     ]
 }

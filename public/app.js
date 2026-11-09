@@ -261,16 +261,28 @@ async function loadNetwork() {
 async function loadCleanup() {
   await ensureScan();
   if (!state.cleanup) {
-    const data = await api('/api/cleanup/scan');
-    state.cleanup = data.categories;
+    try {
+      const data = await api('/api/cleanup/scan');
+      state.cleanup = data.categories;
+      state.cleanupError = null;
+    } catch (err) {
+      state.cleanupError = err.message;
+      throw err;
+    }
   }
 }
 
 async function loadStartup() {
   await ensureScan();
   if (!state.startup) {
-    const data = await api('/api/startup');
-    state.startup = data.startup;
+    try {
+      const data = await api('/api/startup');
+      state.startup = data.startup;
+      state.startupError = null;
+    } catch (err) {
+      state.startupError = err.message;
+      throw err;
+    }
   }
 }
 
@@ -283,7 +295,13 @@ async function loadHistory() {
 
 async function loadGamesPage() {
   await ensureScan();
-  await loadGames();
+  try {
+    await loadGames();
+    state.gamesError = null;
+  } catch (err) {
+    state.gamesError = err.message;
+    throw err;
+  }
 }
 
 async function runGlobalScan(button) {

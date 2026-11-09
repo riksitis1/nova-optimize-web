@@ -64,7 +64,7 @@ function summaryCard(scan, mode, actionPool = []) {
 function actionCard(action) {
   const locked = action.requiresAdmin && !state.snapshot?.admin;
   return `
-    <article class="action-card ${action.appliedByNova ? 'is-applied' : action.optimized ? 'is-optimized' : ''}">
+    <article class="action-card ${action.appliedByNexa ? 'is-applied' : action.optimized ? 'is-optimized' : ''}">
       <div class="action-top">
         <h3>${escapeHtml(action.name)}</h3>
         ${action.risk === 'advanced' ? '<span class="badge advanced">Advanced</span>' : action.risk === 'caution' ? '<span class="badge amber">Caution</span>' : '<span class="badge green">Safe</span>'}
@@ -77,7 +77,7 @@ function actionCard(action) {
         ${impactBadge(action.impact)}
         ${action.requiresReboot ? rebootBadge() : ''}
         ${action.requiresAdmin ? adminBadge() : ''}
-        ${action.appliedByNova
+        ${action.appliedByNexa
           ? `<button class="button button-small" style="margin-left:auto" type="button" data-undo-action="${escapeHtml(action.id)}">${icon('undo')} Undo</button>`
           : action.optimized
             ? '<span class="action-status">' + icon('check') + ' Active</span>'
@@ -103,10 +103,10 @@ function findingCard(finding) {
 }
 
 function appliedSection(scan) {
-  const applied = scan.actions.filter((action) => action.appliedByNova);
+  const applied = scan.actions.filter((action) => action.appliedByNexa);
   if (!applied.length) return '';
   return `
-    ${sectionHead('Applied by Nova', 'Backed up and reversible. Undo one at a time or from the Activity page.')}
+    ${sectionHead('Applied by Nexa', 'Backed up and reversible. Undo one at a time or from the Activity page.')}
     <div class="card card-pad">
       <div class="chip-row">${applied.map((action) => `<span class="badge lime">${icon('check')} ${escapeHtml(action.name)}</span>`).join('')}</div>
       <p class="small muted" style="margin:12px 0 0">Some changes need a restart to fully revert.</p>
@@ -121,8 +121,8 @@ export function renderOptimize(mode = 'safe') {
   const actionPool = scan.actions.filter((action) => action.applicable && (mode === 'advanced' ? action.risk === 'advanced' : action.risk !== 'advanced'));
   const safePool = actionPool.filter((action) => action.risk === 'safe');
   const cautionPool = actionPool.filter((action) => action.risk === 'caution');
-  const safeReady = safePool.filter((action) => !action.optimized && !action.appliedByNova);
-  const cautionReady = cautionPool.filter((action) => !action.optimized && !action.appliedByNova);
+  const safeReady = safePool.filter((action) => !action.optimized && !action.appliedByNexa);
+  const cautionReady = cautionPool.filter((action) => !action.optimized && !action.appliedByNexa);
   const findings = scan.findings.filter((finding) => !finding.actionId);
   const primaryFindings = findings.filter((finding) => finding.severity !== 'info');
   const infoFindings = findings.filter((finding) => finding.severity === 'info');
@@ -157,7 +157,7 @@ async function confirmApplyOne(id) {
   if (action.requiresAdmin && !state.snapshot?.admin) {
     openModal({
       title: 'Administrator access needed',
-      body: `<p>${escapeHtml(action.name)} changes a system-wide setting. Restart Nova with administrator rights to apply it.</p>`,
+      body: `<p>${escapeHtml(action.name)} changes a system-wide setting. Restart Nexa with administrator rights to apply it.</p>`,
       confirmLabel: 'Restart as administrator',
       onConfirm: elevate,
     });
@@ -176,7 +176,7 @@ async function confirmApplyOne(id) {
   }
   openModal({
     title: action.name,
-    body: `<p>${escapeHtml(action.description)}</p><ul class="modal-list"><li>${escapeHtml(action.note)}</li><li>Nova records a backup first.</li>${action.requiresReboot ? '<li>A reboot is required for this change.</li>' : ''}</ul>`,
+    body: `<p>${escapeHtml(action.description)}</p><ul class="modal-list"><li>${escapeHtml(action.note)}</li><li>Nexa records a backup first.</li>${action.requiresReboot ? '<li>A reboot is required for this change.</li>' : ''}</ul>`,
     confirmLabel: 'Apply change',
     danger: true,
     onConfirm: async () => {
@@ -199,9 +199,9 @@ async function confirmUndo(id) {
   }
 }
 
-async function applySafe() {
+export async function applySafe() {
   const candidates = (state.scan?.actions || []).filter(
-    (action) => action.applicable && action.risk === 'safe' && !action.optimized && !action.appliedByNova,
+    (action) => action.applicable && action.risk === 'safe' && !action.optimized && !action.appliedByNexa,
   );
   if (!candidates.length) {
     toast('info', 'Nothing to apply', 'Every safe optimization is already active.');
@@ -209,10 +209,45 @@ async function applySafe() {
   }
   const blocked = !state.snapshot?.admin ? candidates.filter((action) => action.requiresAdmin) : [];
   const available = candidates.filter((action) => !blocked.includes(action));
+
+  if (!state.snapshot?.admin && blocked.length > 0) {
+    openModal({
+      title: 'Administrator Rights Needed for Full Optimization',
+      body: `
+        <p>Windows requires Administrator rights to configure low-latency network throttling, multimedia scheduling, and high-performance power plans.</p>
+        <ul class="modal-list">
+          <li><strong>${blocked.length} system optimizations</strong> need Administrator rights to reach <strong>95–100/100</strong>.</li>
+          <li>${available.length ? `Only ${available.length} user settings can be applied without administrator rights (Score: ~70–75).` : 'All remaining optimizations require Administrator rights.'}</li>
+        </ul>
+        <p class="small muted" style="margin-top:12px">Click below to approve the Windows prompt and restart Nexa as Administrator.</p>
+      `,
+      confirmLabel: 'Restart as Administrator (Recommended)',
+      cancelLabel: available.length ? 'Apply Standard Fixes Only' : 'Cancel',
+      danger: false,
+      onConfirm: elevate,
+      onCancel: available.length
+        ? async () => {
+            try {
+              const response = await applyActions(available.map((action) => action.id));
+              const failed = (response.results || []).filter((result) => !result.ok);
+              if (failed.length) {
+                toast('warn', 'Some changes were skipped', failed.map((result) => result.error).join(' · '));
+              } else {
+                toast('success', 'Safe fixes applied', `${available.length} settings updated. Restart as admin for full 95+ score.`);
+              }
+            } catch (error) {
+              toast('error', 'Could not apply safe fixes', error.message);
+            }
+          }
+        : null,
+    });
+    return;
+  }
+
   if (!available.length) {
     openModal({
       title: 'Administrator access needed',
-      body: '<p>The remaining safe fixes change system-wide settings. Restart Nova with administrator rights to continue.</p>',
+      body: '<p>The remaining safe fixes change system-wide settings. Restart Nexa with administrator rights to continue.</p>',
       confirmLabel: 'Restart as administrator',
       onConfirm: elevate,
     });

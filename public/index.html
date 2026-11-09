@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#080b0f">
-  <meta name="description" content="Nova Optimize — a free, local-first Windows gaming performance and latency suite.">
-  <meta name="nova-token" content="__NOVA_TOKEN__">
-  <title>Nova Optimize</title>
+  <meta name="description" content="Nexa Optimize — a free, local-first Windows gaming performance and latency suite.">
+  <meta name="nexa-token" content="__NEXA_TOKEN__">
+  <title>Nexa Optimize</title>
   <link rel="icon" href="/assets/nova.ico" sizes="any">
   <link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
@@ -15,10 +15,10 @@
 <body>
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
-      <a class="brand" href="#/dashboard" data-route="dashboard" aria-label="Nova Optimize home">
+      <a class="brand" href="#/dashboard" data-route="dashboard" aria-label="Nexa Optimize home">
         <img src="/assets/logo.svg" alt="" class="brand-mark">
         <span class="brand-copy">
-          <strong>NOVA</strong>
+          <strong>NEXA</strong>
           <small>OPTIMIZE</small>
         </span>
       </a>
@@ -61,7 +61,7 @@
           <span class="admin-dot"></span>
           <div>
             <strong id="admin-card-title">Checking access</strong>
-            <small id="admin-card-copy">Nova is starting up</small>
+            <small id="admin-card-copy">Nexa is starting up</small>
           </div>
         </div>
         <div class="sidebar-bg-row">
@@ -69,10 +69,10 @@
             <strong>Background mode</strong>
             <small id="bg-mode-sub">Active in background</small>
           </div>
-          <button class="switch on" id="bg-mode-toggle" type="button" role="switch" aria-checked="true" aria-label="Keep Nova running in the background"></button>
+          <button class="switch on" id="bg-mode-toggle" type="button" role="switch" aria-checked="true" aria-label="Keep Nexa running in the background"></button>
         </div>
-        <button class="sidebar-quit" id="quit-btn" type="button"><span data-icon="power"></span> Quit Nova</button>
-        <p class="sidebar-version">v<span id="version-label">1.4.0</span> · local only · no account</p>
+        <button class="sidebar-quit" id="quit-btn" type="button"><span data-icon="power"></span> Quit Nexa</button>
+        <p class="sidebar-version">v<span id="version-label">1.4.3</span> · local only · no account</p>
       </div>
     </aside>
 
@@ -87,7 +87,7 @@
           <button class="status-pill" id="admin-pill" type="button">
             <span class="status-dot"></span><span id="admin-pill-label">Checking</span>
           </button>
-          <button class="button button-small button-primary" id="update-btn" type="button" hidden style="display:none" title="Download and install the latest Nova update in place"><span data-icon="download"></span> <span id="update-btn-label">Update available</span></button>
+          <button class="button button-small button-primary" id="update-btn" type="button" hidden style="display:none" title="Download and install the latest Nexa update in place"><span data-icon="download"></span> <span id="update-btn-label">Update available</span></button>
           <button class="button button-small" id="trim-ram-btn" type="button" title="Close optional background apps, flush DNS, and trim idle working-set RAM"><span data-icon="zap"></span> Pre-game boost</button>
           <button class="button button-primary" id="scan-btn" type="button"><span data-icon="scan"></span> Run scan</button>
         </div>
@@ -96,7 +96,12 @@
       <div id="view" class="view" aria-live="polite">
         <div class="page-loading">
           <div class="loading-orbit"></div>
-          <p>Reading your system…</p>
+          <p id="loading-status-text">Reading your system…</p>
+          <div style="margin-top:16px">
+            <button class="button button-small button-ghost" id="cancel-scan-btn" type="button" style="display:inline-flex;align-items:center;gap:6px">
+              <span data-icon="x"></span> Stop scan
+            </button>
+          </div>
         </div>
       </div>
     </main>
@@ -108,7 +113,7 @@
     <div class="elevate-card">
       <div class="loading-orbit small"></div>
       <h2>Restarting with administrator rights</h2>
-      <p>Approve the Windows UAC prompt. Nova will reconnect automatically.</p>
+      <p>Approve the Windows UAC prompt. Nexa will reconnect automatically.</p>
       <small id="elevate-status">Waiting for the new instance…</small>
       <div style="margin-top:16px">
         <button class="button button-small button-ghost" id="elevate-cancel" type="button">Dismiss</button>

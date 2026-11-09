@@ -3,18 +3,19 @@
 const net = require('node:net');
 
 const HOSTNAME = /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
+const SAFE_HOST_CHARS = /^[a-zA-Z0-9.:-]+$/;
 
 function isValidIp(value) {
   if (typeof value !== 'string') return false;
   const trimmed = value.trim();
-  if (!trimmed || trimmed.length > 45 || trimmed.includes('%')) return false;
+  if (!trimmed || trimmed.length > 45 || trimmed.includes('%') || !SAFE_HOST_CHARS.test(trimmed)) return false;
   return net.isIP(trimmed) !== 0;
 }
 
 function isValidHost(value) {
   if (typeof value !== 'string') return false;
   const host = value.trim().replace(/^\[|\]$/g, '');
-  if (!host || host.length > 253) return false;
+  if (!host || host.length > 253 || !SAFE_HOST_CHARS.test(host)) return false;
   if (isValidIp(host)) return true;
   return HOSTNAME.test(host);
 }

@@ -1,15 +1,16 @@
 {
-  "name": "nexa-optimize-web",
-  "version": "1.1.0",
-  "description": "Official download and documentation portal for Nexa Optimize — Free, local-first Windows 10/11 gaming performance suite.",
+  "name": "nexa-optimize",
+  "version": "1.4.4",
+  "private": true,
+  "description": "Nexa Optimize - a free, local-first Windows gaming performance and latency suite.",
   "license": "Proprietary",
-  "main": "server.js",
   "scripts": {
-    "build": "echo \"Static assets ready\"",
-    "start": "node server.js"
+    "start": "node server/server.js",
+    "dev": "node server/server.js --dev",
+    "test": "node tools/test.js",
+    "check": "node tools/check.js"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18"
   }
 }
-

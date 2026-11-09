@@ -604,13 +604,33 @@ function createGameService(env = defaultEnv()) {
     };
   }
 
-  async function list() {
-    const result = [];
-    for (const game of GAMES) result.push(await describe(game));
-    return result;
+  let listCache = null;
+  let listCacheAt = 0;
+  let inFlightList = null;
+  const LIST_TTL = 4_000;
+
+  async function list(force = false) {
+    if (!force && listCache && Date.now() - listCacheAt < LIST_TTL) {
+      return listCache;
+    }
+    if (!force && inFlightList) {
+      return inFlightList;
+    }
+    const promise = (async () => {
+      const result = [];
+      for (const game of GAMES) result.push(await describe(game));
+      listCache = result;
+      listCacheAt = Date.now();
+      return result;
+    })().finally(() => {
+      if (inFlightList === promise) inFlightList = null;
+    });
+    inFlightList = promise;
+    return promise;
   }
 
   async function apply(gameId, settingIds) {
+    listCache = null;
     const game = getGameDef(gameId);
     if (!game) throw new GameError(404, 'Unknown game.');
     const chosen = game.settings.filter((setting) => settingIds.includes(setting.id));
@@ -658,6 +678,7 @@ function createGameService(env = defaultEnv()) {
   }
 
   async function revert(gameId, settingIds = null) {
+    listCache = null;
     const game = getGameDef(gameId);
     if (!game) throw new GameError(404, 'Unknown game.');
     const gameState = env.store.get(game.id);
