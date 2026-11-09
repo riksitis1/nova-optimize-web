@@ -18,7 +18,7 @@ export function scoreRing(score, potential = null, size = 184) {
   const offset = circumference * (1 - value / 100);
   return `
     <div class="score-ring" style="width:${size}px;height:${size}px">
-      <svg viewBox="0 0 184 184" aria-hidden="true">
+      <svg class="score-ring-svg" viewBox="-24 -24 232 232" aria-hidden="true">
         <circle class="score-ring-track" cx="92" cy="92" r="${radius}"></circle>
         <circle class="score-ring-progress" cx="92" cy="92" r="${radius}" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
       </svg>
