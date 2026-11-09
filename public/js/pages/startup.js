@@ -125,6 +125,17 @@ export function renderStartup() {
 
   return `
     ${!isAdmin ? `<div class="callout warn" style="margin-bottom:12px">${icon('lock')}<div><strong>System-wide startup items require administrator access.</strong> <button class="button button-small" type="button" data-action="elevate" style="margin-left:8px">Restart as admin</button></div></div>` : ''}
+    <div class="panel" style="margin-bottom:14px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:22px">⚡</span>
+        <div>
+          <strong style="font-size:13px;font-weight:650;display:block">Startup Apps &amp; Boot Delay</strong>
+          <small style="color:var(--muted);font-size:11px;display:block;margin-top:2px">
+            Apps that start with Windows. Disabling launchers (Discord, Spotify, Steam) makes your PC boot faster. You can still open them normally anytime.
+          </small>
+        </div>
+      </div>
+    </div>
     <div class="card card-pad">
       <div class="startup-toolbar">
         <div class="tabs">
@@ -133,7 +144,7 @@ export function renderStartup() {
         <input class="input" id="startup-search" placeholder="Search startup apps…" value="${escapeHtml(state.startupQuery || '')}" autocomplete="off" style="max-width:240px">
         <div style="display:flex;gap:8px;margin-left:auto;flex-wrap:wrap">
           <button class="button button-small button-primary" type="button" data-action="startup-disable-all" ${disableableCount ? '' : 'disabled'} title="Disable all non-protected startup apps">${icon('slash')} Disable all${disableableCount ? ` (${disableableCount})` : ''}</button>
-          ${restorableCount ? `<button class="button button-small" type="button" data-action="startup-enable-all" title="Re-enable all startup apps disabled by Nova">${icon('undo')} Enable all (${restorableCount})</button>` : ''}
+          ${restorableCount ? `<button class="button button-small" type="button" data-action="startup-enable-all" title="Re-enable all startup apps disabled by Nexa">${icon('undo')} Enable all (${restorableCount})</button>` : ''}
           <button class="button button-small" type="button" data-action="startup-refresh">${icon('refresh')} Refresh</button>
         </div>
       </div>
@@ -172,7 +183,7 @@ async function toggleStartup(button) {
   if (!state.snapshot?.admin && needsAdmin) {
     openModal({
       title: 'Administrator access needed',
-      body: '<p>This is a system-wide startup entry. Restart Nova with administrator rights to change it.</p>',
+      body: '<p>This is a system-wide startup entry. Restart Nexa with administrator rights to change it.</p>',
       confirmLabel: 'Restart as administrator',
       onConfirm: elevate,
     });

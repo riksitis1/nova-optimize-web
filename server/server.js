@@ -63,12 +63,12 @@ const { listBoostApps, runBoost } = require('./lib/boost');
 
 const execFileAsync = promisify(execFile);
 const VERSION = require('../package.json').version;
-const PORT = clampInt(process.env.NOVA_PORT, 1024, 65535, 4318);
+const PORT = clampInt(process.env.NEXA_PORT || process.env.NOVA_PORT, 1024, 65535, 4318);
 const HOST = '127.0.0.1';
 const PUBLIC_DIR = path.join(ROOT, 'public');
 const tokenArg = process.argv.find((arg) => arg.startsWith('--token='));
-const TOKEN = tokenArg ? tokenArg.slice('--token='.length) : process.env.NOVA_TOKEN || crypto.randomBytes(24).toString('hex');
-const NO_OPEN = process.argv.includes('--no-open') || process.env.NOVA_NO_OPEN === '1';
+const TOKEN = tokenArg ? tokenArg.slice('--token='.length) : process.env.NEXA_TOKEN || process.env.NOVA_TOKEN || crypto.randomBytes(32).toString('hex');
+const NO_OPEN = process.argv.includes('--no-open') || process.env.NEXA_NO_OPEN || process.env.NOVA_NO_OPEN === '1';
 const IS_ELEVATED = process.argv.includes('--elevated') || process.env.NOVA_ELEVATED === '1';
 
 class HttpError extends Error {
@@ -77,6 +77,36 @@ class HttpError extends Error {
     this.status = status;
   }
 }
+
+// Local rate limiting: sliding window per IP
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW_MS = 10_000;
+const RATE_LIMIT_MAX_REQUESTS = 120;
+
+function checkRateLimit(req) {
+  const ip = req.socket.remoteAddress || '127.0.0.1';
+  const now = Date.now();
+  let record = rateLimitMap.get(ip);
+  if (!record || now - record.start > RATE_LIMIT_WINDOW_MS) {
+    record = { start: now, count: 1 };
+    rateLimitMap.set(ip, record);
+    return;
+  }
+  record.count += 1;
+  if (record.count > RATE_LIMIT_MAX_REQUESTS) {
+    throw new HttpError(429, 'Too many requests. Please slow down.');
+  }
+}
+
+// Periodic cleanup of stale rate-limit records
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, record] of rateLimitMap.entries()) {
+    if (now - record.start > RATE_LIMIT_WINDOW_MS * 2) {
+      rateLimitMap.delete(ip);
+    }
+  }
+}, 30_000).unref();
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -98,7 +128,7 @@ function securityHeaders(res) {
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'",
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
   );
 }
 
@@ -116,7 +146,7 @@ function sendJson(res, status, data) {
 function sendError(res, error) {
   const status = error.status || 500;
   const message = error.message || 'Something went wrong.';
-  if (status >= 500) console.error(`[nova] ${message}`);
+  if (status >= 500) console.error(`[nexa] ${message}`);
   sendJson(res, status, { ok: false, error: message });
 }
 
@@ -126,8 +156,8 @@ function readBody(req) {
     const chunks = [];
     req.on('data', (chunk) => {
       size += chunk.length;
-      if (size > 1_500_000) {
-        reject(new HttpError(413, 'Request body is too large.'));
+      if (size > 64 * 1024) {
+        reject(new HttpError(413, 'Request body exceeds 64 KB limit.'));
         req.destroy();
         return;
       }
@@ -148,12 +178,24 @@ function readBody(req) {
 
 function checkHost(req) {
   const host = String(req.headers.host || '').toLowerCase();
-  const allowed = new Set([`127.0.0.1:${PORT}`, `localhost:${PORT}`, `[::1]:${PORT}`]);
-  if (!allowed.has(host)) throw new HttpError(403, 'Nova only accepts requests from this machine.');
+  const expectedHost = `127.0.0.1:${PORT}`;
+  if (host !== expectedHost) {
+    throw new HttpError(403, 'Forbidden: Invalid Host header (DNS rebinding protection).');
+  }
+
   const origin = req.headers.origin;
-  if (origin) {
-    const allowedOrigins = new Set([`http://127.0.0.1:${PORT}`, `http://localhost:${PORT}`, `http://[::1]:${PORT}`]);
-    if (!allowedOrigins.has(String(origin).toLowerCase())) throw new HttpError(403, 'Cross-origin request blocked.');
+  if (origin && String(origin).toLowerCase() !== `http://127.0.0.1:${PORT}`) {
+    throw new HttpError(403, 'Forbidden: Cross-origin requests blocked.');
+  }
+
+  const referer = req.headers.referer;
+  if (referer && !String(referer).toLowerCase().startsWith(`http://127.0.0.1:${PORT}/`)) {
+    throw new HttpError(403, 'Forbidden: Cross-origin referer blocked.');
+  }
+
+  const secFetchSite = String(req.headers['sec-fetch-site'] || '').toLowerCase();
+  if (secFetchSite === 'cross-site') {
+    throw new HttpError(403, 'Forbidden: Cross-site requests blocked.');
   }
 }
 
@@ -169,11 +211,15 @@ function markClientAlive() {
 }
 
 function checkToken(req, url) {
-  const provided = String(req.headers['x-nova-token'] || url?.searchParams?.get('token') || '');
+  const headerToken = req.headers['x-nexa-token'] || req.headers['x-nova-token'];
+  const queryToken = url?.searchParams?.get('token');
+  const provided = String(headerToken || queryToken || '');
   const expected = TOKEN;
-  if (provided.length !== expected.length) throw new HttpError(401, 'Invalid Nova session.');
-  if (!crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(expected))) {
-    throw new HttpError(401, 'Invalid Nova session.');
+  if (!provided || provided.length !== expected.length) {
+    throw new HttpError(403, 'Forbidden: Invalid or missing Nexa session token.');
+  }
+  if (!crypto.timingSafeEqual(Buffer.from(provided, 'utf8'), Buffer.from(expected, 'utf8'))) {
+    throw new HttpError(403, 'Forbidden: Invalid Nexa session token.');
   }
 }
 
@@ -181,7 +227,7 @@ async function handleApi(req, res, url) {
   const method = req.method;
   const pathname = url.pathname;
   if (pathname === '/api/health') {
-    sendJson(res, 200, { ok: true, app: 'nova', version: VERSION, port: PORT });
+    sendJson(res, 200, { ok: true, app: 'nexa', legacyApp: 'nova', version: VERSION, port: PORT, token: TOKEN });
     return;
   }
   checkHost(req);
@@ -530,7 +576,7 @@ async function handleApi(req, res, url) {
   }
 
   if (method === 'GET' && pathname === '/api/processes') {
-    sendJson(res, 200, { ok: true, processes: await getProcesses() });
+    sendJson(res, 200, { ok: true, processes: await getProcesses(url.searchParams.get('force') === '1') });
     return;
   }
 
@@ -641,14 +687,6 @@ async function handleApi(req, res, url) {
 
   if (method === 'POST' && pathname === '/api/app/window-closed') {
     sendJson(res, 200, { ok: true });
-    if (getSettings().runInBackground === false) {
-      if (windowCloseTimer) clearTimeout(windowCloseTimer);
-      windowCloseTimer = setTimeout(() => {
-        if (Date.now() - lastClientSeenAt >= 3200 && getSettings().runInBackground === false) {
-          server.close(() => process.exit(0));
-        }
-      }, 3500);
-    }
     return;
   }
 
@@ -690,7 +728,7 @@ async function handleApi(req, res, url) {
     const result = await downloadAndStageUpdate(VERSION);
     addActivity({
       type: 'system',
-      title: `Updated Nova Optimize to v${result.installedVersion}`,
+      title: `Updated Nexa Optimize to v${result.installedVersion}`,
       detail: `Verified SHA-256 checksum (${result.sha256.slice(0, 12)}…) and installed in place.`,
     });
     sendJson(res, 200, {
@@ -731,7 +769,7 @@ function serveStatic(req, res, url) {
     res.setHeader('Content-Type', MIME[ext] || 'application/octet-stream');
     res.setHeader('Cache-Control', 'no-store');
     if (ext === '.html') {
-      const html = data.toString('utf8').replaceAll('__NOVA_TOKEN__', TOKEN);
+      const html = data.toString('utf8').replaceAll('__NEXA_TOKEN__', TOKEN);
       res.writeHead(200);
       res.end(html);
       return;
@@ -742,6 +780,14 @@ function serveStatic(req, res, url) {
 }
 
 const server = http.createServer((req, res) => {
+  try {
+    checkHost(req);
+    checkRateLimit(req);
+  } catch (error) {
+    sendError(res, error);
+    return;
+  }
+
   const url = new URL(req.url, `http://${HOST}:${PORT}`);
   if (url.pathname.startsWith('/api/')) {
     handleApi(req, res, url).catch((error) => sendError(res, error));
@@ -764,9 +810,9 @@ function findEdge() {
   return candidates.find((candidate) => candidate && fs.existsSync(candidate));
 }
 
-function openApp() {
+function openApp(targetToken = TOKEN) {
   if (NO_OPEN) return;
-  const url = `http://${HOST}:${PORT}/`;
+  const url = `http://${HOST}:${PORT}/?token=${targetToken}`;
   const edge = findEdge();
   try {
     if (edge) {
@@ -783,13 +829,19 @@ function openApp() {
         ],
         { detached: true, stdio: 'ignore' },
       );
+      child.on('error', () => {
+        try {
+          const fallback = spawn('cmd.exe', ['/c', 'start', '', url], { detached: true, stdio: 'ignore', windowsHide: true });
+          fallback.unref();
+        } catch {}
+      });
       child.unref();
     } else {
       const child = spawn('cmd.exe', ['/c', 'start', '', url], { detached: true, stdio: 'ignore', windowsHide: true });
       child.unref();
     }
   } catch (error) {
-    console.error('[nova] Could not open the app window:', error.message);
+    console.error('[nexa] Could not open the app window:', error.message);
   }
 }
 
@@ -821,22 +873,15 @@ async function healthCheck() {
   try {
     const response = await fetch(`http://${HOST}:${PORT}/api/health`, { signal: AbortSignal.timeout(900) });
     const data = await response.json();
-    return data && data.app === 'nova';
+    return data && (data.app === 'nexa' || data.app === 'nova' || data.ok) ? data : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
 function startBackgroundService() {
   setInterval(async () => {
     try {
-      const settings = getSettings();
-      if (settings.runInBackground === false) {
-        if (Date.now() - lastClientSeenAt > 30_000) {
-          server.close(() => process.exit(0));
-        }
-        return;
-      }
       const telemetry = await getTelemetry();
       if (Number(telemetry?.memory?.usagePercent) >= 82) {
         await trimMemory();
@@ -847,7 +892,47 @@ function startBackgroundService() {
   }, 180_000).unref();
 }
 
+function checkIntegrity() {
+  const manifestPath = path.join(ROOT, 'manifest.json');
+  if (!fs.existsSync(manifestPath)) return { ok: true, verified: false };
+  try {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    let valid = true;
+    for (const [relPath, expectedHash] of Object.entries(manifest.files || {})) {
+      const fullPath = path.join(ROOT, relPath);
+      if (!fs.existsSync(fullPath)) {
+        valid = false;
+        break;
+      }
+      const data = fs.readFileSync(fullPath);
+      const hash = crypto.createHash('sha256').update(data).digest('hex');
+      if (hash !== expectedHash) {
+        valid = false;
+        break;
+      }
+    }
+    return { ok: valid, verified: true };
+  } catch {
+    return { ok: false, verified: true };
+  }
+}
+
+let isPrimaryServer = false;
+
+function getStoredToken() {
+  try {
+    const raw = fs.readFileSync(path.join(DATA_DIR, 'session.token'), 'utf8').trim();
+    if (raw.includes(':')) return raw.split(':')[1];
+    return raw;
+  } catch {
+    return null;
+  }
+}
+
 async function listen(attempt = 0) {
+  try {
+    fs.appendFileSync(path.join(DATA_DIR, 'server.log'), `[${new Date().toISOString()}] PID ${process.pid} Starting listen (attempt ${attempt}, args: ${process.argv.slice(2).join(' ')})\n`);
+  } catch {}
   try {
     await new Promise((resolve, reject) => {
       const onError = (error) => {
@@ -862,22 +947,44 @@ async function listen(attempt = 0) {
       server.once('listening', onListening);
       server.listen(PORT, HOST);
     });
-    const banner = `Nova Optimize ${VERSION} · http://${HOST}:${PORT}`;
+    isPrimaryServer = true;
+    const banner = `Nexa Optimize ${VERSION} · http://${HOST}:${PORT}`;
     console.log(banner);
     if (IS_ELEVATED) console.log('Administrator mode');
+    try {
+      fs.writeFileSync(path.join(DATA_DIR, 'session.token'), `${process.pid}:${TOKEN}`, 'utf8');
+      fs.appendFileSync(path.join(DATA_DIR, 'server.log'), `[${new Date().toISOString()}] PID ${process.pid} Listening on http://${HOST}:${PORT}\n`);
+    } catch {}
+    const integrity = checkIntegrity();
+    if (integrity.verified) {
+      if (integrity.ok) {
+        console.log('[nexa] Package integrity verified (SHA-256 self-check passed).');
+      } else {
+        console.warn('[nexa] WARNING: Package integrity check failed. Some core files have been modified.');
+      }
+    }
     getSnapshot().catch(() => {});
+    getProcesses().catch(() => {});
     startBackgroundService();
     openApp();
   } catch (error) {
+    try {
+      fs.appendFileSync(path.join(DATA_DIR, 'server.log'), `[${new Date().toISOString()}] PID ${process.pid} Error: ${error.code} - ${error.message}\n`);
+    } catch {}
     if (error.code === 'EADDRINUSE') {
       const isRestarted = process.argv.includes('--restarted');
-      if (!isRestarted && !IS_ELEVATED && attempt === 0 && (await healthCheck())) {
-        console.log('Nova is already running. Opening the existing window.');
-        openApp();
+      const health = await healthCheck();
+      if (!isRestarted && !IS_ELEVATED && attempt === 0 && health) {
+        console.log('Nexa is already running. Opening the existing window.');
+        try {
+          fs.appendFileSync(path.join(DATA_DIR, 'server.log'), `[${new Date().toISOString()}] PID ${process.pid} Nexa already running. Reusing window and exiting.\n`);
+        } catch {}
+        const activeToken = health.token || getStoredToken() || TOKEN;
+        openApp(activeToken);
         setTimeout(() => process.exit(0), 500);
         return;
       }
-      if (attempt < 30) {
+      if (attempt < 40) {
         await new Promise((resolve) => setTimeout(resolve, 350));
         return listen(attempt + 1);
       }
@@ -885,13 +992,37 @@ async function listen(attempt = 0) {
       process.exit(1);
       return;
     }
-    console.error('[nova] Server failed to start:', error.message);
+    console.error('[nexa] Server failed to start:', error.message);
     process.exit(1);
   }
 }
 
 process.on('SIGINT', () => {
+  if (isPrimaryServer) {
+    try { fs.unlinkSync(path.join(DATA_DIR, 'session.token')); } catch {}
+  }
   server.close(() => process.exit(0));
+});
+
+process.on('exit', (code) => {
+  try {
+    fs.appendFileSync(path.join(DATA_DIR, 'server.log'), `[${new Date().toISOString()}] PID ${process.pid} Exit with code ${code}\n`);
+    if (isPrimaryServer) {
+      fs.unlinkSync(path.join(DATA_DIR, 'session.token'));
+    }
+  } catch {}
+});
+
+process.on('uncaughtException', (err) => {
+  try {
+    fs.appendFileSync(path.join(DATA_DIR, 'server.log'), `[${new Date().toISOString()}] Uncaught Exception: ${err?.stack || err}\n`);
+  } catch {}
+});
+
+process.on('unhandledRejection', (reason) => {
+  try {
+    fs.appendFileSync(path.join(DATA_DIR, 'server.log'), `[${new Date().toISOString()}] Unhandled Rejection: ${reason?.stack || reason}\n`);
+  } catch {}
 });
 
 listen();

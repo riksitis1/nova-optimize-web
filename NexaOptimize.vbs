@@ -28,7 +28,7 @@ End If
 
 shell.CurrentDirectory = baseDir
 EnsureDesktopShortcut baseDir
-command = """" & nodePath & """ --max-old-space-size=96 """ & serverPath & """"
+command = """" & nodePath & """ """ & serverPath & """"
 shell.Run command, 0, False
 
 Sub EnsureDesktopShortcut(rootDir)
@@ -71,6 +71,8 @@ Function FindNode()
   On Error GoTo 0
 
   candidates = Array( _
+    "C:\Program Files\nodejs\node.exe", _
+    shell.ExpandEnvironmentStrings("%ProgramW6432%\nodejs\node.exe"), _
     shell.ExpandEnvironmentStrings("%ProgramFiles%\nodejs\node.exe"), _
     shell.ExpandEnvironmentStrings("%LOCALAPPDATA%\Programs\nodejs\node.exe"), _
     shell.ExpandEnvironmentStrings("%ProgramFiles(x86)%\nodejs\node.exe"))

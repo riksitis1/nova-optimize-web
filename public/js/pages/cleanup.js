@@ -64,6 +64,17 @@ export function renderCleanup() {
   const admin = state.snapshot?.admin === true;
   return `
     ${!admin ? `<div class="callout warn" style="margin-bottom:12px">${icon('lock')}<div><strong>System temp folders require administrator access.</strong> <button class="button button-small" type="button" data-action="elevate" style="margin-left:8px">Restart as admin</button></div></div>` : ''}
+    <div class="panel" style="margin-bottom:14px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:22px">🧹</span>
+        <div>
+          <strong style="font-size:13px;font-weight:650;display:block">Safe Cache &amp; Shader Cleaner</strong>
+          <small style="color:var(--muted);font-size:11px;display:block;margin-top:2px">
+            Removes stale GPU shader files and DirectX logs that build up over time. Your personal files, photos, downloads, and game saves are 100% safe.
+          </small>
+        </div>
+      </div>
+    </div>
     <div class="card card-pad">
       <div class="card-header">
         <div>
@@ -112,7 +123,7 @@ function runCleanup() {
   if (selected.some((category) => category.requiresAdmin) && !state.snapshot?.admin) {
     openModal({
       title: 'Administrator access needed',
-      body: '<p>One or more selected categories require administrator rights. Restart Nova with administrator access and try again.</p>',
+      body: '<p>One or more selected categories require administrator rights. Restart Nexa with administrator access and try again.</p>',
       confirmLabel: 'Restart as administrator',
       onConfirm: elevate,
     });
@@ -121,7 +132,7 @@ function runCleanup() {
   const recycle = selected.some((category) => category.recycleBin);
   openModal({
     title: `Free ${formatBytes(selected.reduce((sum, category) => sum + (Number(category.bytes) || 0), 0))}?`,
-    body: `<p>Nova will remove temp and cache data from the selected categories. Files in use are skipped. This cannot be undone.</p><ul class="modal-list">${selected.map((category) => `<li>${escapeHtml(category.label)} — ${formatBytes(category.bytes)}</li>`).join('')}</ul>${recycle ? '<p class="small" style="margin-top:10px;color:var(--amber)">The Recycle Bin will be emptied. Deleted files cannot be recovered.</p>' : ''}`,
+    body: `<p>Nexa will remove temp and cache data from the selected categories. Files in use are skipped. This cannot be undone.</p><ul class="modal-list">${selected.map((category) => `<li>${escapeHtml(category.label)} — ${formatBytes(category.bytes)}</li>`).join('')}</ul>${recycle ? '<p class="small" style="margin-top:10px;color:var(--amber)">The Recycle Bin will be emptied. Deleted files cannot be recovered.</p>' : ''}`,
     confirmLabel: 'Clean now',
     danger: true,
     onConfirm: async () => {

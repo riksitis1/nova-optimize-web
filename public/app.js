@@ -10,8 +10,10 @@ import {
   applyBodyPreferences,
   updateAdminUI,
   loadScan,
+  cancelScan,
   ensureScan,
   elevate,
+  quitNexa,
   quitNova,
   checkForUpdates,
   promptAndInstallUpdate,
@@ -103,21 +105,71 @@ function routeFromHash() {
   return Object.prototype.hasOwnProperty.call(PAGE_META, raw) ? raw : 'dashboard';
 }
 
+let reconnectTimer = null;
+function scheduleReconnect() {
+  if (reconnectTimer) return;
+  reconnectTimer = setInterval(async () => {
+    try {
+      const res = await fetch('/api/health');
+      if (res.ok) {
+        clearInterval(reconnectTimer);
+        reconnectTimer = null;
+        if (state.pageError) {
+          state.pageError = null;
+          handleRoute();
+        }
+      }
+    } catch {}
+  }, 2000);
+}
+
 function render() {
   const route = state.page;
   const meta = PAGE_META[route] || PAGE_META.dashboard;
   const view = document.getElementById('view');
   if (!view) return;
-  view.innerHTML = meta.render();
-  hydrateIcons(view);
-  document.querySelectorAll('.nav-link[data-route]').forEach((link) => {
-    link.classList.toggle('active', link.getAttribute('data-route') === route);
-  });
+
   const title = document.getElementById('page-title');
   const eyebrow = document.getElementById('page-eyebrow');
   if (title) title.textContent = meta.title;
   if (eyebrow) eyebrow.textContent = meta.eyebrow;
-  document.title = `${meta.title} · Nova Optimize`;
+  document.title = `${meta.title} · Nexa Optimize`;
+
+  document.querySelectorAll('.nav-link[data-route]').forEach((link) => {
+    link.classList.toggle('active', link.getAttribute('data-route') === route);
+  });
+
+  if (state.pageError && state.pageError.route === route) {
+    view.innerHTML = `
+      <div class="panel empty-state" style="text-align:center;padding:48px 24px;max-width:520px;margin:40px auto;border-radius:14px">
+        <div style="font-size:36px;margin-bottom:14px">⚡</div>
+        <h2 style="font-size:19px;font-weight:700;margin-bottom:8px">Connecting to Nexa Engine…</h2>
+        <p style="color:var(--muted);font-size:13px;line-height:1.55;margin-bottom:22px">
+          ${escapeHtml(state.pageError.message || 'Could not communicate with the local background service.')}
+        </p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+          <button class="button button-primary" id="page-retry-btn" type="button" style="padding:9px 22px">
+            ${icon('refresh')} Reconnect &amp; Retry
+          </button>
+          <button class="button button-ghost" id="page-home-btn" type="button" style="padding:9px 18px">
+            Go to Overview
+          </button>
+        </div>
+      </div>`;
+    hydrateIcons(view);
+    document.getElementById('page-retry-btn')?.addEventListener('click', () => {
+      state.pageError = null;
+      handleRoute();
+    });
+    document.getElementById('page-home-btn')?.addEventListener('click', () => {
+      state.pageError = null;
+      navigate('dashboard');
+    });
+    return;
+  }
+
+  view.innerHTML = meta.render();
+  hydrateIcons(view);
   meta.bind?.();
   updateAdminUI();
   if (route === 'dashboard') {
@@ -133,12 +185,16 @@ async function handleRoute() {
   const next = routeFromHash();
   if (state.page === 'network' && next !== 'network') stopNetworkLive();
   state.page = next;
+  state.pageError = null;
   render();
   try {
     await PAGE_META[next].load();
+    state.pageError = null;
   } catch (error) {
     if (generation === routeGeneration) {
+      state.pageError = { route: next, message: error.message };
       toast('error', `Could not load ${PAGE_META[next].title}`, error.message);
+      scheduleReconnect();
     }
   }
   if (generation !== routeGeneration) return;
@@ -166,11 +222,11 @@ async function loadTelemetry() {
   }
 }
 
-async function loadProcesses() {
+async function loadProcesses(force = false) {
   if (processesBusy) return;
   processesBusy = true;
   try {
-    const data = await api('/api/processes');
+    const data = await api(`/api/processes${force ? '?force=1' : ''}`);
     state.processes = data.processes;
     if (state.page === 'dashboard') updateOverviewProcesses();
   } catch {
@@ -231,18 +287,24 @@ async function loadGamesPage() {
 }
 
 async function runGlobalScan(button) {
-  if (state.scanLoading) return;
+  if (state.scanLoading) {
+    cancelScan();
+    toast('info', 'Scan stopped', 'Cancelled in-progress system scan.');
+    render();
+    return;
+  }
   const scanButton = document.getElementById('scan-btn');
   const rescanButton = document.getElementById('rescan-btn');
   const original = scanButton ? scanButton.innerHTML : '';
   if (scanButton) {
-    scanButton.disabled = true;
-    scanButton.innerHTML = `${icon('refresh')} Scanning…`;
-    scanButton.classList.add('spinning');
+    scanButton.innerHTML = `${icon('stop')} Stop scan`;
+    scanButton.classList.add('button-ghost');
+    scanButton.classList.remove('button-primary');
+    hydrateIcons(scanButton);
   }
   if (rescanButton) {
-    rescanButton.disabled = true;
-    rescanButton.classList.add('spinning');
+    rescanButton.innerHTML = `${icon('stop')} Stop scan`;
+    hydrateIcons(rescanButton);
   }
   if (button && button !== scanButton) button.classList.add('spinning');
   try {
@@ -252,17 +314,21 @@ async function runGlobalScan(button) {
     await PAGE_META[state.page].load();
     render();
   } catch (error) {
-    toast('error', 'Scan failed', error.message);
+    if (error.name !== 'AbortError') {
+      toast('error', 'Scan failed', error.message);
+    }
   } finally {
     if (scanButton) {
       scanButton.disabled = false;
-      scanButton.classList.remove('spinning');
+      scanButton.classList.remove('spinning', 'button-ghost');
+      scanButton.classList.add('button-primary');
       scanButton.innerHTML = original;
       hydrateIcons(scanButton);
     }
     if (rescanButton) {
       rescanButton.disabled = false;
-      rescanButton.classList.remove('spinning');
+      rescanButton.innerHTML = `${icon('scan')} Rescan`;
+      hydrateIcons(rescanButton);
     }
     if (button) button.classList.remove('spinning');
   }
@@ -301,7 +367,7 @@ function bindChrome() {
   document.getElementById('rescan-btn')?.addEventListener('click', (event) => runGlobalScan(event.currentTarget));
   document.getElementById('trim-ram-btn')?.addEventListener('click', () => openBoostModal());
   document.getElementById('update-btn')?.addEventListener('click', () => promptAndInstallUpdate());
-  document.getElementById('quit-btn')?.addEventListener('click', quitNova);
+  document.getElementById('quit-btn')?.addEventListener('click', quitNexa);
   document.getElementById('bg-mode-toggle')?.addEventListener('click', async () => {
     const next = state.settings.runInBackground === false;
     state.settings.runInBackground = next;
@@ -344,6 +410,18 @@ function bindChrome() {
   document.addEventListener('click', (event) => {
     const target = event.target instanceof Element ? event.target : null;
     if (!target) return;
+    const cancelBtn = target.closest('#cancel-scan-btn, [data-action="cancel-scan"]');
+    if (cancelBtn) {
+      event.preventDefault();
+      if (!bootCompleted) {
+        stopInitialBoot();
+      } else {
+        cancelScan();
+        render();
+        toast('info', 'Scan stopped', 'Cancelled current system scan.');
+      }
+      return;
+    }
     const nav = target.closest('[data-nav]');
     if (nav) {
       event.preventDefault();
@@ -411,9 +489,35 @@ function startPolling() {
   });
 }
 
+let bootAbortController = null;
+let bootCompleted = false;
+
+function stopInitialBoot() {
+  if (bootCompleted) return;
+  bootCompleted = true;
+  if (bootAbortController) {
+    try { bootAbortController.abort(); } catch {}
+    bootAbortController = null;
+  }
+  cancelScan();
+  render();
+  toast('info', 'Scan stopped', 'Loaded dashboard. You can click "Run scan" anytime.');
+}
+
 async function boot() {
+  bootAbortController = new AbortController();
+  const fallbackTimer = setTimeout(() => {
+    if (!bootCompleted && !state.scan) {
+      console.warn('[nexa] Initial reading exceeded 3.5s; continuing to dashboard.');
+      stopInitialBoot();
+    }
+  }, 3500);
+
   try {
-    const data = await api('/api/bootstrap');
+    const data = await api('/api/bootstrap', { signal: bootAbortController.signal });
+    clearTimeout(fallbackTimer);
+    if (bootCompleted) return;
+    bootCompleted = true;
     state.version = data.version || state.version;
     state.port = data.port || null;
     state.dataDir = data.dataDir || '';
@@ -449,6 +553,12 @@ async function boot() {
       checkForUpdates({ silent: true });
     }, 2500);
   } catch (error) {
+    clearTimeout(fallbackTimer);
+    if (bootCompleted) return;
+    if (error.name === 'AbortError') {
+      stopInitialBoot();
+      return;
+    }
     renderFatal(error);
   }
 }

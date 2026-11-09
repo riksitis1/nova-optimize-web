@@ -103,7 +103,7 @@ function settingRow(game, setting, selected, locked) {
   const values = setting.optimized
     ? `<div class="game-value-pill is-optimal"><span class="game-ok">${icon('check', 12)} ${escapeHtml(setting.recommended)}</span></div>`
     : `<div class="game-value-pill"><span class="game-from">${escapeHtml(currentFormatted)}</span><span class="game-arrow">${icon('arrow', 12)}</span><span class="game-to">${escapeHtml(setting.recommended)}</span></div>`;
-  const restoreOneBtn = setting.appliedByNova
+  const restoreOneBtn = setting.appliedByNexa
     ? `<button class="button button-small button-ghost game-restore-inline" type="button" data-game-restore-one="${escapeHtml(game.id)}:${escapeHtml(setting.id)}" ${game.running ? 'disabled' : ''} title="Restore this setting to ${escapeHtml(setting.original ?? 'its original value')}">${icon('undo')} Restore</button>`
     : '';
   return `
@@ -116,7 +116,7 @@ function settingRow(game, setting, selected, locked) {
             <strong>
               ${escapeHtml(setting.label)}
               ${impactBadge(setting.impact)}
-              ${setting.appliedByNova ? `<span class="badge lime">Backed up${setting.original !== null && setting.original !== undefined ? `: ${escapeHtml(formatDisplayValue(setting.original, setting))}` : ''}</span>` : ''}
+              ${setting.appliedByNexa ? `<span class="badge lime">Backed up${setting.original !== null && setting.original !== undefined ? `: ${escapeHtml(formatDisplayValue(setting.original, setting))}` : ''}</span>` : ''}
             </strong>
             <span class="game-values mono">${values}</span>
           </span>
@@ -200,7 +200,20 @@ export function renderGames() {
         <button class="button button-small" type="button" data-action="recheck-games">${icon('refresh')} Refresh</button>
       </div>
     </div>`;
+  const infoBanner = `
+    <div class="panel" style="margin-bottom:14px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:22px">🎮</span>
+        <div>
+          <strong style="font-size:13px;font-weight:650;display:block">Per-Game Competitive Tuning</strong>
+          <small style="color:var(--muted);font-size:11px;display:block;margin-top:2px">
+            Optimizes internal video &amp; network configs for lowest input delay and smooth 1% lows. All original values are backed up and restorable with one click.
+          </small>
+        </div>
+      </div>
+    </div>`;
   return `
+    ${infoBanner}
     ${filterTabs}
     <div class="game-grid">${visibleGames.map(gameCard).join('')}</div>
     ${state.games.some((game) => game.installed) ? '' : emptyState('gamepad', 'No supported game configs detected', 'Launch Fortnite, Counter-Strike 2, or Minecraft once so it creates its config file, then click Refresh.')}
