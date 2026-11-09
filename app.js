@@ -605,7 +605,7 @@
   const reviewsCountText = document.getElementById('reviews-count-text');
   const reviewsStarsDisplay = document.getElementById('reviews-stars-display');
 
-  const GITHUB_REPO = 'riksitis1/nexa-optimize-web';
+  const GITHUB_REPO = 'riksitis1/nova-optimize-web';
   const REVIEWS_URL = `https://api.github.com/repos/${GITHUB_REPO}/issues?labels=verified-review&state=all`;
 
   function parseRating(body) {
@@ -619,33 +619,23 @@
 
   function parseSpecs(body) {
     if (!body) return [];
-    const specsMatch = body.match(/### System Specs[^
-]*
-+([\s\S]*?)(?=###|$)/i);
+    const specsMatch = body.match(/### System Specs[^\r\n]*\r?\n+([\s\S]*?)(?=###|$)/i);
     const text = specsMatch ? specsMatch[1] : '';
     const chips = [];
-    const cpuMatch = text.match(/CPU:s*([^
-]+)/i);
+    const cpuMatch = text.match(/CPU:\s*([^\r\n]+)/i);
     if (cpuMatch && cpuMatch[1].trim()) chips.push(`CPU: ${cpuMatch[1].trim()}`);
-    const gpuMatch = text.match(/GPU:s*([^
-]+)/i);
+    const gpuMatch = text.match(/GPU:\s*([^\r\n]+)/i);
     if (gpuMatch && gpuMatch[1].trim()) chips.push(`GPU: ${gpuMatch[1].trim()}`);
-    const scoreMatch = text.match(/Score:s*([^
-]+)/i);
+    const scoreMatch = text.match(/Score:\s*([^\r\n]+)/i);
     if (scoreMatch && scoreMatch[1].trim()) chips.push(`Score: ${scoreMatch[1].trim()}`);
     return chips;
   }
 
   function parseFeedback(body) {
     if (!body) return 'Verified hardware report submitted via Nexa Optimize.';
-    const feedMatch = body.match(/### Review[^
-]*
-+([\s\S]*?)(?=###|$)/i);
+    const feedMatch = body.match(/### Review[^\r\n]*\r?\n+([\s\S]*?)(?=###|$)/i);
     if (feedMatch && feedMatch[1].trim()) return feedMatch[1].trim();
-    // Strip headers if any
-    const clean = body.replace(/###[^
-]+
-/g, '').trim();
+    const clean = body.replace(/###[^\r\n]+/g, '').trim();
     return clean.slice(0, 480) || 'Verified hardware report submitted via Nexa Optimize.';
   }
 
@@ -655,9 +645,28 @@
     return `<span class="review-stars-row">${full}${empty}</span>`;
   }
 
+  function renderEmptyReviews() {
+    if (reviewsScoreText) reviewsScoreText.textContent = 'GitHub Review Stream Active · 0 Verified Reviews';
+    if (reviewsCountText) reviewsCountText.textContent = '100% Real Community Benchmarks';
+    if (reviewsStarsDisplay) {
+      reviewsStarsDisplay.textContent = '☆☆☆☆☆';
+      reviewsStarsDisplay.classList.add('is-empty');
+    }
+    if (reviewsContainer) {
+      reviewsContainer.innerHTML = `
+        <div class="empty-reviews-box">
+          <div class="empty-reviews-icon">☆</div>
+          <h3>No community reviews yet</h3>
+          <p>Be the first to post an authentic hardware report or benchmark from inside Nexa Optimize or via GitHub! Every review submitted to our public repository is rendered here with 100% transparency.</p>
+          <a href="https://github.com/${GITHUB_REPO}/issues/new?template=review.yml" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+            Submit a Verified Review on GitHub
+          </a>
+        </div>`;
+    }
+  }
+
   async function loadRealReviews() {
     try {
-      // Check session cache first (10 min expiry)
       const cacheKey = 'nexa_real_reviews_v1';
       const cached = sessionStorage.getItem(cacheKey);
       let issues = null;
@@ -689,25 +698,10 @@
       );
 
       if (verifiedIssues.length === 0) {
-        // Honest empty state
-        if (reviewsScoreText) reviewsScoreText.textContent = 'Community Benchmark Stream · Real Reports Only';
-        if (reviewsCountText) reviewsCountText.textContent = '0 Fake Reviews · Be the first to benchmark';
-        if (reviewsStarsDisplay) reviewsStarsDisplay.textContent = '★★★★★';
-        if (reviewsContainer) {
-          reviewsContainer.innerHTML = `
-            <div class="empty-reviews-box">
-              <div class="empty-reviews-icon">★</div>
-              <h3>No community reviews yet</h3>
-              <p>Be the first to post an authentic hardware report or benchmark from inside Nexa Optimize or via GitHub! Every review submitted to our public repository is rendered here with 100% transparency.</p>
-              <a href="https://github.com/${GITHUB_REPO}/issues/new?template=review.yml" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
-                Submit a Verified Review on GitHub
-              </a>
-            </div>`;
-        }
+        renderEmptyReviews();
         return;
       }
 
-      // Calculate dynamic average
       let totalRating = 0;
       const reviews = verifiedIssues.map((issue) => {
         const rating = parseRating(issue.body || '');
@@ -735,7 +729,10 @@
       const avg = (totalRating / reviews.length).toFixed(1);
       if (reviewsScoreText) reviewsScoreText.textContent = `Average Rating: ${avg} / 5.0`;
       if (reviewsCountText) reviewsCountText.textContent = `${reviews.length} Verified Community Review${reviews.length === 1 ? '' : 's'} on GitHub`;
-      if (reviewsStarsDisplay) reviewsStarsDisplay.textContent = '★'.repeat(Math.round(avg)) + '☆'.repeat(5 - Math.round(avg));
+      if (reviewsStarsDisplay) {
+        reviewsStarsDisplay.textContent = '★'.repeat(Math.round(avg)) + '☆'.repeat(5 - Math.round(avg));
+        reviewsStarsDisplay.classList.remove('is-empty');
+      }
 
       if (reviewsContainer) {
         reviewsContainer.innerHTML = `
@@ -770,20 +767,7 @@
           </div>`;
       }
     } catch {
-      // Graceful fallback to honest empty state if GitHub API is offline or rate limited
-      if (reviewsScoreText) reviewsScoreText.textContent = 'Community Benchmark Stream';
-      if (reviewsCountText) reviewsCountText.textContent = '0 Fake Reviews · Real Hardware Reports';
-      if (reviewsContainer) {
-        reviewsContainer.innerHTML = `
-          <div class="empty-reviews-box">
-            <div class="empty-reviews-icon">★</div>
-            <h3>Community Reviews &amp; Hardware Reports</h3>
-            <p>Reviews are live-synced from our public GitHub repository. Submit your verified benchmark from inside Nexa Optimize (Settings &rarr; Data, updates &amp; reports) or directly on GitHub.</p>
-            <a href="https://github.com/${GITHUB_REPO}/issues/new?template=review.yml" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
-              Submit a Verified Review on GitHub
-            </a>
-          </div>`;
-      }
+      renderEmptyReviews();
     }
   }
 

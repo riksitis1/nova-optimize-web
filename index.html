@@ -75,7 +75,7 @@
             </div>
 
             <label class="consent-box" for="legal-consent">
-              <input type="checkbox" id="legal-consent" />
+              <input type="checkbox" id="legal-consent" checked />
               <span>
                 I have read and agree to the <a href="#legal">Terms of Use, Assumption of Risk &amp; Limitation of Liability</a>. I understand that Nexa Optimize modifies Windows and game configuration files at my own risk, is provided <strong>"AS IS" without warranty</strong>, and that I should create a Windows System Restore Point before applying system-wide changes.
               </span>
@@ -85,34 +85,34 @@
               <a
                 href="downloads/Nexa-Optimize-Setup-v1.4.0.cmd"
                 download="Nexa-Optimize-Setup-v1.4.0.cmd"
-                class="btn btn-primary btn-lg download-btn is-disabled"
+                class="btn btn-primary btn-lg download-btn"
                 data-requires-consent="true"
-                aria-disabled="true"
+                aria-disabled="false"
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <span>
                   <strong>Download Quick Setup (.cmd)</strong>
-                  <small>Self-extracting installer · 191.8 KB · Creates "NEXA" Desktop shortcut</small>
+                  <small>Self-extracting installer · 267.9 KB · Creates "NEXA" Desktop shortcut</small>
                 </span>
               </a>
 
               <a
                 href="downloads/Nexa-Optimize-v1.4.0.zip"
                 download="Nexa-Optimize-v1.4.0.zip"
-                class="btn btn-secondary btn-lg download-btn is-disabled"
+                class="btn btn-secondary btn-lg download-btn"
                 data-requires-consent="true"
-                aria-disabled="true"
+                aria-disabled="false"
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m4-5l5 5 5-5m-5 5V3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <span>
                   <strong>Download Portable Archive (.zip)</strong>
-                  <small>Readable source + Install Nexa.bat · 139.1 KB</small>
+                  <small>Readable source + Install Nexa.bat · 194.1 KB</small>
                 </span>
               </a>
             </div>
 
-            <p class="consent-hint" id="consent-hint" role="status">
-              Accept the legal terms above to enable the download links.
+            <p class="consent-hint is-ready" id="consent-hint" role="status">
+              Downloads unlocked. Create a Windows System Restore Point before applying system-wide changes.
             </p>
 
             <div class="download-meta">
@@ -152,16 +152,16 @@
             <div class="preview-panel active" id="preview-overview" role="tabpanel">
               <div class="preview-score-row">
                 <div class="score-circle">
-                  <span class="score-num">94</span>
+                  <span class="score-num">98</span>
                   <span class="score-sub">OPTIMAL</span>
                 </div>
                 <div class="score-details">
                   <h3>System configuration is optimized</h3>
-                  <p>17 of 18 parameters active · Background polling suspended while gaming.</p>
+                  <p>31 of 32 parameters active · Background polling suspended while gaming.</p>
                   <div class="mini-bars">
-                    <div><span>Performance</span><strong>96 / 100</strong></div>
-                    <div><span>Gaming</span><strong>95 / 100</strong></div>
-                    <div><span>Network</span><strong>92 / 100</strong></div>
+                    <div><span>Performance</span><strong>98 / 100</strong></div>
+                    <div><span>Gaming</span><strong>98 / 100</strong></div>
+                    <div><span>Network</span><strong>96 / 100</strong></div>
                     <div><span>Security</span><strong>100 / 100</strong></div>
                   </div>
                 </div>
@@ -526,7 +526,7 @@
         <!-- Live Average Rating & Submissions Bar -->
         <div class="reviews-summary-bar" id="reviews-summary-bar">
           <div class="reviews-stat">
-            <div class="reviews-stars" id="reviews-stars-display">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+            <div class="reviews-stars is-empty" id="reviews-stars-display">&#9734;&#9734;&#9734;&#9734;&#9734;</div>
             <div>
               <div class="reviews-score-text" id="reviews-score-text">Connecting to GitHub review stream...</div>
               <div class="reviews-score-sub" id="reviews-count-text">100% Real Community Benchmarks</div>
@@ -543,7 +543,7 @@
         <!-- Real Reviews Container or Honest Empty State -->
         <div id="reviews-container">
           <div class="empty-reviews-box" id="reviews-empty-state">
-            <div class="empty-reviews-icon">&#9733;</div>
+            <div class="empty-reviews-icon">&#9734;</div>
             <h3>No community reviews yet</h3>
             <p>Be the first to post an authentic hardware report or benchmark from inside Nexa Optimize or via GitHub! Every review submitted to our public repository is rendered here with 100% transparency.</p>
             <a href="https://github.com/riksitis1/nova-optimize-web/issues/new?template=review.yml" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
@@ -580,15 +580,6 @@
             <p>Before applying system-wide changes, click <strong>Create restore point</strong> in Nexa (requires Administrator) so you have both Nexa's per-setting backup and a Windows System Restore checkpoint.</p>
           </div>
         </div>
-
-        <div class="smartscreen-note">
-          <div>
-            <strong>Note on Windows SmartScreen ("Windows protected your PC")</strong>
-            <p>
-              Nexa Optimize is distributed as an open-source MIT project without a paid commercial EV code-signing certificate. Unlike compiled executables, every file in Nexa Optimize (<code>.cmd</code>, <code>.bat</code>, <code>.ps1</code>, <code>.js</code>) is plain text and can be inspected in any text editor before execution. If SmartScreen prompts on first launch, verify the SHA-256 checksum below and select <strong>More info</strong> &rarr; <strong>Run anyway</strong>.
-            </p>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -620,7 +611,7 @@
             </div>
             <div class="checksum-row">
               <code id="hash-zip">1a856a9aa15933881a4ad4f1c2a104a70ff23f16c2f134ab190444276c989bdb</code>
-              <button type="button" class="btn btn-sm btn-secondary copy-btn" data-copy="030b0b04c4cce3efa2dc510e9960e2a7c2b566250678286c939c2e72d0dd069b">Copy Hash</button>
+              <button type="button" class="btn btn-sm btn-secondary copy-btn" data-copy="1a856a9aa15933881a4ad4f1c2a104a70ff23f16c2f134ab190444276c989bdb">Copy Hash</button>
             </div>
           </div>
         </div>
@@ -648,7 +639,7 @@
 
         <div class="smartscreen-note" style="margin-top:24px">
           <div>
-            <strong>Transparent Note on Windows SmartScreen ("Windows protected your PC")</strong>
+            <strong class="smartscreen-note-title">Transparent Note on Windows SmartScreen ("Windows protected your PC")</strong>
             <p>
               <strong>Why does SmartScreen appear on new open-source projects?</strong> Microsoft SmartScreen relies on either an expensive Extended Validation (EV) hardware token certificate ($400+ per year) or a high reputation threshold built over hundreds of thousands of downloads. As an independent, free open-source project, Nexa Optimize is distributed without commercial markup. Every single file (<code>.cmd</code>, <code>.bat</code>, <code>.ps1</code>, <code>.js</code>) is 100% human-readable plain text that you can inspect in Notepad before running. Verify the SHA-256 hash above, select <strong>More info</strong>, and click <strong>Run anyway</strong>.
             </p>

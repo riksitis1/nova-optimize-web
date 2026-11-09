@@ -737,16 +737,31 @@ a:focus-visible {
   padding: 16px 20px;
 }
 
-.smartscreen-note strong {
+.smartscreen-note-title,
+.smartscreen-note > div > strong:first-child {
   display: block;
   font-size: 0.9rem;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
   color: var(--text);
 }
 
 .smartscreen-note p {
   font-size: 0.84rem;
   color: var(--muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.smartscreen-note p strong,
+.smartscreen-note p b,
+.smartscreen-note p span,
+.smartscreen-note p code,
+.smartscreen-note p a,
+.smartscreen-note p em {
+  display: inline !important;
+  color: var(--text);
+  font-size: inherit;
+  margin: 0;
 }
 
 /* Checksums */
@@ -930,6 +945,10 @@ a:focus-visible {
   .download-actions {
     grid-template-columns: 1fr;
   }
+  .transparency-search {
+    min-width: 100%;
+    max-width: 100%;
+  }
   .nav-links {
     display: none;
   }
@@ -961,6 +980,12 @@ a:focus-visible {
   color: var(--accent);
   font-size: 1.25rem;
   letter-spacing: 2px;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.reviews-stars.is-empty {
+  color: var(--muted);
+  opacity: 0.65;
 }
 
 .reviews-score-text {
@@ -1145,9 +1170,9 @@ a:focus-visible {
 
 .transparency-search {
   position: relative;
-  flex: 1;
-  min-width: 260px;
-  max-width: 440px;
+  flex: 1 1 380px;
+  min-width: 360px;
+  max-width: 620px;
 }
 
 .transparency-search input {
