@@ -2,7 +2,7 @@
     "version": "1.4.0",
     "releasedAt": "2026-11-08",
     "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nova-Optimize-v1.4.0.zip",
-    "sha256": "28a71523f4d88f8fc057e3f25a3b970f2c0b91e8cc0471423eb89c4e79f012b4",
+    "sha256": "192a965f1e731739c3039c77b7be2daae46ec025bd1f32caf066d5b0d6c67bec",
     "notes": [
         "Anti-Cheat-Safe Game CPU & Disk I/O Priority: Configured Windows kernel IFEO PerfOptions (High CPU & High Disk I/O) for competitive games (CS2, Fortnite, Roblox, Minecraft, Valorant, Apex, CoD) without anti-cheat blocks",
         "Active DSCP 46 Expedited Forwarding Packet Tagging: Windows QoS policies now actively stamp game UDP packets with DSCP 46 priority and reload live with zero reboot required",
