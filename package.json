@@ -1,7 +1,7 @@
 {
-  "name": "nova-optimize-web",
+  "name": "nexa-optimize-web",
   "version": "1.1.0",
-  "description": "Official download and documentation portal for Nova Optimize — Free, local-first Windows 10/11 gaming performance suite.",
+  "description": "Official download and documentation portal for Nexa Optimize — Free, local-first Windows 10/11 gaming performance suite.",
   "license": "MIT",
   "main": "server.js",
   "scripts": {

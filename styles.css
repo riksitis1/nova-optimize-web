@@ -1328,14 +1328,14 @@ a:focus-visible {
   letter-spacing: 0.5px;
 }
 
-.comp-table th.col-nova {
+.comp-table th.col-nexa {
   color: var(--accent);
   background: rgba(184, 249, 54, 0.05);
   border-left: 1px solid var(--accent-line);
   border-right: 1px solid var(--accent-line);
 }
 
-.comp-table td.col-nova {
+.comp-table td.col-nexa {
   background: rgba(184, 249, 54, 0.02);
   border-left: 1px solid var(--accent-line);
   border-right: 1px solid var(--accent-line);

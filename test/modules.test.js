@@ -45,6 +45,6 @@ test('server modules load with the expected public API', () => {
 test('package version matches the version shown by the app shell', () => {
   const pkg = require('../package.json');
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
-  assert.match(pkg.name, /^nova-optimize(-web)?$/);
+  assert.match(pkg.name, /^(nexa|nova)-optimize(-web)?$/);
   assert.equal(pkg.license, 'MIT');
 });

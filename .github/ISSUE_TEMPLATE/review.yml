@@ -1,18 +1,18 @@
 name: Verified Hardware Review
-description: Submit an authentic benchmark, hardware report, or user review for Nova Optimize.
+description: Submit an authentic benchmark, hardware report, or user review for Nexa Optimize.
 title: "[Review]: "
 labels: ["verified-review"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thank you for contributing a verified review to Nova Optimize!
+        Thank you for contributing a verified review to Nexa Optimize!
         All reviews are 100% authentic, publicly hosted, and live-rendered on the official website.
   - type: dropdown
     id: rating
     attributes:
       label: Star Rating
-      description: How would you rate Nova Optimize overall?
+      description: How would you rate Nexa Optimize overall?
       options:
         - "5 ★★★★★ (Exceptional - noticeable FPS/latency boost)"
         - "4 ★★★★☆ (Great - smooth experience, zero issues)"
@@ -33,14 +33,14 @@ body:
     id: specs
     attributes:
       label: System Specs & Readiness Score
-      description: Your CPU, GPU, RAM, and Nova Readiness Score.
+      description: Your CPU, GPU, RAM, and Nexa Readiness Score.
       placeholder: |
         CPU: AMD Ryzen 7 7800X3D
         GPU: NVIDIA GeForce RTX 4080 Super
         RAM: 32 GB DDR5-6000
-        Nova Readiness Score: 96/100
+        Nexa Readiness Score: 96/100
         Active NIC MSI Mode: Supported
-        Nova Version: v1.4.0
+        Nexa Version: v1.4.0
     validations:
       required: true
   - type: textarea

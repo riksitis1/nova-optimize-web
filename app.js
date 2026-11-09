@@ -29,7 +29,7 @@
       if (!consentCheckbox || !consentCheckbox.checked) {
         event.preventDefault();
         if (consentHint) {
-          consentHint.textContent = 'Please check the legal agreement box above before downloading Nova Optimize.';
+          consentHint.textContent = 'Please check the legal agreement box above before downloading Nexa Optimize.';
         }
         if (consentCheckbox) consentCheckbox.focus();
       }
@@ -260,13 +260,13 @@
   },
   {
     "id": "power-plan",
-    "name": "Activate the Nova Gaming power plan",
+    "name": "Activate the Nexa Gaming power plan",
     "category": "Performance",
     "catGroup": "cpu",
     "impact": "medium",
     "keyPath": "Windows Power Schemes (powercfg)",
     "stockVal": "Balanced Scheme (381b4222-f694-41f0-9685-ff5bb260df2e)",
-    "optVal": "Nova High Performance (preserves AMD X3D core parking)",
+    "optVal": "Nexa High Performance (preserves AMD X3D core parking)",
     "revertNote": "Re-activates original active Windows power scheme.",
     "description": "Creates a high-performance Windows power plan and makes it active. Your original plan is remembered."
   },
@@ -568,7 +568,7 @@
             <strong>${escapeHtml(a.stockVal)}</strong>
           </div>
           <div class="action-compare-col is-opt">
-            <span>Nova Optimized</span>
+            <span>Nexa Optimized</span>
             <strong>${escapeHtml(a.optVal)}</strong>
           </div>
         </div>
@@ -605,7 +605,7 @@
   const reviewsCountText = document.getElementById('reviews-count-text');
   const reviewsStarsDisplay = document.getElementById('reviews-stars-display');
 
-  const GITHUB_REPO = 'riksitis1/nova-optimize-web';
+  const GITHUB_REPO = 'riksitis1/nexa-optimize-web';
   const REVIEWS_URL = `https://api.github.com/repos/${GITHUB_REPO}/issues?labels=verified-review&state=all`;
 
   function parseRating(body) {
@@ -637,7 +637,7 @@
   }
 
   function parseFeedback(body) {
-    if (!body) return 'Verified hardware report submitted via Nova Optimize.';
+    if (!body) return 'Verified hardware report submitted via Nexa Optimize.';
     const feedMatch = body.match(/### Review[^
 ]*
 +([\s\S]*?)(?=###|$)/i);
@@ -646,7 +646,7 @@
     const clean = body.replace(/###[^
 ]+
 /g, '').trim();
-    return clean.slice(0, 480) || 'Verified hardware report submitted via Nova Optimize.';
+    return clean.slice(0, 480) || 'Verified hardware report submitted via Nexa Optimize.';
   }
 
   function starsHtml(rating) {
@@ -658,7 +658,7 @@
   async function loadRealReviews() {
     try {
       // Check session cache first (10 min expiry)
-      const cacheKey = 'nova_real_reviews_v1';
+      const cacheKey = 'nexa_real_reviews_v1';
       const cached = sessionStorage.getItem(cacheKey);
       let issues = null;
 
@@ -698,7 +698,7 @@
             <div class="empty-reviews-box">
               <div class="empty-reviews-icon">★</div>
               <h3>No community reviews yet</h3>
-              <p>Be the first to post an authentic hardware report or benchmark from inside Nova Optimize or via GitHub! Every review submitted to our public repository is rendered here with 100% transparency.</p>
+              <p>Be the first to post an authentic hardware report or benchmark from inside Nexa Optimize or via GitHub! Every review submitted to our public repository is rendered here with 100% transparency.</p>
               <a href="https://github.com/${GITHUB_REPO}/issues/new?template=review.yml" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
                 Submit a Verified Review on GitHub
               </a>
@@ -778,7 +778,7 @@
           <div class="empty-reviews-box">
             <div class="empty-reviews-icon">★</div>
             <h3>Community Reviews &amp; Hardware Reports</h3>
-            <p>Reviews are live-synced from our public GitHub repository. Submit your verified benchmark from inside Nova Optimize (Settings &rarr; Data, updates &amp; reports) or directly on GitHub.</p>
+            <p>Reviews are live-synced from our public GitHub repository. Submit your verified benchmark from inside Nexa Optimize (Settings &rarr; Data, updates &amp; reports) or directly on GitHub.</p>
             <a href="https://github.com/${GITHUB_REPO}/issues/new?template=review.yml" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
               Submit a Verified Review on GitHub
             </a>

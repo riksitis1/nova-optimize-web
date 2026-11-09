@@ -85,6 +85,6 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Nova Optimize website running on http://localhost:${PORT}`);
+  console.log(`Nexa Optimize website running on http://localhost:${PORT}`);
 });
 
