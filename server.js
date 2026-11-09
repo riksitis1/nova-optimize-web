@@ -27,7 +27,7 @@ const SECURITY_HEADERS = {
   'Referrer-Policy': 'no-referrer',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
   'Content-Security-Policy':
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://giscus.app; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://github.githubassets.com; connect-src 'self' https://api.github.com https://giscus.app; frame-src 'self' https://giscus.app; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
 };
 
 const server = http.createServer((req, res) => {

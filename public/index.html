@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#080b0f">
+  <meta name="description" content="Nova Optimize — a free, local-first Windows gaming performance and latency suite.">
+  <meta name="nova-token" content="__NOVA_TOKEN__">
+  <title>Nova Optimize</title>
+  <link rel="icon" href="/assets/nova.ico" sizes="any">
+  <link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#/dashboard" data-route="dashboard" aria-label="Nova Optimize home">
+        <img src="/assets/logo.svg" alt="" class="brand-mark">
+        <span class="brand-copy">
+          <strong>NOVA</strong>
+          <small>OPTIMIZE</small>
+        </span>
+      </a>
+
+      <nav class="nav" aria-label="Main navigation">
+        <p class="nav-label">Workspace</p>
+        <a href="#/dashboard" data-route="dashboard" class="nav-link">
+          <span class="nav-icon" data-icon="grid"></span><span>Overview</span>
+        </a>
+        <a href="#/optimize" data-route="optimize" class="nav-link">
+          <span class="nav-icon" data-icon="spark"></span><span>Optimize</span><span class="nav-badge" id="nav-issues"></span>
+        </a>
+        <a href="#/games" data-route="games" class="nav-link">
+          <span class="nav-icon" data-icon="gamepad"></span><span>Game settings</span>
+        </a>
+        <a href="#/network" data-route="network" class="nav-link">
+          <span class="nav-icon" data-icon="pulse"></span><span>Network lab</span>
+        </a>
+        <a href="#/cleanup" data-route="cleanup" class="nav-link">
+          <span class="nav-icon" data-icon="broom"></span><span>Cleanup</span>
+        </a>
+        <a href="#/startup" data-route="startup" class="nav-link">
+          <span class="nav-icon" data-icon="rocket"></span><span>Startup</span>
+        </a>
+
+        <p class="nav-label nav-label-spaced">Control</p>
+        <a href="#/advanced" data-route="advanced" class="nav-link">
+          <span class="nav-icon" data-icon="sliders"></span><span>Advanced</span>
+        </a>
+        <a href="#/activity" data-route="activity" class="nav-link">
+          <span class="nav-icon" data-icon="history"></span><span>Activity</span>
+        </a>
+        <a href="#/settings" data-route="settings" class="nav-link">
+          <span class="nav-icon" data-icon="gear"></span><span>Settings</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="admin-card" id="admin-card">
+          <span class="admin-dot"></span>
+          <div>
+            <strong id="admin-card-title">Checking access</strong>
+            <small id="admin-card-copy">Nova is starting up</small>
+          </div>
+        </div>
+        <div class="sidebar-bg-row">
+          <div class="sidebar-bg-copy">
+            <strong>Background mode</strong>
+            <small id="bg-mode-sub">Active in background</small>
+          </div>
+          <button class="switch on" id="bg-mode-toggle" type="button" role="switch" aria-checked="true" aria-label="Keep Nova running in the background"></button>
+        </div>
+        <button class="sidebar-quit" id="quit-btn" type="button"><span data-icon="power"></span> Quit Nova</button>
+        <p class="sidebar-version">v<span id="version-label">1.4.0</span> · local only · no account</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-button mobile-menu" id="mobile-menu" type="button" aria-label="Open navigation"><span data-icon="menu"></span></button>
+        <div class="topbar-title">
+          <span class="eyebrow" id="page-eyebrow">SYSTEM READINESS</span>
+          <h1 id="page-title">Overview</h1>
+        </div>
+        <div class="topbar-actions">
+          <button class="status-pill" id="admin-pill" type="button">
+            <span class="status-dot"></span><span id="admin-pill-label">Checking</span>
+          </button>
+          <button class="button button-small button-primary" id="update-btn" type="button" hidden style="display:none" title="Download and install the latest Nova update in place"><span data-icon="download"></span> <span id="update-btn-label">Update available</span></button>
+          <button class="button button-small" id="trim-ram-btn" type="button" title="Close optional background apps, flush DNS, and trim idle working-set RAM"><span data-icon="zap"></span> Pre-game boost</button>
+          <button class="button button-primary" id="scan-btn" type="button"><span data-icon="scan"></span> Run scan</button>
+        </div>
+      </header>
+
+      <div id="view" class="view" aria-live="polite">
+        <div class="page-loading">
+          <div class="loading-orbit"></div>
+          <p>Reading your system…</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div id="modal-root"></div>
+  <div id="elevate-overlay" class="elevate-overlay" hidden>
+    <div class="elevate-card">
+      <div class="loading-orbit small"></div>
+      <h2>Restarting with administrator rights</h2>
+      <p>Approve the Windows UAC prompt. Nova will reconnect automatically.</p>
+      <small id="elevate-status">Waiting for the new instance…</small>
+      <div style="margin-top:16px">
+        <button class="button button-small button-ghost" id="elevate-cancel" type="button">Dismiss</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

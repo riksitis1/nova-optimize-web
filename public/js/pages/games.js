@@ -1,0 +1,364 @@
+import {
+  state,
+  icon,
+  escapeHtml,
+  toast,
+  openModal,
+  api,
+  requestRender,
+  copyText,
+} from '../core.js';
+import { sectionHead, impactBadge, emptyState } from '../ui.js';
+
+function selectionFor(game) {
+  state.gameSelections = state.gameSelections || {};
+  if (!state.gameSelections[game.id]) {
+    state.gameSelections[game.id] = new Set(
+      game.settings.filter((setting) => setting.defaultOn && !setting.optimized).map((setting) => setting.id),
+    );
+  }
+  return state.gameSelections[game.id];
+}
+
+function replaceGame(next) {
+  if (!next || !Array.isArray(state.games)) return;
+  state.games = state.games.map((game) => (game.id === next.id ? next : game));
+}
+
+function statusBadge(game) {
+  if (game.running) return `<span class="badge amber">${icon('alert')} Running. Close it first</span>`;
+  if (!game.installed) return '<span class="badge muted">Config not found</span>';
+  if (game.applied) return `<span class="badge lime">${icon('check')} ${game.applied.settingIds.length} applied · Backed up</span>`;
+  return '<span class="badge green">Ready</span>';
+}
+
+function formatDisplayValue(val, setting) {
+  if (val === null || val === undefined) return 'not set';
+  let s = String(val).trim();
+  // Strip trailing .000000 or decimal zeroes from Unreal Engine floats
+  if (/^-?\d+\.0+$/.test(s)) s = s.replace(/\.0+$/, '');
+  else if (/^-?\d+\.\d+?0+$/.test(s)) s = s.replace(/0+$/, '');
+
+  if (s.toLowerCase() === 'false') return 'Off';
+  if (s.toLowerCase() === 'true') return 'On';
+
+  if (setting.id === 'fn-res' || setting.recommended?.includes('%')) {
+    if (/^\d+$/.test(s)) return `${s}%`;
+  }
+  if (setting.id === 'fn-fps') {
+    if (s === '0') return 'Unlimited';
+    if (/^\d+$/.test(s)) return `${s} FPS`;
+  }
+  if (setting.id === 'mc-fps') {
+    if (s === '0' || s === '260') return 'Unlimited';
+    if (/^\d+$/.test(s)) return `${s} FPS`;
+  }
+  if (setting.id === 'mc-render' || setting.id === 'mc-sim') {
+    if (/^\d+$/.test(s)) return `${s} chunks`;
+  }
+
+  // Fortnite scalability indices
+  const FN_LEVELS = { '0': 'Low', '1': 'Medium', '2': 'High', '3': 'Epic', '4': 'Cinematic' };
+  if (setting.id.startsWith('fn-') && FN_LEVELS[s]) return FN_LEVELS[s];
+
+  // CS2 indices
+  if (setting.id === 'cs2-reflex') {
+    const REFLEX = { '0': 'Off', '1': 'On', '2': 'On + Boost' };
+    if (REFLEX[s]) return REFLEX[s];
+  }
+  if (setting.id === 'cs2-fidelityfx') {
+    const FSR = { '0': 'Disabled', '1': 'Ultra Quality', '2': 'Quality', '3': 'Balanced', '4': 'Performance' };
+    if (FSR[s]) return FSR[s];
+  }
+  if (setting.id === 'cs2-ao' || setting.id === 'cs2-vsync') {
+    if (s === '0') return 'Off';
+    if (s === '1') return 'On';
+  }
+  const CS2_LEVELS = { '0': 'Low', '1': 'Medium', '2': 'High', '3': 'Very High' };
+  if (setting.id.startsWith('cs2-') && CS2_LEVELS[s]) return CS2_LEVELS[s];
+
+  // Minecraft indices
+  if (setting.id === 'mc-graphics') {
+    const G = { '0': 'Fast', '1': 'Fancy', '2': 'Fabulous' };
+    if (G[s]) return G[s];
+  }
+  if (setting.id === 'mc-particles') {
+    const P = { '0': 'All', '1': 'Decreased', '2': 'Minimal' };
+    if (P[s]) return P[s];
+  }
+  if (setting.id === 'mc-smooth') {
+    const SM = { '0': 'Off', '1': 'Minimum', '2': 'Maximum' };
+    if (SM[s]) return SM[s];
+  }
+  if (setting.id === 'mc-clouds') {
+    const CL = { '0': 'Off', '1': 'Fast', '2': 'Fancy' };
+    if (CL[s]) return CL[s];
+  }
+
+  return s;
+}
+
+function settingRow(game, setting, selected, locked) {
+  const currentFormatted = formatDisplayValue(setting.current, setting);
+  const values = setting.optimized
+    ? `<div class="game-value-pill is-optimal"><span class="game-ok">${icon('check', 12)} ${escapeHtml(setting.recommended)}</span></div>`
+    : `<div class="game-value-pill"><span class="game-from">${escapeHtml(currentFormatted)}</span><span class="game-arrow">${icon('arrow', 12)}</span><span class="game-to">${escapeHtml(setting.recommended)}</span></div>`;
+  const restoreOneBtn = setting.appliedByNova
+    ? `<button class="button button-small button-ghost game-restore-inline" type="button" data-game-restore-one="${escapeHtml(game.id)}:${escapeHtml(setting.id)}" ${game.running ? 'disabled' : ''} title="Restore this setting to ${escapeHtml(setting.original ?? 'its original value')}">${icon('undo')} Restore</button>`
+    : '';
+  return `
+    <div class="game-setting ${setting.optimized ? 'is-optimal' : ''} ${locked ? 'is-locked' : ''}">
+      <label class="game-setting-label">
+        <input type="checkbox" data-game-setting="${escapeHtml(game.id)}:${escapeHtml(setting.id)}" ${selected.has(setting.id) ? 'checked' : ''} ${locked ? 'disabled' : ''}>
+        <span class="game-check" aria-hidden="true">${icon('check', 12)}</span>
+        <span class="game-setting-main">
+          <span class="game-setting-top">
+            <strong>
+              ${escapeHtml(setting.label)}
+              ${impactBadge(setting.impact)}
+              ${setting.appliedByNova ? `<span class="badge lime">Backed up${setting.original !== null && setting.original !== undefined ? `: ${escapeHtml(formatDisplayValue(setting.original, setting))}` : ''}</span>` : ''}
+            </strong>
+            <span class="game-values mono">${values}</span>
+          </span>
+          <small>${escapeHtml(setting.description)}</small>
+        </span>
+      </label>
+      ${restoreOneBtn ? `<div class="game-setting-actions">${restoreOneBtn}</div>` : ''}
+    </div>`;
+}
+
+function gameCard(game) {
+  const selected = selectionFor(game);
+  const locked = !game.installed || game.running;
+  const count = game.settings.filter((setting) => selected.has(setting.id)).length;
+  const hasBackup = Boolean(game.applied && game.applied.settingIds?.length);
+  const tips = (game.tips || []).map((tip) => `<li>${escapeHtml(tip)}</li>`).join('');
+  return `
+    <article class="card game-card" data-game="${escapeHtml(game.id)}">
+      <header class="game-head">
+        <div class="game-mark">${icon('gamepad', 20)}</div>
+        <div class="game-title">
+          <div class="game-title-row">
+            <h3>${escapeHtml(game.name)}</h3>
+            ${statusBadge(game)}
+          </div>
+          <p>${escapeHtml(game.tagline)}</p>
+        </div>
+        <div class="game-tools">
+          <span class="small muted">Select:</span>
+          <span class="game-tool-links">
+            <button class="link-button" type="button" data-game-pick="${escapeHtml(game.id)}:recommended" ${locked ? 'disabled' : ''}>Recommended</button>
+            <button class="link-button" type="button" data-game-pick="${escapeHtml(game.id)}:all" ${locked ? 'disabled' : ''}>All</button>
+            <button class="link-button" type="button" data-game-pick="${escapeHtml(game.id)}:none" ${locked ? 'disabled' : ''}>None</button>
+          </span>
+        </div>
+      </header>
+      ${game.installed
+        ? `<div class="game-file-bar"><span class="mono">${escapeHtml(game.fileLabel)}</span>${game.files.length > 1 ? `<span class="badge muted">${game.files.length} Steam accounts</span>` : ''}${hasBackup ? `<span class="badge lime">Backup active (${game.applied.settingIds.length} setting${game.applied.settingIds.length === 1 ? '' : 's'})</span>` : ''}</div>`
+        : `<p class="game-file game-missing">Config path: <span class="mono">${escapeHtml(game.expectedPath || game.fileLabel)}</span>. Launch ${escapeHtml(game.name)} once to generate its config file, then click Re-check games.</p>`}
+      <div class="game-settings">
+        ${game.settings.map((setting) => settingRow(game, setting, selected, locked)).join('')}
+      </div>
+      ${game.launchOptions ? `
+        <div class="game-launch">
+          <span class="small muted">Optional Steam launch parameters</span>
+          <code class="mono">${escapeHtml(game.launchOptions)}</code>
+          <button class="button button-small" type="button" data-game-copy="${escapeHtml(game.launchOptions)}">${icon('copy')} Copy</button>
+        </div>` : ''}
+      <footer class="game-foot">
+        <div class="game-foot-buttons">
+          <button class="button button-primary" type="button" data-game-apply="${escapeHtml(game.id)}" ${locked || !count ? 'disabled' : ''}>${icon('zap')} <span data-game-apply-label="${escapeHtml(game.id)}">Apply ${count} setting${count === 1 ? '' : 's'}</span></button>
+          <button class="button" type="button" data-game-restore="${escapeHtml(game.id)}" ${!hasBackup || game.running ? 'disabled' : ''} title="${hasBackup ? 'Restore all original backed-up settings for this game' : 'Apply settings first to create a restore point for this game'}">${icon('undo')} Restore original${hasBackup ? ` (${game.applied.settingIds.length})` : ''}</button>
+        </div>
+        <details class="game-tips">
+          <summary>Notes &amp; behavior</summary>
+          <ul>${tips}</ul>
+        </details>
+      </footer>
+    </article>`;
+}
+
+export function renderGames() {
+  if (!Array.isArray(state.games)) {
+    return '<div class="page-loading"><div class="loading-orbit"></div><p>Scanning game configurations…</p></div>';
+  }
+  const activeFilter = state.gameFilter || 'all';
+  const visibleGames = activeFilter === 'all'
+    ? state.games
+    : state.games.filter((g) => g.id === activeFilter);
+  const anyApplied = state.games.some((g) => g.applied && g.applied.settingIds?.length);
+  const filterTabs = `
+    <div class="game-filter-bar" role="tablist" aria-label="Filter games">
+      <button type="button" class="tab ${activeFilter === 'all' ? 'active' : ''}" data-game-filter="all">All (${state.games.length})</button>
+      ${state.games.map((g) => `
+        <button type="button" class="tab ${activeFilter === g.id ? 'active' : ''}" data-game-filter="${escapeHtml(g.id)}">
+          ${escapeHtml(g.name)}
+          ${g.applied?.settingIds?.length ? `<span class="badge lime">${g.applied.settingIds.length}</span>` : g.installed ? '<span class="badge green">Ready</span>' : ''}
+        </button>`).join('')}
+      <div style="display:flex;gap:8px;margin-left:auto;flex-wrap:wrap">
+        <button class="button button-small" type="button" data-action="restore-all-games" ${anyApplied ? '' : 'disabled'} title="Restore all games back to their original settings">${icon('undo')} Restore all games</button>
+        <button class="button button-small" type="button" data-action="recheck-games">${icon('refresh')} Refresh</button>
+      </div>
+    </div>`;
+  return `
+    ${filterTabs}
+    <div class="game-grid">${visibleGames.map(gameCard).join('')}</div>
+    ${state.games.some((game) => game.installed) ? '' : emptyState('gamepad', 'No supported game configs detected', 'Launch Fortnite, Counter-Strike 2, or Minecraft once so it creates its config file, then click Refresh.')}
+  `;
+}
+
+function updateApplyButton(gameId) {
+  const game = state.games?.find((item) => item.id === gameId);
+  if (!game) return;
+  const count = selectionFor(game).size;
+  const button = document.querySelector(`[data-game-apply="${gameId}"]`);
+  const label = document.querySelector(`[data-game-apply-label="${gameId}"]`);
+  if (label) label.textContent = `Apply ${count} setting${count === 1 ? '' : 's'}`;
+  if (button) button.disabled = !count || !game.installed || game.running;
+}
+
+async function applySelected(gameId) {
+  const game = state.games?.find((item) => item.id === gameId);
+  if (!game) return;
+  const ids = Array.from(selectionFor(game));
+  if (!ids.length) {
+    toast('info', 'Nothing selected', 'Tick at least one setting to apply.');
+    return;
+  }
+  const button = document.querySelector(`[data-game-apply="${gameId}"]`);
+  if (button) button.disabled = true;
+  try {
+    const data = await api('/api/games/apply', { method: 'POST', body: { gameId, settingIds: ids } });
+    replaceGame(data.game);
+    state.history = null;
+    toast('success', `${game.name} is tuned`, `${data.result.applied.length} setting${data.result.applied.length === 1 ? '' : 's'} applied. Original values are backed up and can be restored anytime.`);
+  } catch (error) {
+    toast('error', `Could not tune ${game.name}`, error.message);
+  } finally {
+    requestRender();
+  }
+}
+
+async function restoreSingleSetting(gameId, settingId) {
+  const game = state.games?.find((item) => item.id === gameId);
+  if (!game) return;
+  const setting = game.settings.find((item) => item.id === settingId);
+  try {
+    const data = await api('/api/games/revert', {
+      method: 'POST',
+      body: { gameId, settingIds: [settingId] },
+    });
+    replaceGame(data.game);
+    state.history = null;
+    toast('success', `${setting ? setting.label : 'Setting'} restored`, `Restored in ${game.name}.`);
+  } catch (error) {
+    toast('error', `Could not restore setting`, error.message);
+  } finally {
+    requestRender();
+  }
+}
+
+async function restoreGame(gameId) {
+  const game = state.games?.find((item) => item.id === gameId);
+  if (!game) return;
+  try {
+    const data = await api('/api/games/revert', { method: 'POST', body: { gameId } });
+    replaceGame(data.game);
+    state.gameSelections = state.gameSelections || {};
+    delete state.gameSelections[gameId];
+    state.history = null;
+    toast('success', `${game.name} restored`, 'Original settings restored.');
+  } catch (error) {
+    toast('error', `Could not restore ${game.name}`, error.message);
+  } finally {
+    requestRender();
+  }
+}
+
+async function restoreAllGames() {
+  const activeGames = (state.games || []).filter((g) => g.applied && g.applied.settingIds?.length);
+  if (!activeGames.length) return;
+  try {
+    for (const game of activeGames) {
+      const data = await api('/api/games/revert', { method: 'POST', body: { gameId: game.id } });
+      replaceGame(data.game);
+      if (state.gameSelections) delete state.gameSelections[game.id];
+    }
+    state.history = null;
+    toast('success', 'All game settings restored', 'Every game is back to its original configuration.');
+  } catch (error) {
+    toast('error', 'Could not restore all games', error.message);
+  } finally {
+    requestRender();
+  }
+}
+
+export async function loadGames() {
+  const data = await api('/api/games');
+  state.games = data.games;
+}
+
+export function bindGames() {
+  document.querySelectorAll('[data-game-filter]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.gameFilter = button.getAttribute('data-game-filter') || 'all';
+      requestRender();
+    });
+  });
+  document.querySelectorAll('[data-game-setting]').forEach((input) => {
+    input.addEventListener('change', () => {
+      const [gameId, settingId] = input.getAttribute('data-game-setting').split(':');
+      const game = state.games?.find((item) => item.id === gameId);
+      if (!game) return;
+      const selected = selectionFor(game);
+      if (input.checked) selected.add(settingId);
+      else selected.delete(settingId);
+      updateApplyButton(gameId);
+    });
+  });
+  document.querySelectorAll('[data-game-pick]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const [gameId, mode] = button.getAttribute('data-game-pick').split(':');
+      const game = state.games?.find((item) => item.id === gameId);
+      if (!game) return;
+      const next = new Set();
+      for (const setting of game.settings) {
+        if (mode === 'all' || (mode === 'recommended' && setting.defaultOn && !setting.optimized)) next.add(setting.id);
+      }
+      state.gameSelections[gameId] = next;
+      requestRender();
+    });
+  });
+  document.querySelectorAll('[data-game-apply]').forEach((button) => {
+    button.addEventListener('click', () => applySelected(button.getAttribute('data-game-apply')));
+  });
+  document.querySelectorAll('[data-game-restore]').forEach((button) => {
+    button.addEventListener('click', () => restoreGame(button.getAttribute('data-game-restore')));
+  });
+  document.querySelectorAll('[data-game-restore-one]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const [gameId, settingId] = button.getAttribute('data-game-restore-one').split(':');
+      restoreSingleSetting(gameId, settingId);
+    });
+  });
+  document.querySelectorAll('[data-action="restore-all-games"]').forEach((button) => {
+    button.addEventListener('click', restoreAllGames);
+  });
+  document.querySelectorAll('[data-game-copy]').forEach((button) => {
+    button.addEventListener('click', () => copyText(button.getAttribute('data-game-copy')));
+  });
+  document.querySelectorAll('[data-action="recheck-games"]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      try {
+        await loadGames();
+        toast('success', 'Games re-checked');
+      } catch (error) {
+        toast('error', 'Could not check games', error.message);
+      }
+      requestRender();
+    });
+  });
+}

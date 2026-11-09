@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="nova-tile" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#141a24" />
+      <stop offset="100%" stop-color="#080b10" />
+    </linearGradient>
+    <linearGradient id="nova-glow" x1="4" y1="4" x2="60" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#b8ff2c" stop-opacity="0.85" />
+      <stop offset="60%" stop-color="#38ef7d" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0.7" />
+    </linearGradient>
+    <linearGradient id="nova-letter" x1="16" y1="14" x2="48" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#e8ff66" />
+      <stop offset="48%" stop-color="#b8ff2c" />
+      <stop offset="100%" stop-color="#38ef7d" />
+    </linearGradient>
+    <linearGradient id="nova-shine" x1="16" y1="16" x2="48" y2="34" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- High-contrast obsidian tile squircle with neon lime stroke -->
+  <rect x="2.5" y="2.5" width="59" height="59" rx="15" fill="url(#nova-tile)" stroke="url(#nova-glow)" stroke-width="1.6" />
+  <rect x="3.8" y="3.8" width="56.4" height="56.4" rx="13.7" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1" />
+
+  <!-- Bold, razor-sharp Nova 'N' -->
+  <path d="M16 48V16h9.5l13 18V16H48v32h-9.5l-13-18V48H16Z" fill="url(#nova-letter)" />
+  <path d="M16 48V16h9.5l13 18V16H48v32h-9.5l-13-18V48H16Z" fill="none" stroke="url(#nova-shine)" stroke-width="0.8" />
+</svg>

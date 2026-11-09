@@ -1,0 +1,54 @@
+name: Verified Hardware Review
+description: Submit an authentic benchmark, hardware report, or user review for Nova Optimize.
+title: "[Review]: "
+labels: ["verified-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for contributing a verified review to Nova Optimize!
+        All reviews are 100% authentic, publicly hosted, and live-rendered on the official website.
+  - type: dropdown
+    id: rating
+    attributes:
+      label: Star Rating
+      description: How would you rate Nova Optimize overall?
+      options:
+        - "5 ★★★★★ (Exceptional - noticeable FPS/latency boost)"
+        - "4 ★★★★☆ (Great - smooth experience, zero issues)"
+        - "3 ★★★☆☆ (Average - subtle improvement)"
+        - "2 ★★☆☆☆ (Below Average - did not notice a difference)"
+        - "1 ★☆☆☆☆ (Poor - encountered issues or negative performance)"
+    validations:
+      required: true
+  - type: input
+    id: games
+    attributes:
+      label: Games Tested
+      description: Which competitive titles did you test?
+      placeholder: CS2, Fortnite, Valorant, Roblox, Apex Legends, Minecraft
+    validations:
+      required: false
+  - type: textarea
+    id: specs
+    attributes:
+      label: System Specs & Readiness Score
+      description: Your CPU, GPU, RAM, and Nova Readiness Score.
+      placeholder: |
+        CPU: AMD Ryzen 7 7800X3D
+        GPU: NVIDIA GeForce RTX 4080 Super
+        RAM: 32 GB DDR5-6000
+        Nova Readiness Score: 96/100
+        Active NIC MSI Mode: Supported
+        Nova Version: v1.4.0
+    validations:
+      required: true
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Review & Hardware Feedback
+      description: Describe your FPS, 1% lows, input lag, jitter changes, and overall thoughts.
+      placeholder: Frame pacing felt noticeably crisper after DSCP 46 packet tagging and PCIe MSI mode. Zero crashes or stutters.
+    validations:
+      required: true
+
