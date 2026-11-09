@@ -2,7 +2,7 @@
   "name": "nexa-optimize-web",
   "version": "1.1.0",
   "description": "Official download and documentation portal for Nexa Optimize — Free, local-first Windows 10/11 gaming performance suite.",
-  "license": "MIT",
+  "license": "Proprietary",
   "main": "server.js",
   "scripts": {
     "build": "echo \"Static assets ready\"",

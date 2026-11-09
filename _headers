@@ -1,0 +1,8 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com; connect-src 'self' https://api.github.com; object-src 'none'; base-uri 'self'; frame-ancestors 'none';
+
+/downloads/*
+  Content-Disposition: attachment

@@ -9,8 +9,8 @@ echo     Nexa Optimize v1.4.0 - Local Setup
 echo     Free, local-first Windows 10/11 gaming performance
 echo   ========================================================
 echo.
-echo   NOTICE: This software is provided "AS IS", without warranty
-echo   of any kind under the MIT License. You use it at your own risk.
+echo   NOTICE: Proprietary Freeware — Free for personal use. All Rights Reserved.
+echo   Provided strictly "AS IS" without warranty of any kind. Use at your own risk.
 echo.
 
 where node >nul 2>nul

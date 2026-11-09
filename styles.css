@@ -811,8 +811,9 @@ a:focus-visible {
   color: var(--muted);
 }
 
-/* MIT Box */
-.mit-box {
+/* EULA & License Box */
+.mit-box,
+.eula-box {
   margin-top: 18px;
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -820,7 +821,8 @@ a:focus-visible {
   padding: 18px;
 }
 
-.mit-head {
+.mit-head,
+.eula-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -828,12 +830,14 @@ a:focus-visible {
   font-size: 0.88rem;
 }
 
-.mit-head span {
+.mit-head span,
+.eula-head span {
   color: var(--muted-2);
   font-size: 0.78rem;
 }
 
-.mit-pre {
+.mit-pre,
+.eula-pre {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -841,6 +845,25 @@ a:focus-visible {
   font-size: 0.76rem;
   color: var(--muted);
   white-space: pre-wrap;
+}
+
+/* Anti-Cloning & Asset Protection */
+.hero-preview,
+.preview-window,
+.comp-table,
+.action-tile-head,
+.badge,
+.step-card {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.checksum-card code,
+.verify-cmd-box code,
+.action-key-row code,
+.copy-btn {
+  user-select: text !important;
+  -webkit-user-select: text !important;
 }
 
 /* Footer */

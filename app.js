@@ -735,36 +735,95 @@
       }
 
       if (reviewsContainer) {
-        reviewsContainer.innerHTML = `
-          <div class="reviews-grid">
-            ${reviews
-              .map(
-                (r) => `
-              <article class="review-card">
-                <div class="review-head">
-                  <img src="${escapeHtml(r.user.avatar_url)}" alt="${escapeHtml(r.user.login)}" width="36" height="36" class="reviewer-avatar">
-                  <div class="reviewer-meta">
-                    <strong><a href="${escapeHtml(r.user.html_url)}" target="_blank" rel="noopener noreferrer">@${escapeHtml(r.user.login)}</a></strong>
-                    <time>${escapeHtml(r.created_at)}</time>
-                  </div>
-                  <span class="verified-badge">GitHub Verified</span>
-                </div>
-                <div>${starsHtml(r.rating)}</div>
-                ${
-                  r.chips.length > 0
-                    ? `<div class="spec-chips">${r.chips.map((c) => `<span class="spec-chip">${escapeHtml(c)}</span>`).join('')}</div>`
-                    : ''
-                }
-                <p class="review-body">${escapeHtml(r.feedback)}</p>
-                <div class="review-foot">
-                  <span>Authentic Submission</span>
-                  <a href="${escapeHtml(r.html_url)}" target="_blank" rel="noopener noreferrer">View on GitHub #${r.number} &rarr;</a>
-                </div>
-              </article>
-            `
-              )
-              .join('')}
-          </div>`;
+        reviewsContainer.textContent = '';
+        const grid = document.createElement('div');
+        grid.className = 'reviews-grid';
+
+        reviews.forEach((r) => {
+          const article = document.createElement('article');
+          article.className = 'review-card';
+
+          const head = document.createElement('div');
+          head.className = 'review-head';
+
+          const img = document.createElement('img');
+          const isSafeAvatar = typeof r.user.avatar_url === 'string' && r.user.avatar_url.startsWith('https://avatars.githubusercontent.com/');
+          img.src = isSafeAvatar ? r.user.avatar_url : 'assets/logo.svg';
+          img.alt = r.user.login;
+          img.width = 36;
+          img.height = 36;
+          img.className = 'reviewer-avatar';
+          head.appendChild(img);
+
+          const meta = document.createElement('div');
+          meta.className = 'reviewer-meta';
+
+          const strong = document.createElement('strong');
+          const userLink = document.createElement('a');
+          const isSafeProfile = typeof r.user.html_url === 'string' && r.user.html_url.startsWith('https://github.com/');
+          userLink.href = isSafeProfile ? r.user.html_url : `https://github.com/${GITHUB_REPO}`;
+          userLink.target = '_blank';
+          userLink.rel = 'noopener noreferrer';
+          userLink.textContent = `@${r.user.login}`;
+          strong.appendChild(userLink);
+          meta.appendChild(strong);
+
+          const time = document.createElement('time');
+          time.textContent = r.created_at;
+          meta.appendChild(time);
+          head.appendChild(meta);
+
+          const badge = document.createElement('span');
+          badge.className = 'verified-badge';
+          badge.textContent = 'GitHub Verified';
+          head.appendChild(badge);
+
+          article.appendChild(head);
+
+          const starsDiv = document.createElement('div');
+          const starsSpan = document.createElement('span');
+          starsSpan.className = 'review-stars-row';
+          starsSpan.textContent = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+          starsDiv.appendChild(starsSpan);
+          article.appendChild(starsDiv);
+
+          if (r.chips.length > 0) {
+            const chipsDiv = document.createElement('div');
+            chipsDiv.className = 'spec-chips';
+            r.chips.forEach((c) => {
+              const chip = document.createElement('span');
+              chip.className = 'spec-chip';
+              chip.textContent = c;
+              chipsDiv.appendChild(chip);
+            });
+            article.appendChild(chipsDiv);
+          }
+
+          const bodyP = document.createElement('p');
+          bodyP.className = 'review-body';
+          bodyP.textContent = r.feedback;
+          article.appendChild(bodyP);
+
+          const foot = document.createElement('div');
+          foot.className = 'review-foot';
+
+          const footSpan = document.createElement('span');
+          footSpan.textContent = 'Authentic Submission';
+          foot.appendChild(footSpan);
+
+          const issueLink = document.createElement('a');
+          const isSafeIssue = typeof r.html_url === 'string' && r.html_url.startsWith('https://github.com/');
+          issueLink.href = isSafeIssue ? r.html_url : `https://github.com/${GITHUB_REPO}/issues`;
+          issueLink.target = '_blank';
+          issueLink.rel = 'noopener noreferrer';
+          issueLink.textContent = `View on GitHub #${r.number} →`;
+          foot.appendChild(issueLink);
+
+          article.appendChild(foot);
+          grid.appendChild(article);
+        });
+
+        reviewsContainer.appendChild(grid);
       }
     } catch {
       renderEmptyReviews();
