@@ -794,6 +794,7 @@ function Get-Snapshot {
       allowAutoGameMode = Read-RegValue @{ hive = 'HKCU'; path = 'Software\Microsoft\GameBar'; name = 'AllowAutoGameMode' }
     }
     gameDvr = [ordered]@{
+      history = Read-RegValue @{ hive = 'HKCU'; path = 'Software\Microsoft\Windows\CurrentVersion\GameDVR'; name = 'HistoricalCaptureEnabled' }
       gameDvrEnabled = Read-RegValue @{ hive = 'HKCU'; path = 'System\GameConfigStore'; name = 'GameDVR_Enabled' }
       appCaptureEnabled = Read-RegValue @{ hive = 'HKCU'; path = 'Software\Microsoft\Windows\CurrentVersion\GameDVR'; name = 'AppCaptureEnabled' }
     }
@@ -1141,6 +1142,83 @@ public static class NexaMem {
   }
 }
 
+function Get-GamingDiagnostics {
+  $result = [ordered]@{ display = $null; memory = $null; powerLine = 'Unknown'; highPerformanceAvailable = $null }
+  try {
+    Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+public static class NexaGamingInfo {
+    [StructLayout(LayoutKind.Explicit, Size = 220)]
+    public struct DisplayMode {
+        [FieldOffset(68)] public ushort Size;
+        [FieldOffset(168)] public uint Depth;
+        [FieldOffset(172)] public uint Width;
+        [FieldOffset(176)] public uint Height;
+        [FieldOffset(180)] public uint Flags;
+        [FieldOffset(184)] public uint Hertz;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PerformanceInfo {
+        public uint Size;
+        public UIntPtr CommitTotal, CommitLimit, CommitPeak, PhysicalTotal, PhysicalAvailable,
+            SystemCache, KernelTotal, KernelPaged, KernelNonpaged, PageSize;
+        public uint HandleCount, ProcessCount, ThreadCount;
+    }
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "EnumDisplaySettingsW", ExactSpelling = true)]
+    private static extern bool DisplaySettings(string device, int mode, ref DisplayMode data);
+    [DllImport("psapi.dll")]
+    private static extern bool GetPerformanceInfo(ref PerformanceInfo info, uint size);
+    public static DisplayMode GetDisplayMode(int mode) {
+        DisplayMode data = new DisplayMode { Size = 220 };
+        return DisplaySettings(null, mode, ref data) ? data : new DisplayMode();
+    }
+    public static PerformanceInfo ReadMemory() {
+        PerformanceInfo info = new PerformanceInfo();
+        info.Size = (uint)Marshal.SizeOf(typeof(PerformanceInfo));
+        return GetPerformanceInfo(ref info, info.Size) ? info : new PerformanceInfo();
+    }
+}
+"@
+    $current = [NexaGamingInfo]::GetDisplayMode(-1)
+    if ($current.Hertz -gt 1) {
+      $highest = $current.Hertz
+      for ($index = 0; $index -lt 4096; $index++) {
+        $mode = [NexaGamingInfo]::GetDisplayMode($index)
+        if ($mode.Width -eq 0) { break }
+        if ($mode.Width -eq $current.Width -and $mode.Height -eq $current.Height -and
+            $mode.Depth -eq $current.Depth -and $mode.Flags -eq $current.Flags -and $mode.Hertz -gt $highest) {
+          $highest = $mode.Hertz
+        }
+      }
+      $result.display = [ordered]@{ width = $current.Width; height = $current.Height; currentHz = $current.Hertz; maxHz = $highest }
+    }
+    $perf = [NexaGamingInfo]::ReadMemory()
+    if ($perf.CommitLimit.ToUInt64() -gt 0) {
+      $result.memory = [ordered]@{
+        committedBytes = $perf.CommitTotal.ToUInt64() * $perf.PageSize.ToUInt64()
+        limitBytes = $perf.CommitLimit.ToUInt64() * $perf.PageSize.ToUInt64()
+        automaticPagefile = $null
+      }
+    }
+  } catch { }
+  if ($result.memory) {
+    try {
+      $cs = Get-CimInstance Win32_ComputerSystem -Property AutomaticManagedPagefile -ErrorAction Stop
+      if ($null -ne $cs.AutomaticManagedPagefile) { $result.memory.automaticPagefile = [bool]$cs.AutomaticManagedPagefile }
+    } catch { }
+  }
+  try {
+    Add-Type -AssemblyName System.Windows.Forms
+    $result.powerLine = [string][Windows.Forms.SystemInformation]::PowerStatus.PowerLineStatus
+  } catch { }
+  try {
+    $schemes = & powercfg /list | Out-String
+    if ($LASTEXITCODE -eq 0) { $result.highPerformanceAvailable = $schemes -match '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c' }
+  } catch { }
+  return $result
+}
+
 function Get-OptionalAppPackages {
   param([string[]]$Names)
   Get-AppxPackage -PackageTypeFilter Main,Bundle | Where-Object {
@@ -1155,6 +1233,54 @@ function Get-SessionApps {
   if ($valid.Count -eq 0) { return }
   $sessionId = (Get-Process -Id $PID).SessionId
   Get-Process -Name $valid -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq $sessionId }
+}
+
+function Get-CloudSyncProcesses {
+  $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+  foreach ($proc in @(Get-SessionApps -Names @('OneDrive', 'Dropbox', 'GoogleDriveFS'))) {
+    try {
+      $processInfo = Get-CimInstance Win32_Process -Filter "ProcessId=$($proc.Id)" -ErrorAction Stop
+      $owner = Invoke-CimMethod -InputObject $processInfo -MethodName GetOwnerSid -ErrorAction Stop
+      if ($owner.ReturnValue -eq 0 -and $owner.Sid -eq $sid) { $proc }
+    } catch { }
+  }
+}
+
+function Get-CloudSyncPriority {
+  foreach ($proc in @(Get-CloudSyncProcesses)) {
+    try {
+      [ordered]@{ id = $proc.Id; name = $proc.ProcessName; started = $proc.StartTime.ToFileTimeUtc().ToString(); priority = [string]$proc.PriorityClass }
+    } catch { }
+  }
+}
+
+function Set-CloudSyncPriority {
+  param($Targets, [bool]$Restore)
+  $processes = @{}
+  foreach ($proc in @(Get-CloudSyncProcesses)) { $processes[[int]$proc.Id] = $proc }
+  foreach ($target in @($Targets)) {
+    $proc = $processes[[int]$target.id]
+    if (-not $proc -or $proc.ProcessName -ne $target.name) {
+      [ordered]@{ id = $target.id; started = $target.started; status = 'gone' }
+      continue
+    }
+    try {
+      $null = $proc.Handle
+      if ($proc.StartTime.ToFileTimeUtc().ToString() -ne $target.started) {
+        [ordered]@{ id = $target.id; started = $target.started; status = 'gone' }
+        continue
+      }
+      $expected = if ($Restore) { 'BelowNormal' } else { 'Normal' }
+      if ([string]$proc.PriorityClass -ne $expected) {
+        [ordered]@{ id = $target.id; started = $target.started; status = 'unchanged' }
+        continue
+      }
+      $proc.PriorityClass = if ($Restore) { 'Normal' } else { 'BelowNormal' }
+      [ordered]@{ id = $target.id; started = $target.started; status = 'changed' }
+    } catch {
+      [ordered]@{ id = $target.id; started = $target.started; status = 'failed' }
+    }
+  }
 }
 
 function Get-RunningApps {
@@ -1532,6 +1658,9 @@ try {
     'ping' { Send-Result (Invoke-Ping -HostName ([string]$p.host) -Count ([int]$p.count)) }
     'processes' { Send-Result (Get-ProcessSnapshot) }
     'memory.trim' { Send-Result (Invoke-MemoryTrim) }
+    'gaming.diagnostics' { Send-Result (Get-GamingDiagnostics) }
+    'apps.syncPriority.list' { Send-Result @(Get-CloudSyncPriority) }
+    'apps.syncPriority.set' { Send-Result @(Set-CloudSyncPriority -Targets @($p.targets) -Restore ($p.restore -eq $true)) }
     'optionalApps.list' {
       $names = @(Get-OptionalAppPackages -Names @($p.names) | Select-Object -ExpandProperty Name -Unique)
       Send-Result $names

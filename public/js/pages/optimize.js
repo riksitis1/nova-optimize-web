@@ -2,6 +2,7 @@ import {
   state,
   icon,
   escapeHtml,
+  formatBytes,
   toast,
   openModal,
   applyActions,
@@ -113,6 +114,126 @@ function appliedSection(scan) {
     </div>`;
 }
 
+const WINDOWS_SETTINGS = [
+  ['display-advancedgraphics', 'Graphics', 'Set the high-performance GPU per game. Compare Hardware-accelerated GPU scheduling on and off if Windows offers it.'],
+  ['display-advanced', 'Refresh rate', 'Select the gaming monitor and confirm its refresh rate at your chosen resolution. A higher refresh rate changes display smoothness.'],
+  ['powersleep', 'Power mode', 'On AC, compare Windows Best performance with your normal plan. Heat and power limits can change the result.'],
+  ['gaming-gamedvr', 'Game captures', 'Review the recording buffer and capture settings. Turn off background recording if you do not use it.'],
+  ['startupapps', 'Startup apps', 'Remove unnecessary launchers or sync tools from startup when they compete with your game.'],
+  ['storagesense', 'Storage', 'Check free space. Use Windows Optimize Drives for scheduled SSD TRIM or HDD maintenance.'],
+  ['windowsupdate-optionalupdates', 'Optional updates', 'Check driver updates if a game has rendering or stability issues. Prefer your PC or GPU vendor’s supported driver.'],
+];
+
+function windowsGamingCard() {
+  const setup = state.windowsGamingSetup;
+  const diagnostics = setup?.diagnostics;
+  const display = diagnostics?.display;
+  const memory = diagnostics?.memory;
+  const commit = memory && memory.limitBytes > 0 ? Math.round(memory.committedBytes / memory.limitBytes * 100) : null;
+  return `
+    <div class="card card-pad" style="margin-top:14px">
+      <div class="card-header">
+        <div><h2>Windows gaming setup</h2><p>Check display, power, memory, and background work before changing system settings.</p></div>
+        <div class="card-actions">
+          <button class="button button-small" data-action="scan-windows-gaming" type="button">${icon('scan')} ${setup ? 'Rescan Windows' : 'Scan Windows'}</button>
+          ${setup?.candidates.length ? '<button class="button button-small button-primary" data-action="review-windows-gaming" type="button">Review Windows changes</button>' : ''}
+        </div>
+      </div>
+      ${diagnostics ? `
+        <div class="metrics-list">
+          ${metricRow('Primary display', display ? `${display.width} × ${display.height} at ${display.currentHz} Hz · ${display.maxHz} Hz highest listed at this resolution` : 'Unavailable')}
+          ${metricRow('Power', [setup.snapshot.power?.name, { Online: 'AC connected', Offline: 'On battery' }[diagnostics.powerLine] || 'AC status unavailable'].filter(Boolean).join(' · '))}
+          ${metricRow('Memory commit', commit === null ? 'Unavailable' : `${formatBytes(memory.committedBytes)} / ${formatBytes(memory.limitBytes)} · ${commit}%`)}
+          ${metricRow('Page file', memory?.automaticPagefile === true ? 'System managed' : memory?.automaticPagefile === false ? 'Manual configuration' : 'Unavailable')}
+        </div>
+        ${display?.maxHz > display?.currentHz ? '<p class="small">Windows lists a faster primary-display mode at this resolution. Verify it in Advanced display.</p>' : ''}
+        ${commit >= 90 ? '<p class="small">Memory commit is near its limit. Close memory-heavy apps before playing.</p>' : ''}
+        ${memory?.automaticPagefile === false ? '<p class="small">If games run out of memory, check Advanced system settings → Performance → Advanced → Virtual memory. System management lets Windows grow the page file as needed.</p>' : ''}
+        ${diagnostics.syncApps.length ? `
+          <h3>Cloud sync during play</h3>
+          <p class="small muted">Lower CPU priority for running sync processes. This can slow sync. Restore it here or restart the sync app.</p>
+          ${diagnostics.syncApps.map((app) => `
+            <div class="finding">
+              <div class="finding-body"><strong>${escapeHtml(app.label)}</strong><p class="small muted">${app.lowered} running at lowered priority</p></div>
+              <div class="finding-side">
+                ${app.eligible ? `<button class="button button-small" type="button" data-sync-lower="${escapeHtml(app.name)}">Lower priority</button>` : ''}
+                ${app.lowered ? `<button class="button button-small" type="button" data-sync-restore="${escapeHtml(app.name)}">Restore priority</button>` : ''}
+              </div>
+            </div>`).join('')}
+        ` : '<p class="small muted">No eligible cloud-sync apps are running.</p>'}
+      ` : ''}
+      <details class="game-tips" style="margin-top:12px">
+        <summary>Windows settings for gaming</summary>
+        <ul class="modal-list">
+          ${WINDOWS_SETTINGS.map(([uri, name, description]) => `<li><a href="ms-settings:${uri}">${escapeHtml(name)}</a> · ${escapeHtml(description)}</li>`).join('')}
+        </ul>
+      </details>
+    </div>`;
+}
+
+async function scanWindowsGaming(button) {
+  if (button) button.disabled = true;
+  try {
+    const setup = await api('/api/gaming/setup');
+    state.windowsGamingSetup = setup;
+    state.snapshot = setup.snapshot;
+    state.scan = setup.scan;
+    requestRender();
+  } catch (error) {
+    toast('error', 'Could not scan Windows gaming settings', error.message);
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+function reviewWindowsGaming() {
+  const setup = state.windowsGamingSetup;
+  if (!setup?.candidates.length) return;
+  openModal({
+    title: 'Review Windows gaming changes',
+    body: `<p>Pick the settings you want to test. Compare one change at a time when troubleshooting stutter.</p>
+      <div class="boost-list">
+        ${setup.candidates.map((action) => {
+          const locked = action.requiresAdmin && !setup.snapshot.admin;
+          return `<label class="boost-app">
+            <input type="checkbox" value="${escapeHtml(action.id)}" ${locked ? 'disabled' : action.id === 'game-mode' ? 'checked' : ''}>
+            <span><strong>${escapeHtml(action.name)}</strong>${locked ? ' · Administrator required' : ''}
+              <br><small>${escapeHtml(action.note || action.description)}</small></span>
+          </label>`;
+        }).join('')}
+      </div>`,
+    confirmLabel: 'Apply selected settings',
+    onConfirm: async () => {
+      const ids = [...document.querySelectorAll('#modal-root input:checked')].map((input) => input.value);
+      if (!ids.length) throw new Error('Select at least one available setting.');
+      const response = await applyActions(ids);
+      const results = response.results || [];
+      const failures = results.filter((result) => !result.ok);
+      if (failures.length) toast('warn', 'Some changes failed', failures.map((result) => result.error).join(' · '));
+      else toast('success', 'Windows gaming settings applied', 'Review or undo your settings below.');
+      state.windowsGamingSetup = null;
+      requestRender();
+    },
+  });
+}
+
+function changeSyncPriority(name, restore) {
+  const app = state.windowsGamingSetup?.diagnostics?.syncApps.find((item) => item.name === name);
+  if (!app) return;
+  openModal({
+    title: `${restore ? 'Restore' : 'Lower'} ${app.label} CPU priority?`,
+    body: restore ? '<p>Return the selected running sync processes to Normal priority.</p>'
+      : '<p>Windows will give these running sync processes lower CPU priority during contention. File sync can take longer.</p>',
+    confirmLabel: restore ? 'Restore priority' : 'Lower priority',
+    onConfirm: async () => {
+      const { result } = await api('/api/gaming/sync-priority', { method: 'POST', body: { names: [name], restore } });
+      const detail = `${result.changed} changed · ${result.failed} failed`;
+      toast(result.failed ? 'warn' : 'success', 'Cloud-sync CPU priority', detail);
+      await scanWindowsGaming();
+    },
+  });
+}
+
 export function renderOptimize(mode = 'safe') {
   if (!state.scan) {
     return '<div class="page-loading"><div class="loading-orbit"></div><p>Scanning settings…</p></div>';
@@ -138,6 +259,7 @@ export function renderOptimize(mode = 'safe') {
 
   return `
     ${summaryCard(scan, mode, actionPool)}
+    ${windowsGamingCard()}
     ${sectionHead('Safe optimizations', 'Windows Game Mode reduces background interruptions during play.', `<span class="badge muted">${safeReady.length} ready</span>`)}
     ${safePool.length ? `<div class="action-grid">${safePool.map((action) => actionCard(action)).join('')}</div>` : emptyState('check', 'Nothing to apply here', 'Every safe setting is already in the recommended state.')}
     ${cautionPool.length ? `
@@ -246,6 +368,15 @@ function createRestorePoint(button) {
 }
 
 export function bindOptimize() {
+  document.querySelector('[data-action="scan-windows-gaming"]')?.addEventListener('click', (event) => scanWindowsGaming(event.currentTarget));
+  document.querySelector('[data-action="review-windows-gaming"]')?.addEventListener('click', reviewWindowsGaming);
+  document.querySelectorAll('[data-sync-lower]').forEach((button) =>
+    button.addEventListener('click', () => changeSyncPriority(button.dataset.syncLower, false)),
+  );
+  document.querySelectorAll('[data-sync-restore]').forEach((button) =>
+    button.addEventListener('click', () => changeSyncPriority(button.dataset.syncRestore, true)),
+  );
+
   document.querySelectorAll('[data-apply-action]').forEach((button) => {
     button.addEventListener('click', () => confirmApplyOne(button.getAttribute('data-apply-action')));
   });

@@ -412,27 +412,53 @@ test('removed tweaks remain resolvable as hidden undo-only legacy actions', () =
   }
 });
 
-test('the active action set is 25 actions with only Game Mode eligible for bulk apply', () => {
-  assert.equal(actions.length, 25);
+test('the active action set is 26 actions with only Game Mode eligible for bulk apply', () => {
+  assert.equal(actions.length, 26);
   const counts = actions.reduce((acc, action) => {
     acc[action.risk] = (acc[action.risk] || 0) + 1;
     return acc;
   }, {});
-  assert.deepEqual(counts, { safe: 1, caution: 14, advanced: 10 });
+  assert.deepEqual(counts, { safe: 1, caution: 15, advanced: 10 });
   assert.deepEqual(actions.filter((action) => action.risk === 'safe').map((action) => action.id), ['game-mode']);
   const laptop = makeSnapshot({ computer: { isLaptop: true } });
   assert.equal(getPublicActions(laptop).find((action) => action.id === 'power-plan').applicable, false);
 });
 
+test('background capture is reversible without writing the manual capture settings', async () => {
+  const action = getAction('capture-history');
+  assert.equal(action.appliesTo(makeSnapshot()), false);
+  const snapshot = makeSnapshot();
+  snapshot.state.gameDvr.history = { exists: true, value: 1, kind: 'DWord' };
+  assert.equal(action.appliesTo(snapshot), true);
+  const { ps, calls } = fakePs((op, args) => {
+    if (op === 'registry.read') return args.entries.map((entry) => ({ ...entry, ...snapshot.state.gameDvr.history }));
+    return [{ ok: true }];
+  });
+  const backup = await action.apply({ ps });
+  await action.revert({ ps }, backup);
+  assert.deepEqual(calls.slice(1).map(({ args }) => args.operations.map(({ name, value }) => [name, value])), [
+    [['HistoricalCaptureEnabled', 0]],
+    [['HistoricalCaptureEnabled', 1]],
+  ]);
+});
+
+test('the desktop High performance plan is excluded on dual-CCD Ryzen X3D models', () => {
+  const action = getAction('power-plan');
+  for (const model of ['7900X3D', '7950X3D', '9900X3D', '9950X3D']) {
+    assert.equal(action.appliesTo(makeSnapshot({ cpu: { name: 'AMD Ryzen ' + model } })), false);
+  }
+  assert.equal(action.appliesTo(makeSnapshot({ cpu: { name: 'AMD Ryzen 7 7800X3D' } })), true);
+});
+
 test('applied legacy actions appear in the public list only when they have a backup', () => {
   const without = getPublicActions(makeSnapshot(), {});
-  assert.equal(without.length, 25);
+  assert.equal(without.length, 26);
   assert.equal(without.some((action) => action.legacy), false);
 
   const withLegacy = getPublicActions(makeSnapshot(), {
     'game-process-priority': new Date().toISOString(),
   });
-  assert.equal(withLegacy.length, 26);
+  assert.equal(withLegacy.length, 27);
   const legacy = withLegacy.find((action) => action.id === 'game-process-priority');
   assert.ok(legacy);
   assert.equal(legacy.legacy, true);

@@ -62,6 +62,7 @@ const {
 } = require('./lib/validate');
 const { checkForUpdate, downloadAndStageUpdate } = require('./lib/updater');
 const { listGames, describeGame, applyGameSettings, revertGameSettings } = require('./lib/games');
+const { cleanSyncApps, getGamingDiagnostics, setSyncPriority } = require('./lib/gaming');
 const { cleanBoostApps, listBoostApps, runBoost } = require('./lib/boost');
 
 const execFileAsync = promisify(execFile);
@@ -647,6 +648,36 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (method === 'GET' && pathname === '/api/gaming/setup') {
+    const [snapshot, diagnostics] = await Promise.all([getSnapshot(true), getGamingDiagnostics()]);
+    const applied = getApplied();
+    const ids = ['game-mode', 'capture-history', 'windowed-optimizations', 'power-plan', 'delivery-optimization'];
+    const candidates = getPublicActions(snapshot, applied).filter((action) =>
+      ids.includes(action.id) && action.applicable && !action.optimized && !action.appliedByNexa &&
+      (action.id !== 'power-plan' || (diagnostics.powerLine === 'Online' && diagnostics.highPerformanceAvailable === true)),
+    );
+    sendJson(res, 200, { ok: true, diagnostics, candidates, snapshot, scan: analyze(snapshot, applied) });
+    return;
+  }
+
+  if (method === 'POST' && pathname === '/api/gaming/sync-priority') {
+    const { names, restore } = await readBody(req);
+    if (typeof restore !== 'boolean') throw new HttpError(400, 'Choose lower or restore.');
+    try {
+      cleanSyncApps(names);
+    } catch (error) {
+      throw new HttpError(400, error.message);
+    }
+    const result = await setSyncPriority(names, restore);
+    if (result.changed) addActivity({
+      type: 'system',
+      title: restore ? 'Restored cloud-sync CPU priority' : 'Lowered cloud-sync CPU priority',
+      detail: 'Processes changed: ' + result.changed,
+    });
+    sendJson(res, 200, { ok: true, result });
+    return;
+  }
+
   if (method === 'GET' && pathname === '/api/boost/apps') {
     sendJson(res, 200, { ok: true, apps: await listBoostApps() });
     return;
@@ -813,7 +844,7 @@ function serveStatic(req, res, url) {
 }
 
 const exclusiveRoutes = new Set([
-  '/api/actions/apply', '/api/actions/revert', '/api/actions/revert-all',
+  '/api/actions/apply', '/api/actions/revert', '/api/actions/revert-all', '/api/gaming/sync-priority',
   '/api/optional-apps/remove', '/api/update/install', '/api/games/apply', '/api/games/revert',
 ]);
 let changingSystem = false;

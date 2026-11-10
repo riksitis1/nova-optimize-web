@@ -213,6 +213,17 @@ const actions = [
         : 'Recording allowed',
   }),
   regAction({
+    id: 'capture-history',
+    name: 'Stop recording in the background',
+    description: 'Turns off Windows’ “Record what happened” buffer for your account.',
+    note: 'Manual recording remains available if capture is enabled. Saved clips stay on disk.',
+    risk: 'caution',
+    appliesTo: (snapshot) => snapshot.state?.gameDvr?.history?.exists === true,
+    writes: [{ hive: HKCU, path: GAME_DVR_APP_PATH, name: 'HistoricalCaptureEnabled', kind: 'DWord', value: 0 }],
+    isOptimized: (snapshot) => isNumber(snapshot.state?.gameDvr?.history, 0),
+    currentValue: (snapshot) => isNumber(snapshot.state?.gameDvr?.history, 1) ? 'On' : 'Off',
+  }),
+  regAction({
     id: 'hags',
     name: 'Enable hardware-accelerated GPU scheduling',
     category: 'Gaming',
@@ -383,7 +394,8 @@ const actions = [
     requiresAdmin: true,
     requiresReboot: false,
     kind: 'power',
-    appliesTo: (snapshot) => snapshot.computer?.isLaptop === false && Boolean(snapshot.power?.guid),
+    appliesTo: (snapshot) => snapshot.computer?.isLaptop === false && Boolean(snapshot.power?.guid) &&
+      !/\b(?:7900|7950|9900|9950)X3D\w*/i.test(snapshot.cpu?.name || ''),
     isOptimized: (snapshot) => {
       const name = String(snapshot.power?.name || '').toLowerCase();
       const guid = String(snapshot.power?.guid || '').toLowerCase();

@@ -59,6 +59,7 @@ const RUNTIME_FILES = [
   'server/lib/analyze.js',
   'server/lib/boost.js',
   'server/lib/games.js',
+  'server/lib/gaming.js',
   'server/lib/network.js',
   'server/lib/ps.js',
   'server/lib/store.js',
@@ -186,10 +187,10 @@ if (fs.existsSync(versionJsonPath)) {
   vJson.downloadUrl = `https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v${VERSION}.zip`;
   vJson.sha256 = zipHash;
   vJson.notes = [
-    'Preview and apply Max FPS profiles for Fortnite, Counter-Strike 2, and Minecraft Java.',
-    'Fortnite lowers render scale and quality. CS2 reduces graphics detail and anti-aliasing. Minecraft reduces render and simulation load.',
-    'Profiles preserve original settings for restore and skip options absent from your game configuration.',
-    'Games links to Windows graphics preferences for dual-GPU PCs.',
+    'Windows gaming setup checks primary-display refresh rate, AC power, memory commit, and page-file configuration.',
+    'Review applicable Game Mode, windowed graphics, background captures, desktop power, and update-sharing changes before applying.',
+    'Lower or restore CPU priority for running OneDrive, Dropbox, and Google Drive sync processes.',
+    'High performance power-plan changes are excluded on laptops and dual-CCD Ryzen X3D systems.',
   ];
   fs.writeFileSync(versionJsonPath, JSON.stringify(vJson, null, 4), 'utf8');
   console.log(`==> Step 7: Updated website/version.json with new zip SHA-256 and v${VERSION}`);

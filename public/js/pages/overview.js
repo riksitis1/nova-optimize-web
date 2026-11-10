@@ -57,7 +57,7 @@ function heroHtml(scan) {
           ${unappliedCount > 0
             ? `<button class="button button-large" type="button" data-action="apply-safe">${icon('zap')} Enable Windows Game Mode</button>`
             : `<button class="button button-large" type="button" data-action="scan" style="border-color:var(--lime);color:var(--lime)">${icon('check')} Run readiness scan</button>`}
-          <button class="button button-large" type="button" data-nav="optimize">${icon('sliders')} Review tweaks</button>
+          <button class="button button-large" type="button" data-nav="optimize">${icon('sliders')} Windows gaming setup</button>
           <button class="button button-large" type="button" data-action="trim-ram">${icon('zap')} Pre-game boost</button>
         </div>
         <div class="hero-note">${icon('shield')} Automatic registry &amp; config backups · ${state.settings.runInBackground !== false ? 'Runs in the background (toggle in sidebar)' : 'Background mode off (exits when closed)'}</div>
