@@ -17,6 +17,7 @@ import {
   api,
 } from '../core.js';
 import { openBoostModal } from '../boost.js';
+import { optimizePc } from './optimize.js';
 import {
   scoreRing,
   statCard,
@@ -45,7 +46,10 @@ function startPanel() {
         <h2 id="start-title">Get your PC ready to play</h2>
         <p>Choose what to tune, then compare the same scene before and after.</p>
       </div>
-      <button class="button" type="button" data-action="pre-game">${icon('zap')} Close background apps</button>
+      <div class="start-actions">
+        <button class="button button-primary" type="button" data-action="optimize-pc">${icon('spark')} Optimize PC</button>
+        <button class="button" type="button" data-action="pre-game">${icon('zap')} Close background apps</button>
+      </div>
     </div>
     <div class="start-tools">
       ${START_TOOLS.map(([route, glyph, label, description]) => `
@@ -402,6 +406,7 @@ function applyQuickWin(id) {
 }
 
 export function bindOverview() {
+  document.querySelector('[data-action="optimize-pc"]')?.addEventListener('click', (event) => optimizePc(event.currentTarget));
   document.querySelector('[data-action="scan"]')?.addEventListener('click', () => document.getElementById('scan-btn')?.click());
   document.querySelector('[data-action="pre-game"]')?.addEventListener('click', (event) => openBoostModal(event.currentTarget));
   document.querySelectorAll('[data-action="refresh-processes"]').forEach((button) => {

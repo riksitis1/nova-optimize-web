@@ -1,12 +1,11 @@
 {
-    "version": "1.9.0",
+    "version": "1.10.0",
     "releasedAt": "2026-11-10",
-    "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v1.9.0.zip",
-    "sha256": "106165d50f51a0876512528c71159682a0acea4d2179a9a602a30a9da3371572",
+    "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v1.10.0.zip",
+    "sha256": "dd81a2c6771c66c65f35cb6e61eb1d99c172bba1b2671c0aaa8c2a46bc668424",
     "notes": [
-        "Compare average FPS, 1% lows, and P99 frame time using two local PresentMon CSV captures.",
-        "Simplified navigation puts Games, Windows, and Benchmark up front.",
-        "Nexa opens without a full hardware scan and samples live usage only when PC details is open and the app has focus.",
-        "Redesigned the download page with clearer setup instructions and checksum verification."
+        "New Optimize PC button on Overview. Scan Windows, preview available changes, and apply your selection.",
+        "Windows Game Mode and supported windowed graphics are suggested; recording, power, and update sharing are opt-in.",
+        "Nexa checks hardware and permissions again before applying. Each applied setting can be undone."
     ]
 }

@@ -63,7 +63,15 @@ const {
 } = require('./lib/validate');
 const { checkForUpdate, downloadAndStageUpdate } = require('./lib/updater');
 const { listGames, describeGame, applyGameSettings, revertGameSettings } = require('./lib/games');
-const { cleanSyncApps, getGamingDiagnostics, setSyncPriority } = require('./lib/gaming');
+const {
+  cleanSyncApps,
+  getGamingDiagnostics,
+  getWindowsGamingDiagnostics,
+  getGamingCandidates,
+  gamingPowerAvailable,
+  isGamingAction,
+  setSyncPriority,
+} = require('./lib/gaming');
 const { cleanBoostApps, listBoostApps, runBoost } = require('./lib/boost');
 
 const execFileAsync = promisify(execFile);
@@ -288,11 +296,23 @@ async function handleApi(req, res, url) {
 
   if (method === 'POST' && pathname === '/api/actions/apply') {
     const body = await readBody(req);
-    const ids = cleanIdList(body.ids);
-    const snapshot = await getSnapshot();
-    if (!snapshot.admin) {
+    let ids;
+    try {
+      ids = [...new Set(cleanIdList(body.ids))];
+    } catch (error) {
+      throw new HttpError(400, error.message);
+    }
+    const gaming = body.profile === 'gaming';
+    if (body.profile !== undefined && (!gaming || !ids.length || ids.some((id) => !isGamingAction(id)))) {
+      throw new HttpError(400, 'Choose settings from the Optimize PC preview.');
+    }
+    const [snapshot, diagnostics] = await Promise.all([
+      getSnapshot(gaming),
+      gaming && ids.includes('power-plan') ? getWindowsGamingDiagnostics().catch(() => null) : null,
+    ]);
+    if (!gaming && !snapshot.admin) {
       const blocked = ids.map(getAction).filter((action) => action && action.requiresAdmin);
-      if (blocked.length) throw new HttpError(403, 'Restart Nova as administrator to apply the selected changes.');
+      if (blocked.length) throw new HttpError(403, 'Restart Nexa as administrator to apply the selected changes.');
     }
     const settings = getSettings();
     const pending = ids.filter((id) => !getApplied()[id]);
@@ -321,8 +341,16 @@ async function handleApi(req, res, url) {
         continue;
       }
       const originalBackup = getBackup(id);
-      if (info.optimized) {
+      if (info.optimized || (gaming && originalBackup)) {
         results.push({ id, ok: true, skipped: true, message: 'Already configured.' });
+        continue;
+      }
+      if (!snapshot.admin && action.requiresAdmin) {
+        results.push({ id, ok: false, error: 'Administrator access is required.' });
+        continue;
+      }
+      if (gaming && id === 'power-plan' && !gamingPowerAvailable(diagnostics)) {
+        results.push({ id, ok: false, error: 'Connect AC power and check that Windows lists the High performance plan.' });
         continue;
       }
       try {
@@ -343,9 +371,18 @@ async function handleApi(req, res, url) {
         results.push({ id, ok: false, error: error.message });
       }
     }
-    const fresh = body.skipSnapshot ? snapshot : await getSnapshot(true);
+    let fresh = snapshot;
+    let refreshWarning;
+    if (!body.skipSnapshot) {
+      try {
+        fresh = await getSnapshot(true);
+      } catch (error) {
+        if (!gaming) throw error;
+        refreshWarning = 'Windows could not be rescanned. Use Scan PC to refresh the displayed settings.';
+      }
+    }
     const applied = getApplied();
-    sendJson(res, 200, { ok: results.every((result) => result.ok), results, snapshot: fresh, scan: analyze(fresh, applied), applied });
+    sendJson(res, 200, { ok: results.every((result) => result.ok), results, snapshot: fresh, scan: analyze(fresh, applied), applied, refreshWarning });
     return;
   }
 
@@ -652,12 +689,8 @@ async function handleApi(req, res, url) {
   if (method === 'GET' && pathname === '/api/gaming/setup') {
     const [snapshot, diagnostics] = await Promise.all([getSnapshot(true), getGamingDiagnostics()]);
     const applied = getApplied();
-    const ids = ['game-mode', 'capture-history', 'windowed-optimizations', 'power-plan', 'delivery-optimization'];
-    const candidates = getPublicActions(snapshot, applied).filter((action) =>
-      ids.includes(action.id) && action.applicable && !action.optimized && !action.appliedByNexa &&
-      (action.id !== 'power-plan' || (diagnostics.powerLine === 'Online' && diagnostics.highPerformanceAvailable === true)),
-    );
-    sendJson(res, 200, { ok: true, diagnostics, candidates, snapshot, scan: analyze(snapshot, applied) });
+    const candidates = getGamingCandidates(snapshot, applied, diagnostics);
+    sendJson(res, 200, { ok: true, diagnostics, candidates, snapshot, scan: analyze(snapshot, applied), applied });
     return;
   }
 

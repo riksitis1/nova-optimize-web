@@ -189,10 +189,9 @@ if (fs.existsSync(versionJsonPath)) {
   vJson.downloadUrl = `https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v${VERSION}.zip`;
   vJson.sha256 = zipHash;
   vJson.notes = [
-    'Compare average FPS, 1% lows, and P99 frame time using two local PresentMon CSV captures.',
-    'Simplified navigation puts Games, Windows, and Benchmark up front.',
-    'Nexa opens without a full hardware scan and samples live usage only when PC details is open and the app has focus.',
-    'Redesigned the download page with clearer setup instructions and checksum verification.',
+    'New Optimize PC button on Overview. Scan Windows, preview available changes, and apply your selection.',
+    'Windows Game Mode and supported windowed graphics are suggested; recording, power, and update sharing are opt-in.',
+    'Nexa checks hardware and permissions again before applying. Each applied setting can be undone.',
   ];
   fs.writeFileSync(versionJsonPath, JSON.stringify(vJson, null, 4), 'utf8');
   console.log(`==> Step 7: Updated website/version.json with new zip SHA-256 and v${VERSION}`);

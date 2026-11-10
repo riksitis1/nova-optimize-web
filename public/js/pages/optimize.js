@@ -10,6 +10,7 @@ import {
   elevate,
   api,
   requestRender,
+  hydrateIcons,
 } from '../core.js';
 import {
   severityBadge,
@@ -96,7 +97,7 @@ function windowsGamingCard() {
         <div><h2>Windows gaming setup</h2><p>Check display, power, memory, and background work before changing system settings.</p></div>
         <div class="card-actions">
           <button class="button button-small" data-action="scan-windows-gaming" type="button">${icon('scan')} ${setup ? 'Rescan Windows' : 'Scan Windows'}</button>
-          ${setup?.candidates.length ? '<button class="button button-small button-primary" data-action="review-windows-gaming" type="button">Review Windows changes</button>' : ''}
+          <button class="button button-small button-primary" data-action="optimize-pc" type="button">${icon('spark')} Optimize PC</button>
         </div>
       </div>
       ${diagnostics ? `
@@ -131,13 +132,19 @@ function windowsGamingCard() {
     </div>`;
 }
 
+async function loadWindowsGamingSetup() {
+  const setup = await api('/api/gaming/setup');
+  state.windowsGamingSetup = setup;
+  state.snapshot = setup.snapshot;
+  state.scan = setup.scan;
+  state.applied = setup.applied;
+  return setup;
+}
+
 async function scanWindowsGaming(button) {
   if (button) button.disabled = true;
   try {
-    const setup = await api('/api/gaming/setup');
-    state.windowsGamingSetup = setup;
-    state.snapshot = setup.snapshot;
-    state.scan = setup.scan;
+    await loadWindowsGamingSetup();
     requestRender();
   } catch (error) {
     toast('error', 'Could not scan Windows gaming settings', error.message);
@@ -146,34 +153,93 @@ async function scanWindowsGaming(button) {
   }
 }
 
-function reviewWindowsGaming() {
-  const setup = state.windowsGamingSetup;
-  if (!setup?.candidates.length) return;
+let optimizeScanInProgress = false;
+
+export async function optimizePc(button) {
+  if (optimizeScanInProgress) return;
+  optimizeScanInProgress = true;
+  const route = window.location.hash;
+  const originalLabel = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = `${icon('scan')} Checking Windows…`;
+  try {
+    const setup = await loadWindowsGamingSetup();
+    requestRender();
+    if (route !== window.location.hash || document.getElementById('modal-root')?.firstElementChild) return;
+    document.querySelector('[data-action="optimize-pc"]')?.focus();
+    reviewWindowsGaming(setup);
+  } catch (error) {
+    toast('error', 'Could not check Windows settings', error.message);
+  } finally {
+    optimizeScanInProgress = false;
+    button.disabled = false;
+    button.innerHTML = originalLabel;
+    hydrateIcons(button);
+  }
+}
+
+function reviewWindowsGaming(setup) {
+  if (!setup.candidates.length) {
+    openModal({
+      title: 'No changes available',
+      body: '<p>Nexa found no applicable Windows gaming changes on this PC. You can still tune a game from the Games page.</p>',
+      confirmLabel: 'Done',
+      hideCancel: true,
+    });
+    return;
+  }
+  const isLocked = (action) => action.requiresAdmin && !setup.snapshot.admin;
+  const canApply = setup.candidates.some((action) => !isLocked(action));
   openModal({
-    title: 'Review Windows gaming changes',
-    body: `<p>Pick the settings you want to test. Compare one change at a time when troubleshooting stutter.</p>
-      <div class="boost-list">
+    title: 'Optimize PC',
+    body: `<p>Review the Windows gaming settings available on this PC. Nexa saves the original settings so you can undo your changes from Windows.</p>
+      <fieldset class="boost-list optimize-picks">
+        <legend>Choose settings to apply</legend>
         ${setup.candidates.map((action) => {
-          const locked = action.requiresAdmin && !setup.snapshot.admin;
-          return `<label class="boost-app">
-            <input type="checkbox" value="${escapeHtml(action.id)}" ${locked ? 'disabled' : action.id === 'game-mode' ? 'checked' : ''}>
-            <span><strong>${escapeHtml(action.name)}</strong>${locked ? ' · Administrator required' : ''}
-              <br><small>${escapeHtml(action.note || action.description)}</small></span>
+          const locked = isLocked(action);
+          return `<label class="boost-app optimize-pick">
+            <input type="checkbox" value="${escapeHtml(action.id)}" ${locked ? 'disabled' : action.recommended ? 'checked' : ''}>
+            <span class="boost-app-name"><strong>${escapeHtml(action.name)}</strong>
+              <small>${escapeHtml(action.description)}</small>
+              ${action.note ? `<small>${escapeHtml(action.note)}</small>` : ''}
+              <small>${locked ? 'Administrator required' : action.recommended ? 'Recommended' : 'Optional'}</small>
+            </span>
           </label>`;
         }).join('')}
-      </div>`,
-    confirmLabel: 'Apply selected settings',
-    onConfirm: async () => {
-      const ids = [...document.querySelectorAll('#modal-root input:checked')].map((input) => input.value);
+      </fieldset>`,
+    confirmLabel: canApply ? 'Apply selected settings' : 'Restart as administrator',
+    onConfirm: canApply ? async () => {
+      const ids = [...document.querySelectorAll('#modal-root .optimize-picks input:checked:not(:disabled)')].map((input) => input.value);
       if (!ids.length) throw new Error('Select at least one available setting.');
-      const response = await applyActions(ids);
-      const results = response.results || [];
-      const failures = results.filter((result) => !result.ok);
-      if (failures.length) toast('warn', 'Some changes failed', failures.map((result) => result.error).join(' · '));
-      else toast('success', 'Windows gaming settings applied', 'Review or undo your settings below.');
+      const route = window.location.hash;
+      const response = await api('/api/actions/apply', { method: 'POST', body: { ids, profile: 'gaming' } });
+      state.snapshot = response.snapshot;
+      state.scan = response.scan;
+      state.applied = response.applied;
+      state.history = null;
       state.windowsGamingSetup = null;
       requestRender();
-    },
+      requestAnimationFrame(() => {
+        if (route === window.location.hash && document.activeElement === document.body &&
+            !document.getElementById('modal-root')?.firstElementChild) {
+          document.querySelector('[data-action="optimize-pc"]')?.focus();
+        }
+      });
+
+      const results = response.results;
+      const changed = results.filter((result) => result.ok && !result.skipped).length;
+      const failures = results.filter((result) => !result.ok);
+      const detail = changed ? `${changed} changed. Undo from Windows → Applied by Nexa.` : 'No settings changed.';
+      const title = changed ? 'Windows settings applied' : 'Settings already configured';
+      if (failures.length || response.refreshWarning) {
+        const names = new Map(setup.candidates.map((action) => [action.id, action.name]));
+        const errors = failures.map((result) => `${names.get(result.id) || result.id} — ${result.error}`);
+        const status = failures.length ? 'Could not apply all selected settings' : title;
+        toast('warn', status, [detail, ...errors, response.refreshWarning].filter(Boolean).join(' · '), 9000);
+      } else {
+        toast(changed ? 'success' : 'info', title, detail);
+      }
+    } : elevate,
   });
 }
 
@@ -325,7 +391,7 @@ export function bindOptimize() {
   });
 
   document.querySelector('[data-action="scan-windows-gaming"]')?.addEventListener('click', (event) => scanWindowsGaming(event.currentTarget));
-  document.querySelector('[data-action="review-windows-gaming"]')?.addEventListener('click', reviewWindowsGaming);
+  document.querySelector('[data-action="optimize-pc"]')?.addEventListener('click', (event) => optimizePc(event.currentTarget));
   document.querySelectorAll('[data-sync-lower]').forEach((button) =>
     button.addEventListener('click', () => changeSyncPriority(button.dataset.syncLower, false)),
   );

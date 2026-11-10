@@ -2,6 +2,30 @@
 
 const { runBridge } = require('./ps');
 const { getState, save } = require('./store');
+const { getPublicActions } = require('./actions');
+
+const GAMING_ACTIONS = new Map([
+  ['game-mode', true],
+  ['windowed-optimizations', true],
+  ['capture-history', false],
+  ['power-plan', false],
+  ['delivery-optimization', false],
+]);
+
+function isGamingAction(id) {
+  return GAMING_ACTIONS.has(id);
+}
+
+function gamingPowerAvailable(diagnostics) {
+  return diagnostics?.powerLine === 'Online' && diagnostics.highPerformanceAvailable === true;
+}
+
+function getGamingCandidates(snapshot, applied, diagnostics) {
+  return getPublicActions(snapshot, applied)
+    .filter((action) => isGamingAction(action.id) && action.applicable && !action.optimized &&
+      !action.appliedByNexa && (action.id !== 'power-plan' || gamingPowerAvailable(diagnostics)))
+    .map((action) => ({ ...action, recommended: GAMING_ACTIONS.get(action.id) }));
+}
 
 const SYNC_APPS = new Map([
   ['onedrive', 'OneDrive'],
@@ -44,9 +68,13 @@ async function listSyncProcesses() {
   return rows.filter(validProcess);
 }
 
+function getWindowsGamingDiagnostics() {
+  return runBridge('gaming.diagnostics', {}, { timeout: 15_000 });
+}
+
 async function getGamingDiagnostics() {
   const [diagnostics, processes] = await Promise.all([
-    runBridge('gaming.diagnostics', {}, { timeout: 15_000 }),
+    getWindowsGamingDiagnostics(),
     listSyncProcesses(),
   ]);
   const tracked = new Set(loadSyncPriority().map(processKey));
@@ -99,4 +127,12 @@ async function setSyncPriority(names, restore) {
   return { changed, failed };
 }
 
-module.exports = { cleanSyncApps, getGamingDiagnostics, setSyncPriority };
+module.exports = {
+  cleanSyncApps,
+  getGamingDiagnostics,
+  getWindowsGamingDiagnostics,
+  getGamingCandidates,
+  gamingPowerAvailable,
+  isGamingAction,
+  setSyncPriority,
+};

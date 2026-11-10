@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { actions, getAction, getPublicActions } = require('../server/lib/actions');
 const { makeSnapshot } = require('./fixtures');
+const { getGamingCandidates, isGamingAction } = require('../server/lib/gaming');
 
 function fakePs(handler) {
   const calls = [];
@@ -448,6 +449,33 @@ test('the desktop High performance plan is excluded on dual-CCD Ryzen X3D models
     assert.equal(action.appliesTo(makeSnapshot({ cpu: { name: 'AMD Ryzen ' + model } })), false);
   }
   assert.equal(action.appliesTo(makeSnapshot({ cpu: { name: 'AMD Ryzen 7 7800X3D' } })), true);
+});
+
+test('Optimize PC previews the recommended settings and keeps situational changes opt-in', () => {
+  const snapshot = makeSnapshot();
+  const flag = (value) => ({ exists: true, value, kind: 'DWord' });
+  snapshot.state.gameMode = { autoGameMode: flag(0), allowAutoGameMode: flag(0) };
+  snapshot.state.gameDvr.history = flag(1);
+  snapshot.state.windowed = flag(0);
+  snapshot.state.deliveryOptimization = flag(1);
+  snapshot.power = { name: 'Balanced', guid: '381b4222-f694-41f0-9685-ff5bb260df2e' };
+  const diagnostics = { powerLine: 'Online', highPerformanceAvailable: true };
+
+  const profile = getGamingCandidates(snapshot, {}, diagnostics);
+  assert.deepEqual(profile.filter((action) => action.recommended).map((action) => action.id), [
+    'game-mode', 'windowed-optimizations',
+  ]);
+  assert.deepEqual(profile.filter((action) => !action.recommended).map((action) => action.id), [
+    'capture-history', 'power-plan', 'delivery-optimization',
+  ]);
+  assert.equal(profile.find((action) => action.id === 'power-plan').requiresAdmin, true);
+  assert.equal(isGamingAction('hags'), false);
+
+  snapshot.os.build = 19045;
+  const reduced = getGamingCandidates(snapshot, { 'game-mode': 'already applied' }, {
+    ...diagnostics, powerLine: 'Offline',
+  });
+  assert.deepEqual(reduced.map((action) => action.id), ['capture-history', 'delivery-optimization']);
 });
 
 test('applied legacy actions appear in the public list only when they have a backup', () => {

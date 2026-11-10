@@ -75,7 +75,7 @@ export const state = {
     new URLSearchParams(window.location.search).get('token') ||
     document.querySelector('meta[name="nexa-token"]')?.getAttribute('content') ||
     '',
-  version: '1.9.0',
+  version: '1.10.0',
   port: null,
   dataDir: '',
   settings: {},

@@ -755,6 +755,12 @@ summary:focus-visible {
   margin-bottom: 20px;
 }
 
+.start-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .start-intro h2 {
   margin: 0;
   font-size: clamp(24px, 4vw, 36px);
@@ -3715,6 +3721,32 @@ body.compact .card-pad {
   flex: 1;
   font-size: 12px;
   font-weight: 500;
+}
+
+.optimize-picks {
+  min-inline-size: 0;
+  padding: 0;
+  border: 0;
+}
+
+.optimize-picks legend {
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.optimize-pick {
+  align-items: flex-start;
+}
+
+.optimize-pick input {
+  margin-top: 3px;
+}
+
+.optimize-pick small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
 }
 
 .boost-app-mem {
