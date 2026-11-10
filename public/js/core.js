@@ -75,7 +75,7 @@ export const state = {
     new URLSearchParams(window.location.search).get('token') ||
     document.querySelector('meta[name="nexa-token"]')?.getAttribute('content') ||
     '',
-  version: '1.8.0',
+  version: '1.9.0',
   port: null,
   dataDir: '',
   settings: {},
@@ -408,31 +408,22 @@ export function applyBodyPreferences() {
   document.body.classList.toggle('reduce-motion', state.settings.reduceMotion === true);
   document.body.classList.toggle('compact', state.settings.compactMode === true);
   const advancedNav = document.querySelector('.nav-link[data-route="advanced"]');
-  if (advancedNav) advancedNav.style.display = state.settings.showAdvanced === false ? 'none' : '';
-  const runInBg = state.settings.runInBackground !== false;
-  const bgToggle = document.getElementById('bg-mode-toggle');
-  const bgSub = document.getElementById('bg-mode-sub');
-  if (bgToggle) {
-    bgToggle.classList.toggle('on', runInBg);
-    bgToggle.setAttribute('aria-checked', String(runInBg));
-  }
-  if (bgSub) {
-    bgSub.textContent = runInBg ? 'Active in background' : 'Stops when closed';
-  }
+  if (advancedNav) advancedNav.hidden = state.settings.showAdvanced === false;
 }
 
 export function updateAdminUI() {
   const admin = state.snapshot?.admin === true;
+  const known = typeof state.snapshot?.admin === 'boolean';
   const card = document.getElementById('admin-card');
   const cardTitle = document.getElementById('admin-card-title');
   const cardCopy = document.getElementById('admin-card-copy');
   const pill = document.getElementById('admin-pill');
   const pillLabel = document.getElementById('admin-pill-label');
   if (card) card.classList.toggle('is-admin', admin);
-  if (cardTitle) cardTitle.textContent = admin ? 'Administrator' : 'Standard user';
-  if (cardCopy) cardCopy.textContent = admin ? 'Full access enabled' : 'Some fixes need admin';
+  if (cardTitle) cardTitle.textContent = admin ? 'Administrator' : known ? 'Standard user' : 'Access unchecked';
+  if (cardCopy) cardCopy.textContent = admin ? 'Full access enabled' : known ? 'Some fixes need admin' : 'Scan Windows to check';
   if (pill) pill.classList.toggle('admin', admin);
-  if (pillLabel) pillLabel.textContent = admin ? 'Administrator' : 'Standard user';
+  if (pillLabel) pillLabel.textContent = admin ? 'Administrator' : known ? 'Standard user' : 'Access unchecked';
   const navIssues = document.getElementById('nav-issues');
   if (navIssues) {
     const count = state.scan?.counts?.issues || 0;
@@ -441,41 +432,8 @@ export function updateAdminUI() {
   }
 }
 
-export function createFallbackSnapshot() {
-  return {
-    generatedAt: new Date().toISOString(),
-    admin: false,
-    hostname: 'Local PC',
-    username: 'User',
-    os: { caption: 'Microsoft Windows', version: '10.0', build: 19045, architecture: '64-bit' },
-    computer: { manufacturer: 'PC', model: 'Desktop', isLaptop: false, totalRam: 16 * 1024 ** 3, freeRam: 8 * 1024 ** 3, memoryUsagePercent: 50 },
-    cpu: { name: 'Processor', manufacturer: 'Windows PC', cores: 8, threads: 16, maxClockMhz: 3600 },
-    gpus: [],
-    adapters: [],
-    state: {},
-  };
-}
-
 export function cancelScan() {
-  if (state.scanAbortController) {
-    try { state.scanAbortController.abort(); } catch {}
-    state.scanAbortController = null;
-  }
-  state.scanLoading = null;
-  if (!state.snapshot) {
-    state.snapshot = createFallbackSnapshot();
-  }
-  if (!state.scan) {
-    state.scan = {
-      score: 75,
-      potentialScore: 100,
-      summary: 'Scan stopped by user. Click "Run scan" anytime.',
-      quickWins: [],
-      actions: [],
-      counts: { issues: 0, applied: 0 },
-    };
-  }
-  updateAdminUI();
+  state.scanAbortController?.abort();
 }
 
 export async function loadScan(force = false) {
@@ -489,13 +447,6 @@ export async function loadScan(force = false) {
       state.applied = data.applied || {};
       updateAdminUI();
       return data;
-    })
-    .catch((err) => {
-      if (err.name === 'AbortError') {
-        cancelScan();
-        return { snapshot: state.snapshot, scan: state.scan, applied: state.applied };
-      }
-      throw err;
     })
     .finally(() => {
       state.scanLoading = null;

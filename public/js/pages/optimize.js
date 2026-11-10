@@ -12,7 +12,6 @@ import {
   requestRender,
 } from '../core.js';
 import {
-  scoreRing,
   severityBadge,
   riskBadge,
   impactBadge,
@@ -22,45 +21,6 @@ import {
   emptyState,
   metricRow,
 } from '../ui.js';
-
-function categoryBars(scan) {
-  return Object.entries(scan.categoryScores || {}).map(([category, score]) => `
-    <div style="display:flex;align-items:center;gap:10px;margin-top:7px">
-      <span class="small muted" style="width:86px">${escapeHtml(category)}</span>
-      <div class="meter" style="flex:1"><span style="width:${score}%;background:${score >= 85 ? 'var(--lime)' : score >= 65 ? 'var(--amber)' : 'var(--red)'}"></span></div>
-      <span class="mono" style="width:28px;text-align:right">${score}</span>
-    </div>`).join('');
-}
-
-function summaryCard(scan, mode, actionPool = []) {
-  const issueCount = scan.counts.issues;
-  const issueText = `${issueCount} ${issueCount === 1 ? 'issue' : 'issues'}`;
-  return `
-    <div class="card card-pad optimize-hero">
-      <div class="optimize-hero-grid">
-        <div class="optimize-hero-left">
-          <div class="hero-score">${scoreRing(scan.score, scan.potentialScore, 144)}</div>
-          <div class="optimize-hero-meta">
-            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px">
-              <span class="badge lime">${icon('spark')} ${escapeHtml(scan.rank)}</span>
-              <span class="badge muted">${issueText}</span>
-              <span class="badge muted">${scan.counts.optimized} already optimized</span>
-            </div>
-            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">
-              <button class="button button-primary" type="button" data-action="apply-safe">${icon('zap')} Enable Windows Game Mode</button>
-              <button class="button" type="button" data-action="restore-point">${icon('shield')} Create restore point</button>
-            </div>
-          </div>
-        </div>
-        <div class="optimize-hero-right">
-          <p class="muted" style="margin:0 0 12px;font-size:12px;line-height:1.5">${escapeHtml(scan.summary)}</p>
-          <div class="category-bars-wrap">
-            ${categoryBars(scan)}
-          </div>
-        </div>
-      </div>
-    </div>`;
-}
 
 function actionCard(action) {
   const locked = action.requiresAdmin && !state.snapshot?.admin;
@@ -131,7 +91,7 @@ function windowsGamingCard() {
   const memory = diagnostics?.memory;
   const commit = memory && memory.limitBytes > 0 ? Math.round(memory.committedBytes / memory.limitBytes * 100) : null;
   return `
-    <div class="card card-pad" style="margin-top:14px">
+    <div class="card card-pad" >
       <div class="card-header">
         <div><h2>Windows gaming setup</h2><p>Check display, power, memory, and background work before changing system settings.</p></div>
         <div class="card-actions">
@@ -236,7 +196,8 @@ function changeSyncPriority(name, restore) {
 
 export function renderOptimize(mode = 'safe') {
   if (!state.scan) {
-    return '<div class="page-loading"><div class="loading-orbit"></div><p>Scanning settings…</p></div>';
+    return mode === 'safe' ? windowsGamingCard()
+      : '<div class="page-loading"><div class="loading-orbit"></div><p>Scanning settings…</p></div>';
   }
   const scan = state.scan;
   const actionPool = scan.actions.filter((action) => action.applicable && (mode === 'advanced' ? action.risk === 'advanced' : action.risk !== 'advanced'));
@@ -258,18 +219,27 @@ export function renderOptimize(mode = 'safe') {
   }
 
   return `
-    ${summaryCard(scan, mode, actionPool)}
     ${windowsGamingCard()}
-    ${sectionHead('Safe optimizations', 'Windows Game Mode reduces background interruptions during play.', `<span class="badge muted">${safeReady.length} ready</span>`)}
-    ${safePool.length ? `<div class="action-grid">${safePool.map((action) => actionCard(action)).join('')}</div>` : emptyState('check', 'Nothing to apply here', 'Every safe setting is already in the recommended state.')}
-    ${cautionPool.length ? `
-      ${sectionHead('Situational optimizations', 'These change Windows behavior or depend on your hardware. Compare frame times before and after changing one setting.', `<span class="badge amber">${cautionReady.length} review</span>`)}
-      <div class="action-grid">${cautionPool.map((action) => actionCard(action)).join('')}</div>
-    ` : ''}
-    ${primaryFindings.length ? `${sectionHead('System advisories', 'Hardware or OS conditions that require manual review.')}<div>${primaryFindings.map(findingCard).join('')}</div>` : ''}
-    ${infoFindings.length ? `${sectionHead('Hardware & OS notes', 'Informational system status.')}<div>${infoFindings.map(findingCard).join('')}</div>` : ''}
     ${appliedSection(scan)}
-    <p class="small muted" style="margin-top:24px;line-height:1.6">Every applied setting is backed up to your local state file before modification. Windows updates, GPU drivers, and BIOS settings are never modified automatically.</p>
+    <details class="card disclosure" id="windows-controls" ${state.windowsControlsOpen ? 'open' : ''}>
+      <summary>
+        <span><strong>Individual Windows settings</strong><small>${safeReady.length + cautionReady.length} available to review</small></span>
+        <span class="disclosure-chevron">${icon('chevron', 16)}</span>
+      </summary>
+      <div class="disclosure-body">
+        ${safePool.length ? `<div class="action-grid">${safePool.map(actionCard).join('')}</div>` : ''}
+        ${cautionPool.length ? `<div class="action-grid">${cautionPool.map(actionCard).join('')}</div>` : ''}
+        <div><button class="button" type="button" data-action="restore-point">${icon('shield')} Create restore point</button></div>
+      </div>
+    </details>
+    ${primaryFindings.length || infoFindings.length ? `
+      <details class="card disclosure" id="windows-advisories" ${state.windowsAdvisoriesOpen ? 'open' : ''}>
+        <summary>
+          <span><strong>System advisories</strong><small>Hardware and Windows findings</small></span>
+          <span class="disclosure-chevron">${icon('chevron', 16)}</span>
+        </summary>
+        <div class="disclosure-body">${[...primaryFindings, ...infoFindings].map(findingCard).join('')}</div>
+      </details>` : ''}
   `;
 }
 
@@ -321,27 +291,6 @@ async function confirmUndo(id) {
   }
 }
 
-export async function applySafe() {
-  const candidates = (state.scan?.actions || []).filter(
-    (action) => action.applicable && action.risk === 'safe' && !action.optimized && !action.appliedByNexa,
-  );
-  if (!candidates.length) {
-    toast('info', 'Nothing to apply', 'Every safe optimization is already active.');
-    return;
-  }
-  try {
-    const response = await applyActions(candidates.map((action) => action.id));
-    const failed = (response.results || []).filter((result) => !result.ok);
-    if (failed.length) {
-      toast('warn', 'Some changes were skipped', failed.map((result) => result.error).join(' · '));
-    } else {
-      toast('success', 'Safe fixes applied', 'Windows Game Mode is configured.');
-    }
-  } catch (error) {
-    toast('error', 'Could not apply safe fixes', error.message);
-  }
-}
-
 function createRestorePoint(button) {
   if (!state.snapshot?.admin) {
     openModal({
@@ -368,6 +317,13 @@ function createRestorePoint(button) {
 }
 
 export function bindOptimize() {
+  document.getElementById('windows-controls')?.addEventListener('toggle', (event) => {
+    state.windowsControlsOpen = event.currentTarget.open;
+  });
+  document.getElementById('windows-advisories')?.addEventListener('toggle', (event) => {
+    state.windowsAdvisoriesOpen = event.currentTarget.open;
+  });
+
   document.querySelector('[data-action="scan-windows-gaming"]')?.addEventListener('click', (event) => scanWindowsGaming(event.currentTarget));
   document.querySelector('[data-action="review-windows-gaming"]')?.addEventListener('click', reviewWindowsGaming);
   document.querySelectorAll('[data-sync-lower]').forEach((button) =>
@@ -382,9 +338,6 @@ export function bindOptimize() {
   });
   document.querySelectorAll('[data-undo-action]').forEach((button) => {
     button.addEventListener('click', () => confirmUndo(button.getAttribute('data-undo-action')));
-  });
-  document.querySelectorAll('[data-action="apply-safe"]').forEach((button) => {
-    button.addEventListener('click', applySafe);
   });
   document.querySelectorAll('[data-action="restore-point"]').forEach((button) => {
     button.addEventListener('click', () => createRestorePoint(button));

@@ -1,12 +1,12 @@
 {
-    "version": "1.8.0",
+    "version": "1.9.0",
     "releasedAt": "2026-11-10",
-    "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v1.8.0.zip",
-    "sha256": "80861a048bedf09b45f1a0b4a5d98ea44e9c6d6870c00033a4c9239abe03406c",
+    "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v1.9.0.zip",
+    "sha256": "106165d50f51a0876512528c71159682a0acea4d2179a9a602a30a9da3371572",
     "notes": [
-        "Windows gaming setup checks primary-display refresh rate, AC power, memory commit, and page-file configuration.",
-        "Review applicable Game Mode, windowed graphics, background captures, desktop power, and update-sharing changes before applying.",
-        "Lower or restore CPU priority for running OneDrive, Dropbox, and Google Drive sync processes.",
-        "High performance power-plan changes are excluded on laptops and dual-CCD Ryzen X3D systems."
+        "Compare average FPS, 1% lows, and P99 frame time using two local PresentMon CSV captures.",
+        "Simplified navigation puts Games, Windows, and Benchmark up front.",
+        "Nexa opens without a full hardware scan and samples live usage only when PC details is open and the app has focus.",
+        "Redesigned the download page with clearer setup instructions and checksum verification."
     ]
 }

@@ -62,41 +62,30 @@ async function getSnapshot(force = false) {
   if (!force && snapshotCache && Date.now() - snapshotCacheAt < SNAPSHOT_TTL) {
     return snapshotCache;
   }
-  // Stale-while-revalidate: if we have any valid cached snapshot and force is false,
-  // return the cached snapshot immediately and trigger background refresh so the UI never blocks.
-  if (!force && snapshotCache) {
-    if (!inFlightSnapshot) {
-      inFlightSnapshot = runBridge('snapshot', {}, { timeout: 60_000 })
-        .then((snapshot) => {
+  if (!inFlightSnapshot) {
+    const promise = runBridge('snapshot', {}, { timeout: 60_000 })
+      .then((snapshot) => {
+        if (inFlightSnapshot === promise) {
           snapshotCache = snapshot;
           snapshotCacheAt = Date.now();
           saveSnapshotCache(snapshot);
-          return snapshot;
-        })
-        .finally(() => {
-          inFlightSnapshot = null;
-        });
-    }
+        }
+        return snapshot;
+      })
+      .finally(() => {
+        if (inFlightSnapshot === promise) inFlightSnapshot = null;
+      });
+    inFlightSnapshot = promise;
+  }
+  if (!force && snapshotCache) {
+    inFlightSnapshot.catch(() => {});
     return snapshotCache;
   }
-  if (!force && inFlightSnapshot) {
-    return inFlightSnapshot;
-  }
-  const promise = runBridge('snapshot', {}, { timeout: 60_000 })
-    .then((snapshot) => {
-      snapshotCache = snapshot;
-      snapshotCacheAt = Date.now();
-      saveSnapshotCache(snapshot);
-      return snapshot;
-    })
-    .finally(() => {
-      if (inFlightSnapshot === promise) inFlightSnapshot = null;
-    });
-  inFlightSnapshot = promise;
-  return promise;
+  return inFlightSnapshot;
 }
 
 function invalidateSnapshot() {
+  inFlightSnapshot = null;
   snapshotCache = null;
   snapshotCacheAt = 0;
   try {

@@ -13,11 +13,10 @@ import {
   openModal,
   applyActions,
   undoAll,
-  loadScan,
   elevate,
   api,
 } from '../core.js';
-import { applySafe } from './optimize.js';
+import { openBoostModal } from '../boost.js';
 import {
   scoreRing,
   statCard,
@@ -33,42 +32,35 @@ import {
   bufferbloatText,
 } from '../ui.js';
 
-function heroHeadline(score) {
-  if (score >= 90) return 'System readiness is <em>high</em>';
-  if (score >= 75) return 'System is <em>ready for tuning</em>';
-  if (score >= 60) return 'Recommended settings <em>available</em>';
-  return 'Multiple settings <em>need attention</em>';
-}
+const START_TOOLS = [
+  ['games', 'gamepad', 'Tune a game', 'Preview settings for Fortnite, CS2, or Minecraft Java.'],
+  ['optimize', 'sliders', 'Review Windows', 'Check display, power, capture, and background activity.'],
+  ['benchmark', 'pulse', 'Compare frame times', 'See what changed with two PresentMon captures.'],
+];
 
-function heroHtml(scan) {
-  const safeCandidates = (scan.actions || []).filter(
-    (action) => action.applicable && action.risk === 'safe' && !action.optimized && !action.appliedByNexa,
-  );
-  const unappliedCount = safeCandidates.length;
-
-  return `
-    <section class="card dashboard-hero">
-      <div class="hero-copy">
-        <span class="eyebrow">SYSTEM OVERVIEW</span>
-        <h1>${heroHeadline(scan.score)}</h1>
-        <p>${escapeHtml(scan.summary)}</p>
-        <div class="hero-actions">
-          <button class="button button-primary button-large" type="button" data-nav="games">${icon('gamepad')} Tune game FPS</button>
-          ${unappliedCount > 0
-            ? `<button class="button button-large" type="button" data-action="apply-safe">${icon('zap')} Enable Windows Game Mode</button>`
-            : `<button class="button button-large" type="button" data-action="scan" style="border-color:var(--lime);color:var(--lime)">${icon('check')} Run readiness scan</button>`}
-          <button class="button button-large" type="button" data-nav="optimize">${icon('sliders')} Windows gaming setup</button>
-          <button class="button button-large" type="button" data-action="trim-ram">${icon('zap')} Pre-game boost</button>
-        </div>
-        <div class="hero-note">${icon('shield')} Automatic registry &amp; config backups · ${state.settings.runInBackground !== false ? 'Runs in the background (toggle in sidebar)' : 'Background mode off (exits when closed)'}</div>
+function startPanel() {
+  return `<section class="card card-pad start-panel" aria-labelledby="start-title">
+    <div class="start-intro">
+      <div>
+        <h2 id="start-title">Get your PC ready to play</h2>
+        <p>Choose what to tune, then compare the same scene before and after.</p>
       </div>
-      <div class="hero-score">${scoreRing(scan.score, scan.potentialScore)}</div>
-    </section>`;
+      <button class="button" type="button" data-action="pre-game">${icon('zap')} Close background apps</button>
+    </div>
+    <div class="start-tools">
+      ${START_TOOLS.map(([route, glyph, label, description]) => `
+        <a class="start-tool" href="#/${route}">
+          <span class="start-tool-icon">${icon(glyph, 18)}</span>
+          <span><strong>${label}</strong><small>${description}</small></span>
+          <span class="start-tool-arrow">${icon('arrow', 16)}</span>
+        </a>`).join('')}
+    </div>
+  </section>`;
 }
 
 function quickWinsHtml(scan) {
   if (!scan.quickWins.length) {
-    return emptyState('check', 'Nothing urgent on the list', 'Nexa did not find any safe configuration wins. Check the advanced page if you want to go deeper.');
+    return emptyState('check', 'No quick fixes found', 'Open Windows to review optional settings, or tune an individual game.');
   }
   const isSingle = scan.quickWins.length === 1;
   return `<div class="quick-wins ${isSingle ? 'single-win' : ''}">${scan.quickWins.map((finding) => {
@@ -165,7 +157,7 @@ function liveChartHtml() {
       <div class="card-header">
         <div>
           <h2>Live system</h2>
-          <p>Sampled every two seconds. Nothing leaves this PC.</p>
+          <p>Updates while this panel is open and Nexa has focus.</p>
         </div>
         <div class="chart-legend"><span><span class="legend-dot"></span>CPU</span><span><span class="legend-dot cyan"></span>RAM</span></div>
       </div>
@@ -291,37 +283,34 @@ function appliedHtml() {
 }
 
 export function renderOverview() {
-  if (!state.scan) {
-    return `
-      <div class="page-loading">
-        <div class="loading-orbit"></div>
-        <p id="loading-status-text">Building your readiness score…</p>
-        <div style="margin-top:16px">
-          <button class="button button-small button-ghost" type="button" data-action="cancel-scan" style="display:inline-flex;align-items:center;gap:6px">
-            ${icon('x')} Stop scan
-          </button>
-        </div>
-      </div>`;
-  }
   const scan = state.scan;
   return `
-    ${heroHtml(scan)}
-    <div style="margin-top:14px">${statCardsHtml()}</div>
-    ${sectionHead('Recommended for you', 'Ranked by likely impact and safety. Nothing is changed until you click.', `<button class="button button-small" type="button" data-nav="optimize">${icon('spark')} View all fixes</button>`)}
-    ${quickWinsHtml(scan)}
-    ${sectionHead('Live system', 'A quick pulse on the machine under the hood.')}
-    <div class="grid-2">
-      ${liveChartHtml()}
-      ${processesHtml()}
-    </div>
-    ${sectionHead('Network & profile', 'Latency is a route problem, not just a settings problem.')}
-    <div class="grid-2">
-      ${networkCardHtml()}
-      ${profileHtml()}
-    </div>
-    ${appliedHtml()}
-    <p class="small muted" style="margin-top:26px;line-height:1.6">Nexa is free and local-first. It never uploads system data, never disables Windows Security, and never installs drivers or overclocks hardware. Tweak, DNS and startup changes are backed up; temp file cleanup is permanent.</p>
-  `;
+    ${startPanel()}
+    ${scan?.quickWins.length ? `
+      ${sectionHead('Recommended checks', 'Review the settings Nexa flagged on this PC.')}
+      ${quickWinsHtml(scan)}
+    ` : ''}
+    <details class="card disclosure overview-details" id="overview-details" ${state.overviewDetails ? 'open' : ''}>
+      <summary>
+        <span><strong>PC details</strong><small>Hardware, live usage, network, and applied changes</small></span>
+        <span class="disclosure-chevron">${icon('chevron', 16)}</span>
+      </summary>
+      <div class="disclosure-body">
+        ${scan ? `
+          <div class="overview-readiness">
+            ${scoreRing(scan.score, scan.potentialScore, 100)}
+            <div><h3>Windows readiness</h3><p>${escapeHtml(scan.summary)}</p></div>
+          </div>
+          ${statCardsHtml()}
+          <div class="grid-2">${liveChartHtml()}${processesHtml()}</div>
+          <div class="grid-2">${networkCardHtml()}${profileHtml()}</div>
+          ${appliedHtml()}
+        ` : `
+          <p class="muted">Scan this PC to see hardware, Windows recommendations, and live activity.</p>
+          <button class="button" type="button" data-action="scan">${icon('scan')} Scan PC</button>
+        `}
+      </div>
+    </details>`;
 }
 
 function drawCharts() {
@@ -369,25 +358,6 @@ export function updateOverviewProcesses() {
   if (count) count.textContent = String(processes.processCount || 0);
 }
 
-async function runScan(button) {
-  if (!button || button.disabled) return;
-  const original = button.innerHTML;
-  button.disabled = true;
-  button.innerHTML = `${icon('refresh')} Scanning…`;
-  button.classList.add('spinning');
-  try {
-    await loadScan(true);
-    toast('success', 'Scan complete', 'Your readiness score and recommendations are up to date.');
-    requestRender();
-  } catch (error) {
-    toast('error', 'Scan failed', error.message);
-    button.disabled = false;
-    button.innerHTML = original;
-  } finally {
-    button.classList.remove('spinning');
-  }
-}
-
 async function refreshProcesses(button) {
   if (!button || button.disabled) return;
   button.disabled = true;
@@ -432,22 +402,15 @@ function applyQuickWin(id) {
 }
 
 export function bindOverview() {
-  document.querySelectorAll('[data-action="apply-safe"]').forEach((button) => {
-    button.addEventListener('click', applySafe);
-  });
-  document.querySelectorAll('[data-action="scan"]').forEach((button) => {
-    button.addEventListener('click', () => runScan(button));
-  });
-  document.querySelectorAll('[data-action="trim-ram"]').forEach((button) => {
-    button.addEventListener('click', () => document.getElementById('trim-ram-btn')?.click());
-  });
+  document.querySelector('[data-action="scan"]')?.addEventListener('click', () => document.getElementById('scan-btn')?.click());
+  document.querySelector('[data-action="pre-game"]')?.addEventListener('click', (event) => openBoostModal(event.currentTarget));
   document.querySelectorAll('[data-action="refresh-processes"]').forEach((button) => {
     button.addEventListener('click', () => refreshProcesses(button));
   });
   document.querySelectorAll('[data-action="undo-all"]').forEach((button) => {
     button.addEventListener('click', () => {
       openModal({
-        title: 'Undo every Nexa change?',
+        title: 'Undo Nexa’s Windows tweaks?',
         body: '<p>Nexa will restore the settings it backed up. Some changes need a reboot or reconnect to fully revert.</p>',
         confirmLabel: 'Undo all changes',
         danger: true,
@@ -455,7 +418,7 @@ export function bindOverview() {
           const response = await undoAll();
           const failed = (response.results || []).filter((result) => !result.ok);
           if (failed.length) toast('warn', 'Some changes could not be undone', failed.map((item) => item.error).join(' · '));
-          else toast('success', 'All Nexa changes undone');
+          else toast('success', 'Windows tweaks restored');
         },
       });
     });
@@ -466,10 +429,6 @@ export function bindOverview() {
       if (state.processSort !== newSort) {
         state.processSort = newSort;
         requestRender();
-        const refreshBtn = document.querySelector('[data-action="refresh-processes"]');
-        if (refreshBtn && !refreshBtn.disabled) {
-          refreshProcesses(refreshBtn).catch(() => {});
-        }
       }
     });
   });

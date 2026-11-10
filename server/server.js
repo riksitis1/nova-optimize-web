@@ -33,6 +33,7 @@ const { analyze } = require('./lib/analyze');
 const { getAction, getPublicActions, serializeAction } = require('./lib/actions');
 const {
   getSnapshot,
+  getCachedSnapshot,
   invalidateSnapshot,
   getStartup,
   toggleStartup,
@@ -242,8 +243,8 @@ async function handleApi(req, res, url) {
 
   if (method === 'GET' && pathname === '/api/bootstrap') {
     const applied = getApplied();
-    const snapshot = await getSnapshot();
-    const scan = analyze(snapshot, applied);
+    const snapshot = url.searchParams.get('cached') === '1' ? getCachedSnapshot() : await getSnapshot();
+    const scan = snapshot ? analyze(snapshot, applied) : null;
     sendJson(res, 200, {
       ok: true,
       version: VERSION,
@@ -1038,8 +1039,6 @@ async function listen(attempt = 0) {
         console.warn('[nexa] WARNING: Package integrity check failed. Some core files have been modified.');
       }
     }
-    getSnapshot().catch(() => {});
-    getProcesses().catch(() => {});
     openApp();
   } catch (error) {
     try {

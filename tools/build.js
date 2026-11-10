@@ -44,9 +44,11 @@ const RUNTIME_FILES = [
   'public/assets/nova.ico',
   'public/assets/nexa.ico',
   'public/js/boost.js',
+  'public/js/benchmark-data.js',
   'public/js/core.js',
   'public/js/ui.js',
   'public/js/pages/activity.js',
+  'public/js/pages/benchmark.js',
   'public/js/pages/cleanup.js',
   'public/js/pages/games.js',
   'public/js/pages/network.js',
@@ -187,10 +189,10 @@ if (fs.existsSync(versionJsonPath)) {
   vJson.downloadUrl = `https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v${VERSION}.zip`;
   vJson.sha256 = zipHash;
   vJson.notes = [
-    'Windows gaming setup checks primary-display refresh rate, AC power, memory commit, and page-file configuration.',
-    'Review applicable Game Mode, windowed graphics, background captures, desktop power, and update-sharing changes before applying.',
-    'Lower or restore CPU priority for running OneDrive, Dropbox, and Google Drive sync processes.',
-    'High performance power-plan changes are excluded on laptops and dual-CCD Ryzen X3D systems.',
+    'Compare average FPS, 1% lows, and P99 frame time using two local PresentMon CSV captures.',
+    'Simplified navigation puts Games, Windows, and Benchmark up front.',
+    'Nexa opens without a full hardware scan and samples live usage only when PC details is open and the app has focus.',
+    'Redesigned the download page with clearer setup instructions and checksum verification.',
   ];
   fs.writeFileSync(versionJsonPath, JSON.stringify(vJson, null, 4), 'utf8');
   console.log(`==> Step 7: Updated website/version.json with new zip SHA-256 and v${VERSION}`);

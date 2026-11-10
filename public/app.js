@@ -14,7 +14,6 @@ import {
   ensureScan,
   elevate,
   quitNexa,
-  quitNova,
   checkForUpdates,
   promptAndInstallUpdate,
   syncUpdateBanner,
@@ -32,29 +31,34 @@ import { renderStartup, bindStartup } from './js/pages/startup.js';
 import { renderActivity, bindActivity } from './js/pages/activity.js';
 import { renderSettings, bindSettings } from './js/pages/settings.js';
 import { renderGames, bindGames, loadGames } from './js/pages/games.js';
-import { openBoostModal } from './js/boost.js';
+import { renderBenchmark, bindBenchmark } from './js/pages/benchmark.js';
 
 const PAGE_META = {
   dashboard: {
     title: 'Overview',
-    eyebrow: 'SYSTEM READINESS',
+    eyebrow: 'GAMING WORKSPACE',
     render: renderOverview,
     bind: bindOverview,
     load: loadDashboard,
   },
   optimize: {
-    title: 'Optimize',
-    eyebrow: 'SAFE TWEAKS',
+    title: 'Windows',
+    eyebrow: 'GAMING SETUP',
     render: () => renderOptimize('safe'),
     bind: bindOptimize,
-    load: ensureScan,
   },
   games: {
-    title: 'Game settings',
+    title: 'Games',
     eyebrow: 'PER-GAME FPS PROFILES',
     render: renderGames,
     bind: bindGames,
     load: loadGamesPage,
+  },
+  benchmark: {
+    title: 'Benchmark',
+    eyebrow: 'FRAME-TIME COMPARISON',
+    render: renderBenchmark,
+    bind: bindBenchmark,
   },
   advanced: {
     title: 'Advanced',
@@ -136,8 +140,18 @@ function render() {
   document.title = `${meta.title} · Nexa Optimize`;
 
   document.querySelectorAll('.nav-link[data-route]').forEach((link) => {
-    link.classList.toggle('active', link.getAttribute('data-route') === route);
+    const active = link.dataset.route === route;
+    link.classList.toggle('active', active);
+    if (active) {
+      link.setAttribute('aria-current', 'page');
+      const group = link.closest('details');
+      if (group) group.open = true;
+    } else {
+      link.removeAttribute('aria-current');
+    }
   });
+  const scanButton = document.getElementById('scan-btn');
+  if (scanButton) scanButton.hidden = route !== 'dashboard' && route !== 'optimize';
 
   if (state.pageError && state.pageError.route === route) {
     view.innerHTML = `
@@ -173,8 +187,12 @@ function render() {
   meta.bind?.();
   updateAdminUI();
   if (route === 'dashboard') {
-    if (state.telemetry) updateOverviewLive();
-    if (state.processes) updateOverviewProcesses();
+    if (state.overviewDetails && state.telemetry) updateOverviewLive();
+    if (state.overviewDetails && state.processes) updateOverviewProcesses();
+    document.getElementById('overview-details')?.addEventListener('toggle', (event) => {
+      state.overviewDetails = event.currentTarget.open;
+      if (state.overviewDetails) loadDashboard();
+    });
   }
 }
 
@@ -188,10 +206,10 @@ async function handleRoute() {
   state.pageError = null;
   render();
   try {
-    await PAGE_META[next].load();
-    state.pageError = null;
+    await PAGE_META[next].load?.();
+    if (generation === routeGeneration) state.pageError = null;
   } catch (error) {
-    if (generation === routeGeneration) {
+    if (generation === routeGeneration && error.name !== 'AbortError') {
       state.pageError = { route: next, message: error.message };
       toast('error', `Could not load ${PAGE_META[next].title}`, error.message);
       scheduleReconnect();
@@ -236,8 +254,8 @@ async function loadProcesses(force = false) {
   }
 }
 
-async function loadDashboard() {
-  await ensureScan();
+function loadDashboard() {
+  if (!state.scan || !state.overviewDetails || !isAppActivelyViewed()) return;
   loadTelemetry();
   loadProcesses();
 }
@@ -294,7 +312,6 @@ async function loadHistory() {
 }
 
 async function loadGamesPage() {
-  await ensureScan();
   try {
     await loadGames();
     state.gamesError = null;
@@ -307,83 +324,43 @@ async function loadGamesPage() {
 async function runGlobalScan(button) {
   if (state.scanLoading) {
     cancelScan();
-    toast('info', 'Scan stopped', 'Cancelled in-progress system scan.');
-    render();
+    toast('info', 'Scan stopped');
     return;
   }
-  const scanButton = document.getElementById('scan-btn');
-  const rescanButton = document.getElementById('rescan-btn');
-  const original = scanButton ? scanButton.innerHTML : '';
-  if (scanButton) {
-    scanButton.innerHTML = `${icon('stop')} Stop scan`;
-    scanButton.classList.add('button-ghost');
-    scanButton.classList.remove('button-primary');
-    hydrateIcons(scanButton);
-  }
-  if (rescanButton) {
-    rescanButton.innerHTML = `${icon('stop')} Stop scan`;
-    hydrateIcons(rescanButton);
-  }
-  if (button && button !== scanButton) button.classList.add('spinning');
+  const original = button.innerHTML;
+  button.innerHTML = icon('stop') + ' Stop scan';
+  hydrateIcons(button);
   try {
     await loadScan(true);
-    toast('success', 'Scan complete', 'Your readiness score and recommendations are up to date.');
+    toast('success', 'Scan complete', 'Windows recommendations are up to date.');
     render();
-    await PAGE_META[state.page].load();
-    render();
+    if (state.page === 'dashboard') loadDashboard();
   } catch (error) {
-    if (error.name !== 'AbortError') {
-      toast('error', 'Scan failed', error.message);
-    }
+    if (error.name !== 'AbortError') toast('error', 'Scan failed', error.message);
   } finally {
-    if (scanButton) {
-      scanButton.disabled = false;
-      scanButton.classList.remove('spinning', 'button-ghost');
-      scanButton.classList.add('button-primary');
-      scanButton.innerHTML = original;
-      hydrateIcons(scanButton);
-    }
-    if (rescanButton) {
-      rescanButton.disabled = false;
-      rescanButton.innerHTML = `${icon('scan')} Rescan`;
-      hydrateIcons(rescanButton);
-    }
-    if (button) button.classList.remove('spinning');
+    button.innerHTML = original;
+    hydrateIcons(button);
   }
 }
 
 function bindChrome() {
   hydrateIcons(document);
   document.getElementById('scan-btn')?.addEventListener('click', (event) => runGlobalScan(event.currentTarget));
-  document.getElementById('rescan-btn')?.addEventListener('click', (event) => runGlobalScan(event.currentTarget));
-  document.getElementById('trim-ram-btn')?.addEventListener('click', (event) => openBoostModal(event.currentTarget));
   document.getElementById('update-btn')?.addEventListener('click', () => promptAndInstallUpdate());
   document.getElementById('quit-btn')?.addEventListener('click', quitNexa);
-  document.getElementById('bg-mode-toggle')?.addEventListener('click', async () => {
-    const next = state.settings.runInBackground === false;
-    state.settings.runInBackground = next;
-    applyBodyPreferences();
-    if (state.page === 'settings' || state.page === 'dashboard') render();
-    try {
-      const data = await api('/api/settings', { method: 'POST', body: { runInBackground: next } });
-      state.settings = data.settings;
-      applyBodyPreferences();
-      toast(
-        'info',
-        next ? 'Background mode enabled' : 'Background mode disabled',
-        next
-          ? 'Nexa stays open in the background.'
-          : 'Nova pauses when unfocused and stops completely when you close the window.',
-      );
-    } catch (error) {
-      state.settings.runInBackground = !next;
-      applyBodyPreferences();
-      toast('error', 'Could not update background mode', error.message);
+  const menu = document.getElementById('mobile-menu');
+  const sidebar = document.getElementById('sidebar');
+  const setMenuOpen = (open) => {
+    sidebar?.classList.toggle('open', open);
+    menu?.setAttribute('aria-expanded', String(open));
+    menu?.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+  };
+  menu?.addEventListener('click', () => setMenuOpen(!sidebar?.classList.contains('open')));
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && sidebar?.classList.contains('open')) {
+      setMenuOpen(false);
+      menu?.focus();
     }
-  });
-  document.getElementById('mobile-menu')?.addEventListener('click', (event) => {
-    event.stopPropagation();
-    document.getElementById('sidebar')?.classList.toggle('open');
   });
   document.getElementById('admin-pill')?.addEventListener('click', () => {
     if (state.snapshot?.admin) {
@@ -392,7 +369,7 @@ function bindChrome() {
     }
     openModal({
       title: 'Restart with administrator rights?',
-      body: '<p>Windows will show a UAC prompt. Nova reconnects automatically and keeps your session token.</p>',
+      body: '<p>Windows will show a UAC prompt. Nexa reconnects automatically and keeps your session token.</p>',
       confirmLabel: 'Restart as administrator',
       onConfirm: elevate,
     });
@@ -401,32 +378,16 @@ function bindChrome() {
   document.addEventListener('click', (event) => {
     const target = event.target instanceof Element ? event.target : null;
     if (!target) return;
-    const cancelBtn = target.closest('#cancel-scan-btn, [data-action="cancel-scan"]');
-    if (cancelBtn) {
-      event.preventDefault();
-      if (!bootCompleted) {
-        stopInitialBoot();
-      } else {
-        cancelScan();
-        render();
-        toast('info', 'Scan stopped', 'Cancelled current system scan.');
-      }
-      return;
-    }
     const nav = target.closest('[data-nav]');
     if (nav) {
       event.preventDefault();
       navigate(nav.getAttribute('data-nav'));
-      document.getElementById('sidebar')?.classList.remove('open');
+      setMenuOpen(false);
       return;
     }
-    const sidebar = document.getElementById('sidebar');
-    if (
-      sidebar?.classList.contains('open')
-      && !sidebar.contains(target)
-      && !target.closest('#mobile-menu')
-    ) {
-      sidebar.classList.remove('open');
+    if (sidebar?.classList.contains('open') &&
+        (target.closest('[data-route]') || (!sidebar.contains(target) && !target.closest('#mobile-menu')))) {
+      setMenuOpen(false);
     }
   });
 }
@@ -437,9 +398,9 @@ function renderFatal(error) {
   view.innerHTML = `
     <div class="fatal">
       <div class="card card-pad" style="max-width:560px">
-        <h2>Nova could not read this PC</h2>
+        <h2>Could not connect to Nexa</h2>
         <p>${escapeHtml(error.message || 'The local PowerShell bridge did not respond.')}</p>
-        <p class="small muted">Nova never makes changes while it is failing. Check that PowerShell is available and try again.</p>
+        <p class="small muted">Make sure the local Nexa server is running, then try again.</p>
         <button class="button button-primary" type="button" id="boot-retry">${icon('refresh')} Try again</button>
       </div>
     </div>`;
@@ -457,18 +418,16 @@ function startPolling() {
   if (pollingStarted) return;
   pollingStarted = true;
   window.setInterval(() => {
-    if (state.page === 'dashboard' && isAppActivelyViewed()) loadTelemetry();
+    if (state.page === 'dashboard' && state.overviewDetails && state.scan && isAppActivelyViewed()) loadTelemetry();
   }, 3000);
   window.setInterval(() => {
-    if (state.page === 'dashboard' && isAppActivelyViewed()) loadProcesses();
+    if (state.page === 'dashboard' && state.overviewDetails && state.scan && isAppActivelyViewed()) loadProcesses();
   }, 15_000);
   window.setInterval(() => {
     api('/api/app/heartbeat', { method: 'POST', body: {} }).catch(() => {});
   }, 12_000);
   window.addEventListener('focus', () => {
-    if (state.page === 'dashboard') {
-      loadTelemetry();
-    }
+    if (state.page === 'dashboard') loadDashboard();
   });
   window.addEventListener('pagehide', () => {
     if (state.settings.runInBackground === false && state.token && navigator.sendBeacon) {
@@ -477,35 +436,9 @@ function startPolling() {
   });
 }
 
-let bootAbortController = null;
-let bootCompleted = false;
-
-function stopInitialBoot() {
-  if (bootCompleted) return;
-  bootCompleted = true;
-  if (bootAbortController) {
-    try { bootAbortController.abort(); } catch {}
-    bootAbortController = null;
-  }
-  cancelScan();
-  render();
-  toast('info', 'Scan stopped', 'Loaded dashboard. You can click "Run scan" anytime.');
-}
-
 async function boot() {
-  bootAbortController = new AbortController();
-  const fallbackTimer = setTimeout(() => {
-    if (!bootCompleted && !state.scan) {
-      console.warn('[nexa] Initial reading exceeded 3.5s; continuing to dashboard.');
-      stopInitialBoot();
-    }
-  }, 3500);
-
   try {
-    const data = await api('/api/bootstrap', { signal: bootAbortController.signal });
-    clearTimeout(fallbackTimer);
-    if (bootCompleted) return;
-    bootCompleted = true;
+    const data = await api('/api/bootstrap?cached=1', { signal: AbortSignal.timeout(12_000) });
     state.version = data.version || state.version;
     state.port = data.port || null;
     state.dataDir = data.dataDir || '';
@@ -518,35 +451,18 @@ async function boot() {
     if (data.token) state.token = data.token;
     if (data.applied) state.applied = data.applied;
     if (data.snapshot) state.snapshot = data.snapshot;
-    if (data.scan) {
-      state.scan = data.scan;
-      const badge = document.getElementById('nav-issues');
-      if (badge) {
-        const issues = data.scan.counts?.issues || 0;
-        badge.textContent = String(issues);
-        badge.classList.toggle('visible', issues > 0);
-      }
-    }
+    if (data.scan) state.scan = data.scan;
     const versionLabel = document.getElementById('version-label');
     if (versionLabel) versionLabel.textContent = state.version;
     applyBodyPreferences();
     updateAdminUI();
     syncUpdateBanner();
-    if (!state.scan) {
-      await loadScan();
-    }
-    await handleRoute();
     startPolling();
     setTimeout(() => {
       checkForUpdates({ silent: true });
     }, 2500);
+    await handleRoute();
   } catch (error) {
-    clearTimeout(fallbackTimer);
-    if (bootCompleted) return;
-    if (error.name === 'AbortError') {
-      stopInitialBoot();
-      return;
-    }
     renderFatal(error);
   }
 }
@@ -556,6 +472,5 @@ bindChrome();
 if (!window.location.hash) {
   window.history.replaceState(null, '', '#/dashboard');
 }
-boot().finally(() => {
-  window.addEventListener('hashchange', handleRoute);
-});
+window.addEventListener('hashchange', handleRoute);
+boot();

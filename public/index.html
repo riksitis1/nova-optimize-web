@@ -24,33 +24,28 @@
       </a>
 
       <nav class="nav" aria-label="Main navigation">
-        <p class="nav-label">Workspace</p>
         <a href="#/dashboard" data-route="dashboard" class="nav-link">
           <span class="nav-icon" data-icon="grid"></span><span>Overview</span>
         </a>
-        <a href="#/optimize" data-route="optimize" class="nav-link">
-          <span class="nav-icon" data-icon="spark"></span><span>Optimize</span><span class="nav-badge" id="nav-issues"></span>
-        </a>
         <a href="#/games" data-route="games" class="nav-link">
-          <span class="nav-icon" data-icon="gamepad"></span><span>Game settings</span>
+          <span class="nav-icon" data-icon="gamepad"></span><span>Games</span>
         </a>
-        <a href="#/network" data-route="network" class="nav-link">
-          <span class="nav-icon" data-icon="pulse"></span><span>Network lab</span>
+        <a href="#/optimize" data-route="optimize" class="nav-link">
+          <span class="nav-icon" data-icon="sliders"></span><span>Windows</span><span class="nav-badge" id="nav-issues"></span>
         </a>
-        <a href="#/cleanup" data-route="cleanup" class="nav-link">
-          <span class="nav-icon" data-icon="broom"></span><span>Cleanup</span>
+        <a href="#/benchmark" data-route="benchmark" class="nav-link">
+          <span class="nav-icon" data-icon="pulse"></span><span>Benchmark</span>
         </a>
-        <a href="#/startup" data-route="startup" class="nav-link">
-          <span class="nav-icon" data-icon="rocket"></span><span>Startup</span>
-        </a>
-
-        <p class="nav-label nav-label-spaced">Control</p>
-        <a href="#/advanced" data-route="advanced" class="nav-link">
-          <span class="nav-icon" data-icon="sliders"></span><span>Advanced</span>
-        </a>
-        <a href="#/activity" data-route="activity" class="nav-link">
-          <span class="nav-icon" data-icon="history"></span><span>Activity</span>
-        </a>
+        <details class="nav-more" id="nav-more">
+          <summary><span class="nav-icon" data-icon="list"></span> More tools <span class="nav-chevron" data-icon="chevron"></span></summary>
+          <div class="nav-more-links">
+            <a href="#/network" data-route="network" class="nav-link"><span class="nav-icon" data-icon="globe"></span><span>Network lab</span></a>
+            <a href="#/cleanup" data-route="cleanup" class="nav-link"><span class="nav-icon" data-icon="broom"></span><span>Cleanup</span></a>
+            <a href="#/startup" data-route="startup" class="nav-link"><span class="nav-icon" data-icon="rocket"></span><span>Startup</span></a>
+            <a href="#/advanced" data-route="advanced" class="nav-link"><span class="nav-icon" data-icon="beaker"></span><span>Advanced</span></a>
+            <a href="#/activity" data-route="activity" class="nav-link"><span class="nav-icon" data-icon="history"></span><span>Activity</span></a>
+          </div>
+        </details>
         <a href="#/settings" data-route="settings" class="nav-link">
           <span class="nav-icon" data-icon="gear"></span><span>Settings</span>
         </a>
@@ -64,21 +59,14 @@
             <small id="admin-card-copy">Nexa is starting up</small>
           </div>
         </div>
-        <div class="sidebar-bg-row">
-          <div class="sidebar-bg-copy">
-            <strong>Background mode</strong>
-            <small id="bg-mode-sub">Active in background</small>
-          </div>
-          <button class="switch on" id="bg-mode-toggle" type="button" role="switch" aria-checked="true" aria-label="Keep Nexa running in the background"></button>
-        </div>
         <button class="sidebar-quit" id="quit-btn" type="button"><span data-icon="power"></span> Quit Nexa</button>
-        <p class="sidebar-version">v<span id="version-label">1.4.3</span> · local only · no account</p>
+        <p class="sidebar-version">v<span id="version-label">1.9.0</span> · local only · no account</p>
       </div>
     </aside>
 
     <main class="main">
       <header class="topbar">
-        <button class="icon-button mobile-menu" id="mobile-menu" type="button" aria-label="Open navigation"><span data-icon="menu"></span></button>
+        <button class="icon-button mobile-menu" id="mobile-menu" type="button" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><span data-icon="menu"></span></button>
         <div class="topbar-title">
           <span class="eyebrow" id="page-eyebrow">SYSTEM READINESS</span>
           <h1 id="page-title">Overview</h1>
@@ -88,8 +76,8 @@
             <span class="status-dot"></span><span id="admin-pill-label">Checking</span>
           </button>
           <button class="button button-small button-primary" id="update-btn" type="button" hidden style="display:none" title="Download and install the latest Nexa update in place"><span data-icon="download"></span> <span id="update-btn-label">Update available</span></button>
-          <button class="button button-small" id="trim-ram-btn" type="button" title="Review background CPU use and choose apps to close"><span data-icon="zap"></span> Pre-game boost</button>
-          <button class="button button-primary" id="scan-btn" type="button"><span data-icon="scan"></span> Run scan</button>
+
+          <button class="button button-primary" id="scan-btn" type="button"><span data-icon="scan"></span> Scan PC</button>
         </div>
       </header>
 
@@ -97,11 +85,7 @@
         <div class="page-loading">
           <div class="loading-orbit"></div>
           <p id="loading-status-text">Reading your system…</p>
-          <div style="margin-top:16px">
-            <button class="button button-small button-ghost" id="cancel-scan-btn" type="button" style="display:inline-flex;align-items:center;gap:6px">
-              <span data-icon="x"></span> Stop scan
-            </button>
-          </div>
+
         </div>
       </div>
     </main>
