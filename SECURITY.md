@@ -6,11 +6,12 @@ Nexa Optimize is built on a strict, auditable, and non-destructive systems engin
 
 ## 1. Anti-Cheat Safety & Operating Boundaries
 
-Nexa Optimize is 100% compliant with modern competitive gaming anti-cheat platforms, including **Valve Anti-Cheat (VAC)**, **Easy Anti-Cheat (EAC)**, **BattlEye**, **Riot Vanguard**, and **Roblox Hyperion**:
+Nexa Optimize is designed to avoid the techniques that modern anti-cheat platforms commonly flag, including **Valve Anti-Cheat (VAC)**, **Easy Anti-Cheat (EAC)**, **BattlEye**, **Riot Vanguard**, and **Roblox Hyperion**:
 
 - **No Kernel Drivers:** Nexa does not install, load, or bundle third-party kernel drivers (`.sys` files) or kernel bypasses.
 - **No DLL Injection or Memory Hooking:** Nexa never injects dynamic-link libraries, never attaches debuggers, and never reads or writes the virtual memory (`VirtualAlloc`, `WriteProcessMemory`) of running game processes.
-- **Pure Native Windows APIs:** All performance parameters are applied through documented Windows NT kernel registry policies, Group Policy QoS Packet Scheduler (`pacer.sys`), Image File Execution Options (`PerfOptions`), MMCSS multimedia scheduling, and NDIS network driver parameters.
+- **Documented Windows Settings Only:** Performance parameters are applied through documented Windows registry policies, Windows QoS Packet Scheduler settings, TCP/IP and AFD parameters, power management APIs, and standard game configuration files.
+- **No Guarantee:** Anti-cheat software changes over time. No utility can guarantee compatibility with every anti-cheat update, but Nexa avoids kernel drivers, injection, and game-memory access.
 - **Game Config Safety:** Competitive game tweaks (CS2, Fortnite, Minecraft) modify only official plaintext configuration files (`cs2_video.txt`, `GameUserSettings.ini`, `options.txt`) while games are closed.
 
 ---
@@ -23,11 +24,11 @@ Nexa Optimize is 100% compliant with modern competitive gaming anti-cheat platfo
 
 ---
 
-## 3. Cryptographic State Preservation & Full Reversibility
+## 3. State Preservation & Full Reversibility
 
 - **Automated Pre-Change Backups:** Before applying any tweak, Nexa records the exact pre-existing registry values, types, and existence states into `data/state.json`.
-- **Atomic Revert:** Restoring an action (`Undo`) restores the recorded state or deletes newly created keys, returning Windows to its stock configuration without side effects.
-- **Hardware-Aware Safety:** Nexa detects dual-CCD AMD 3D V-Cache processors (`7900X3D`, `7950X3D`, `9950X3D`) to protect CCD core parking, and Intel 12th+ Gen hybrid CPUs to preserve EcoQoS background scheduling.
+- **Atomic Revert:** Restoring an action (`Undo`) restores the recorded state or deletes values that did not exist. It does not guarantee that third-party software or later Windows updates will not change the same values again.
+- **Conservative Public Action Set:** v1.5.0 exposes 25 actions: 12 safe, 3 caution, and 10 advanced. Caution and advanced actions are excluded from the readiness score and the one-click safe fix. Seven older tweaks are undo-only.
 - **System Restore Checkpoints:** Nexa integrates directly with Windows System Restore, enabling full system restore points before applying batches of optimizations.
 
 ---

@@ -11,27 +11,79 @@ test('a clean, fully optimized snapshot scores 100 with no issues', () => {
   assert.equal(scan.potentialScore, 100);
   assert.equal(scan.counts.issues, 0);
   assert.equal(scan.rank, 'Dialed in');
-  assert.equal(scan.optimized.length, 31);
+  assert.equal(scan.optimized.length, 24);
   assert.equal(scan.quickWins.length, 0);
   for (const category of ['Performance', 'Gaming', 'Network', 'Security']) {
     assert.equal(scan.categoryScores[category], 100, category);
   }
 });
 
-test('advanced controls (power-throttling, mpo-bypass, and pcie-msi-mode) do not lower readiness score when unoptimized', () => {
-  // Snapshot where advanced controls are unoptimized (stock Windows)
+test('caution and advanced controls do not lower the readiness score when unoptimized', () => {
+  // Snapshot where every caution/advanced control is at stock Windows values,
+  // while all safe actions remain optimized.
   const snap = makeSnapshot({
     state: {
+      hags: { exists: true, value: 1, kind: 'DWord' },
+      networkThrottling: { exists: true, value: 10, kind: 'DWord' },
+      systemResponsiveness: { exists: true, value: 20, kind: 'DWord' },
+      mouse: {
+        mouseSpeed: { exists: true, value: '1', kind: 'String' },
+        threshold1: { exists: true, value: '6', kind: 'String' },
+        threshold2: { exists: true, value: '10', kind: 'String' },
+      },
+      tcpAutotuning: { autoTuning: 'Restricted', scalingHeuristics: 'Enabled', rss: 'Enabled' },
+      win32PrioritySeparation: { exists: true, value: 2, kind: 'DWord' },
       powerThrottlingOff: { exists: false, value: null, kind: 'DWord' },
+      fastUdp: {
+        fastSend: { exists: false, value: null, kind: 'DWord' },
+        doNotUse: { exists: false, value: null, kind: 'DWord' },
+      },
+      disableUserTos: { exists: true, value: 1, kind: 'DWord' },
+      dscpPolicies: false,
       mpo: { exists: false, value: null, kind: 'DWord' },
-      msiMode: { optimized: false, gpu: 0, nic: 0, gpuSupported: true, nicSupported: true },
+      pagingExecutive: { exists: false, value: null, kind: 'DWord' },
     },
+    adapters: [
+      {
+        name: 'Ethernet',
+        description: 'Intel Ethernet',
+        mediaType: '802.3',
+        status: 'Up',
+        linkSpeed: '1 Gbps',
+        allowComputerToTurnOffDevice: true,
+      },
+    ],
   });
   const scan = analyze(snap);
   assert.equal(scan.score, 100);
   assert.equal(scan.counts.issues, 0);
   assert.equal(scan.categoryScores['Performance'], 100);
   assert.equal(scan.categoryScores['Gaming'], 100);
+  assert.equal(scan.categoryScores['Network'], 100);
+});
+
+test('only safe actions are scored, while caution and advanced actions are advisory', () => {
+  const scan = analyze(makeSnapshot({
+    state: {
+      gameMode: { autoGameMode: 0, allowAutoGameMode: 0 },
+      networkThrottling: { exists: true, value: 10, kind: 'DWord' },
+      pagingExecutive: { exists: false, value: null, kind: 'DWord' },
+    },
+  }));
+  const gameMode = scan.findings.find((finding) => finding.id === 'action-game-mode');
+  assert.ok(gameMode);
+  assert.equal(gameMode.scored, true);
+  assert.equal(gameMode.risk, 'safe');
+
+  const advanced = scan.findings.find((finding) => finding.id === 'action-network-throttling');
+  assert.ok(advanced);
+  assert.equal(advanced.scored, false);
+  assert.equal(advanced.risk, 'advanced');
+
+  const caution = scan.findings.find((finding) => finding.id === 'action-paging-executive');
+  assert.ok(caution);
+  assert.equal(caution.scored, false);
+  assert.equal(caution.risk, 'caution');
 });
 
 test('real problems lower the score and produce quick wins', () => {
@@ -105,7 +157,7 @@ test('real problems lower the score and produce quick wins', () => {
 test('applied actions are reported as active and do not become findings', () => {
   const scan = analyze(makeSnapshot(), { 'game-mode': new Date().toISOString() });
   const gameMode = scan.actions.find((action) => action.id === 'game-mode');
-  assert.equal(gameMode.appliedByNova, true);
+  assert.equal(gameMode.appliedByNexa, true);
   assert.equal(scan.findings.some((finding) => finding.id === 'action-game-mode'), false);
 });
 

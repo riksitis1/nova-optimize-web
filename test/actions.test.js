@@ -27,7 +27,7 @@ test('every action is serializable and has the expected public shape', () => {
     assert.equal(typeof action.currentValue, 'string', action.id);
     assert.ok(action.currentValue.length > 0, action.id);
   }
-  assert.equal(publicActions.find((action) => action.id === 'game-mode').appliedByNova, true);
+  assert.equal(Boolean(publicActions.find((action) => action.id === 'game-mode').appliedByNexa || publicActions.find((action) => action.id === 'game-mode').appliedByNova), true);
   assert.equal(publicActions.find((action) => action.id === 'hags').requiresAdmin, true);
 });
 
@@ -130,7 +130,7 @@ test('the Nagle action writes both TCP values for every adapter', async () => {
 test('power plan apply remembers the original plan and revert restores it', async () => {
   const action = getAction('power-plan');
   const { ps, calls } = fakePs((op) => {
-    if (op === 'power.activateNova') {
+    if (op === 'power.activateNexa' || op === 'power.activateNova') {
       return {
         original: { guid: '381b4222-f694-41f0-9685-ff5bb260df2e', name: 'Balanced' },
         novaGuid: '99999999-9999-9999-9999-999999999999',
@@ -217,12 +217,12 @@ test('adapter power actions only target adapters that are up', async () => {
   assert.deepEqual(calls[calls.length - 1].args.names, ['Ethernet', 'Wi-Fi']);
 });
 
-test('fast-udp and low-latency network actions configure expected registry entries', async () => {
+test('fast-udp and DSCP QoS configure expected registry entries', async () => {
   const udpAction = getAction('fast-udp');
   assert.ok(udpAction, 'fast-udp should exist');
   assert.equal(udpAction.category, 'Network');
   assert.equal(udpAction.impact, 'high');
-  assert.equal(udpAction.risk, 'safe');
+  assert.equal(udpAction.risk, 'advanced');
   assert.deepEqual(
     udpAction.writes.map((w) => w.name),
     ['FastSendDatagramThreshold', 'DoNotUseFastDatagram'],
@@ -233,12 +233,29 @@ test('fast-udp and low-latency network actions configure expected registry entri
   assert.equal(qosAction.category, 'Network');
   assert.equal(qosAction.writes[0].name, 'DisableUserTOSSetting');
   assert.equal(qosAction.writes[0].value, 0);
+});
 
-  const audioAction = getAction('audio-priority');
-  assert.ok(audioAction, 'audio-priority should exist');
-  assert.equal(audioAction.writes.find((w) => w.name === 'GPU Priority').value, 8);
-  assert.equal(audioAction.writes.find((w) => w.name === 'Priority').value, 6);
-  assert.equal(audioAction.writes.find((w) => w.name === 'Scheduling Category').value, 'High');
+test('delivery-optimization writes the documented HKLM policy value', async () => {
+  const action = getAction('delivery-optimization');
+  assert.ok(action, 'delivery-optimization should exist');
+  assert.equal(action.requiresAdmin, true);
+
+  let operations = null;
+  const { ps } = fakePs((op, args) => {
+    if (op === 'registry.read') return args.entries.map((entry) => ({ ...entry, exists: false }));
+    if (op === 'registry.apply') {
+      operations = args.operations;
+      return args.operations.map(() => ({ ok: true }));
+    }
+    throw new Error(`unexpected op ${op}`);
+  });
+
+  await action.apply({ ps, snapshot: makeSnapshot(), admin: true });
+  assert.equal(operations.length, 1);
+  assert.equal(operations[0].hive, 'HKLM');
+  assert.equal(operations[0].path, 'SOFTWARE\\Policies\\Microsoft\\Windows\\DeliveryOptimization');
+  assert.equal(operations[0].name, 'DODownloadMode');
+  assert.equal(operations[0].value, 0);
 });
 
 test('windowed-optimizations parses and preserves existing DirectXUserGlobalSettings tokens', async () => {
@@ -337,13 +354,24 @@ test('mpo-bypass deletes OverlayTestMode registry property on revert when missin
   assert.equal(revertOps[0].name, 'OverlayTestMode');
 });
 
-test('game-process-priority configures High CPU and High Disk IO priorities for competitive game executables', () => {
-  const action = getAction('game-process-priority');
-  assert.ok(action, 'game-process-priority action should exist');
-  assert.equal(action.category, 'Gaming');
-  assert.equal(action.risk, 'safe');
-  assert.equal(action.requiresAdmin, true);
+test('removed tweaks remain resolvable as hidden undo-only legacy actions', () => {
+  const legacyIds = [
+    'game-process-priority',
+    'gpu-priority',
+    'usb-polling',
+    'tdr-delay',
+    'nic-low-jitter',
+    'audio-priority',
+    'pcie-msi-mode',
+  ];
+  for (const id of legacyIds) {
+    assert.equal(actions.some((action) => action.id === id), false, `${id} must not be in the public set`);
+    const action = getAction(id);
+    assert.ok(action, `${id} should remain resolvable for undo`);
+    assert.equal(action.legacy, true, `${id} should be marked legacy`);
+  }
 
+  const action = getAction('game-process-priority');
   const exes = [
     'cs2.exe',
     'FortniteClient-Win64-Shipping.exe',
@@ -353,7 +381,6 @@ test('game-process-priority configures High CPU and High Disk IO priorities for 
     'r5apex.exe',
     'cod.exe',
   ];
-
   for (const exe of exes) {
     const cpuWrite = action.writes.find(
       (w) => w.path.includes(exe) && w.name === 'CpuPriorityClass',
@@ -368,6 +395,30 @@ test('game-process-priority configures High CPU and High Disk IO priorities for 
   }
 });
 
+test('the active action set is 25 actions split into 12 safe, 3 caution, and 10 advanced', () => {
+  assert.equal(actions.length, 25);
+  const counts = actions.reduce((acc, action) => {
+    acc[action.risk] = (acc[action.risk] || 0) + 1;
+    return acc;
+  }, {});
+  assert.deepEqual(counts, { safe: 12, caution: 3, advanced: 10 });
+});
+
+test('applied legacy actions appear in the public list only when they have a backup', () => {
+  const without = getPublicActions(makeSnapshot(), {});
+  assert.equal(without.length, 25);
+  assert.equal(without.some((action) => action.legacy), false);
+
+  const withLegacy = getPublicActions(makeSnapshot(), {
+    'game-process-priority': new Date().toISOString(),
+  });
+  assert.equal(withLegacy.length, 26);
+  const legacy = withLegacy.find((action) => action.id === 'game-process-priority');
+  assert.ok(legacy);
+  assert.equal(legacy.legacy, true);
+  assert.equal(legacy.appliedByNexa, true);
+});
+
 test('dscp-qos configures DSCP 46 expedited forwarding policies for competitive games and removes reserved bandwidth', () => {
   const action = getAction('dscp-qos');
   assert.ok(action, 'dscp-qos action should exist');
@@ -377,7 +428,7 @@ test('dscp-qos configures DSCP 46 expedited forwarding policies for competitive 
   assert.ok(psched, 'missing NonBestEffortLimit write');
   assert.equal(psched.value, 0);
 
-  const qosPolicies = ['NovaQoS_CS2', 'NovaQoS_Fortnite', 'NovaQoS_Roblox', 'NovaQoS_Minecraft', 'NovaQoS_Valorant', 'NovaQoS_Apex'];
+  const qosPolicies = ['NexaQoS_CS2', 'NexaQoS_Fortnite', 'NexaQoS_Roblox', 'NexaQoS_Minecraft', 'NexaQoS_Valorant', 'NexaQoS_Apex'];
   for (const policy of qosPolicies) {
     const dscp = action.writes.find((w) => w.path.includes(policy) && w.name === 'DSCP Value');
     const throttle = action.writes.find((w) => w.path.includes(policy) && w.name === 'Throttle Rate');
@@ -388,9 +439,10 @@ test('dscp-qos configures DSCP 46 expedited forwarding policies for competitive 
   }
 });
 
-test('nic-low-jitter calls net.nicDejitterDisable on apply and net.nicDejitterRestore on revert', async () => {
+test('legacy nic-low-jitter still restores its recorded adapter backup', async () => {
   const action = getAction('nic-low-jitter');
-  assert.ok(action, 'nic-low-jitter should exist');
+  assert.ok(action, 'nic-low-jitter should exist for undo');
+  assert.equal(action.legacy, true);
   assert.equal(action.category, 'Network');
   assert.equal(action.risk, 'safe');
   assert.equal(action.requiresReboot, true);
@@ -428,9 +480,10 @@ test('nic-low-jitter calls net.nicDejitterDisable on apply and net.nicDejitterRe
   assert.equal(restoreBackup.adapters[0].name, 'Ethernet');
 });
 
-test('pcie-msi-mode calls pcie.msiEnable on apply and pcie.msiRestore on revert', async () => {
+test('legacy pcie-msi-mode still restores its recorded device backup', async () => {
   const action = getAction('pcie-msi-mode');
-  assert.ok(action, 'pcie-msi-mode should exist');
+  assert.ok(action, 'pcie-msi-mode should exist for undo');
+  assert.equal(action.legacy, true);
   assert.equal(action.risk, 'advanced');
   assert.equal(action.requiresReboot, true);
 

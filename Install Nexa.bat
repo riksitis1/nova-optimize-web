@@ -5,7 +5,7 @@ cd /d "%~dp0"
 
 echo.
 echo   ========================================================
-echo     Nexa Optimize v1.4.0 - Local Setup
+echo     Nexa Optimize v1.4.3 - Local Setup
 echo     Free, local-first Windows 10/11 gaming performance
 echo   ========================================================
 echo.
@@ -51,21 +51,16 @@ echo   Creating Desktop shortcut...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Create Shortcut.ps1"
 if errorlevel 1 (
   echo   [!] Could not create Desktop shortcut automatically.
-  echo   You can still launch Nova anytime using "Start Nexa.bat".
+  echo   You can still launch Nexa anytime using "Start Nexa.bat".
 ) else (
   echo   [OK] Desktop shortcut created.
 )
 
 echo.
-set /p LAUNCH_NOW="  Launch Nexa Optimize now? [Y/N] (default Y): "
-if "%LAUNCH_NOW%"=="" set LAUNCH_NOW=Y
-if /i "%LAUNCH_NOW%"=="Y" (
-  start "" wscript.exe "%~dp0NexaOptimize.vbs"
-  echo.
-  echo   Nexa Optimize is starting in its own window...
-)
-
+echo   Starting Nexa Optimize...
+start "" wscript.exe "%~dp0NexaOptimize.vbs"
 echo.
-pause
+echo   [OK] Nexa Optimize is running!
+timeout /t 2 >nul 2>nul
 exit /b 0
 

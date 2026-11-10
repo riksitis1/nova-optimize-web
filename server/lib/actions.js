@@ -116,6 +116,7 @@ const MOUSE_PATH = 'Control Panel\\Mouse';
 const AFD_PATH = 'SYSTEM\\CurrentControlSet\\Services\\AFD\\Parameters';
 const TCPIP_PATH = 'SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters';
 const DESKTOP_PATH = 'Control Panel\\Desktop';
+const DELIVERY_OPTIMIZATION_POLICY_PATH = 'SOFTWARE\\Policies\\Microsoft\\Windows\\DeliveryOptimization';
 
 const COMPETITIVE_GAMES = [
   'cs2.exe',
@@ -153,44 +154,16 @@ function qosPolicyWrites(policyName, exe) {
   ];
 }
 
+// The public action set is intentionally conservative: 12 safe, 3 caution,
+// and 10 advanced controls. Only safe actions affect the readiness score and
+// the one-click "Apply safe fixes" action.
 const actions = [
-  regAction({
-    id: 'game-process-priority',
-    name: 'Anti-Cheat-Safe Game CPU & I/O Priority',
-    category: 'Gaming',
-    description:
-      'Configures Windows kernel Image File Execution Options (IFEO) PerfOptions to grant High CPU Priority (3) and High Disk I/O Priority (3) to competitive game executables (CS2, Fortnite, Roblox, Minecraft, Valorant, Apex, Call of Duty) without triggering anti-cheat blocks.',
-    note: 'Safe and reversible. Anti-cheats block runtime API priority boosts, but honor kernel IFEO PerfOptions.',
-    impact: 'high',
-    risk: 'safe',
-    requiresAdmin: true,
-    requiresReboot: false,
-    writes: COMPETITIVE_GAMES.flatMap((exe) => [
-      {
-        hive: HKLM,
-        path: `SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\${exe}\\PerfOptions`,
-        name: 'CpuPriorityClass',
-        kind: 'DWord',
-        value: 3,
-      },
-      {
-        hive: HKLM,
-        path: `SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\${exe}\\PerfOptions`,
-        name: 'IoPriority',
-        kind: 'DWord',
-        value: 3,
-      },
-    ]),
-    isOptimized: (snapshot) => snapshot?.state?.gamePriority === true,
-    currentValue: (snapshot) =>
-      snapshot?.state?.gamePriority ? 'High CPU & I/O (3)' : 'Default (Normal)',
-  }),
   regAction({
     id: 'game-mode',
     name: 'Enable Windows Game Mode',
     category: 'Gaming',
-    description: 'Tells Windows to prioritize your game and reduce background interruptions while you play.',
-    note: 'Safe and reversible. Impact varies by game and system.',
+    description: 'Tells Windows to reduce background interruptions while a game is running.',
+    note: 'Safe and reversible. The effect varies by game and hardware; it is not a guaranteed FPS boost.',
     impact: 'medium',
     risk: 'safe',
     writes: [
@@ -227,8 +200,8 @@ const actions = [
     id: 'hags',
     name: 'Enable hardware-accelerated GPU scheduling',
     category: 'Gaming',
-    description: 'Lets the GPU manage its own scheduling memory. Can reduce latency and frame-time spikes on supported GPUs.',
-    note: 'Requires a reboot. If you see stutter or driver issues after enabling, undo it.',
+    description: 'Enables hardware-accelerated GPU scheduling (HAGS) on supported Windows 10/11 builds.',
+    note: 'Requires a reboot. Some systems see no change or slightly worse frame pacing; undo it if that happens.',
     impact: 'medium',
     risk: 'caution',
     requiresAdmin: true,
@@ -243,8 +216,8 @@ const actions = [
     name: 'Optimize windowed games',
     category: 'Gaming',
     description:
-      'Enables Windows DirectFlip optimizations for borderless and windowed games to eliminate Desktop Window Manager (DWM) composition latency and tearing.',
-    note: 'Windows 11 22H2 or newer. Delivers true fullscreen input responsiveness in borderless mode.',
+      'Enables the DirectX swap-effect upgrade setting that can let borderless and windowed games use modern flip-model presentation on Windows 11 22H2+.',
+    note: 'Effect depends on the game, GPU driver, and Windows version. Windows 11 22H2 or newer.',
     impact: 'low',
     risk: 'safe',
     appliesTo: (snapshot) => snapshot.os.build >= 22621,
@@ -312,7 +285,7 @@ const actions = [
     name: 'Limit background apps',
     category: 'Performance',
     description: 'Stops Store apps from running background work when you are not using them.',
-    note: 'Some background sync and notification features may be delayed.',
+    note: 'Some background sync and notification features may be delayed. Reversible.',
     impact: 'low',
     risk: 'safe',
     writes: [{ hive: HKCU, path: BACKGROUND_PATH, name: 'GlobalUserDisabled', kind: 'DWord', value: 1 }],
@@ -332,39 +305,14 @@ const actions = [
     currentValue: (snapshot) => (isNumber(snapshot.state?.transparency, 0) ? 'Transparency off (0)' : 'Transparency on (1)'),
   }),
   regAction({
-    id: 'gpu-priority',
-    name: 'Raise the Games task priority',
-    category: 'Gaming',
-    description: 'Sets the Windows multimedia Games profile to high priority for GPU and thread scheduling, preventing background tasks from stealing render cycles.',
-    note: 'Safe and reversible. Ensures active game threads receive high-priority GPU scheduling.',
-    impact: 'high',
-    risk: 'safe',
-    requiresAdmin: true,
-    writes: [
-      { hive: HKLM, path: GAMES_TASK_PATH, name: 'GPU Priority', kind: 'DWord', value: 8 },
-      { hive: HKLM, path: GAMES_TASK_PATH, name: 'Priority', kind: 'DWord', value: 6 },
-      { hive: HKLM, path: GAMES_TASK_PATH, name: 'Scheduling Category', kind: 'String', value: 'High' },
-      { hive: HKLM, path: GAMES_TASK_PATH, name: 'SFIO Priority', kind: 'String', value: 'High' },
-    ],
-    isOptimized: (snapshot) =>
-      isNumber(snapshot.state.gamesTask.gpuPriority, 8) &&
-      isNumber(snapshot.state.gamesTask.priority, 6) &&
-      isString(snapshot.state.gamesTask.schedulingCategory, 'High') &&
-      isString(snapshot.state.gamesTask.sfioPriority, 'High'),
-    currentValue: (snapshot) => {
-      const cat = nodeValue(snapshot.state?.gamesTask?.schedulingCategory) || 'Medium';
-      const gpu = nodeValue(snapshot.state?.gamesTask?.gpuPriority) ?? 2;
-      return `${cat} · GPU Priority ${gpu}`;
-    },
-  }),
-  regAction({
     id: 'network-throttling',
     name: 'Disable multimedia network throttling',
     category: 'Network',
-    description: 'Disables the Windows multimedia network packet throttling mechanism, removing throughput caps and reducing packet jitter during online gaming.',
-    note: 'Safe and reversible. Completely unthrottles network packet processing for games.',
+    description:
+      'Sets NetworkThrottlingIndex to 0xFFFFFFFF, disabling the documented Windows multimedia network throttling behavior.',
+    note: 'Advanced. It does not raise your internet plan speed and may not change game latency. Test before keeping it.',
     impact: 'high',
-    risk: 'safe',
+    risk: 'advanced',
     requiresAdmin: true,
     writes: [{ hive: HKLM, path: SYSTEM_PROFILE_PATH, name: 'NetworkThrottlingIndex', kind: 'DWord', value: -1 }],
     isOptimized: (snapshot) => {
@@ -378,12 +326,13 @@ const actions = [
   }),
   regAction({
     id: 'system-responsiveness',
-    name: 'Prioritize foreground apps',
+    name: 'Reduce background multimedia reservation',
     category: 'Performance',
-    description: 'Configures Windows multimedia responsiveness to 0% reserved for background media, dedicating 100% of CPU thread scheduling priority to your foreground game.',
-    note: 'Safe and reversible. Guarantees maximum CPU focus on your active game.',
+    description:
+      'Sets SystemResponsiveness to 0, reducing the CPU time Windows reserves for background multimedia tasks. Windows uses 20 by default.',
+    note: 'Advanced. Background audio and video work may become less smooth. Effect on games varies.',
     impact: 'high',
-    risk: 'safe',
+    risk: 'advanced',
     requiresAdmin: true,
     writes: [{ hive: HKLM, path: SYSTEM_PROFILE_PATH, name: 'SystemResponsiveness', kind: 'DWord', value: 0 }],
     isOptimized: (snapshot) => isNumber(snapshot.state.systemResponsiveness, 0),
@@ -538,14 +487,14 @@ const actions = [
   },
   {
     id: 'delivery-optimization',
-    name: 'Stop Windows Update P2P Bandwidth Sharing',
+    name: 'Stop Windows Update P2P bandwidth sharing',
     category: 'Network',
     description:
-      'Prevents Windows Delivery Optimization from uploading and downloading peer-to-peer update fragments in the background while you game or download.',
-    note: 'Normal Windows Security and OS updates still work; only P2P background bandwidth sharing is disabled.',
-    impact: 'high',
+      'Turns off Delivery Optimization peer-to-peer sharing through the documented Group Policy value, so Windows Update does not upload update fragments to other PCs in the background.',
+    note: 'Normal Windows updates still work. This does not disable Windows Update or speed up your connection by itself.',
+    impact: 'medium',
     risk: 'safe',
-    requiresAdmin: false,
+    requiresAdmin: true,
     requiresReboot: false,
     kind: 'registry',
     appliesTo: () => true,
@@ -557,8 +506,8 @@ const actions = [
     },
     apply: registryApply([
       {
-        hive: HKCU,
-        path: 'Software\\Microsoft\\Windows\\CurrentVersion\\DeliveryOptimization\\Config',
+        hive: HKLM,
+        path: DELIVERY_OPTIMIZATION_POLICY_PATH,
         name: 'DODownloadMode',
         kind: 'DWord',
         value: 0,
@@ -568,13 +517,13 @@ const actions = [
   },
   {
     id: 'tcp-autotuning',
-    name: 'Unlock Gigabit Download Speeds (TCP Auto-Tuning & RSS)',
+    name: 'Restore normal TCP auto-tuning and RSS',
     category: 'Network',
     description:
-      'Enables Normal TCP Receive Window Auto-Tuning, disables Windows window-shrinking heuristics, and enables multi-core Receive-Side Scaling (RSS) for maximum download throughput and lower CPU interrupt latency.',
-    note: 'Fixes throttled Steam, Epic, Battle.net, and browser download speeds caused by restricted TCP windows.',
+      'Resets Windows TCP receive-window auto-tuning to Normal, disables window-shrinking heuristics, and enables Receive-Side Scaling (RSS).',
+    note: 'Advanced. These are already the defaults on most systems. This does not raise your ISP speed limit; it only restores Windows throughput behavior.',
     impact: 'high',
-    risk: 'safe',
+    risk: 'advanced',
     requiresAdmin: true,
     requiresReboot: false,
     kind: 'tcp-autotune',
@@ -616,13 +565,12 @@ const actions = [
   },
   {
     id: 'win32-priority',
-    name: 'Foreground Game CPU Quantum Priority',
+    name: 'Foreground CPU quantum priority',
     category: 'Gaming',
-    description:
-      'Configures Win32PrioritySeparation (0x26) to grant the active foreground game window short, high-priority CPU thread quantums for smoother 1% low FPS and snappier input.',
-    note: 'Backed up and reversible to the Windows default (0x02) with one click.',
+    description: 'Sets Win32PrioritySeparation to 0x26 (38), giving foreground windows shorter, more frequent CPU quantums.',
+    note: 'Advanced. Windows default is 0x02 on many systems. The effect on modern games is small and varies; benchmark before keeping it.',
     impact: 'high',
-    risk: 'safe',
+    risk: 'advanced',
     requiresAdmin: true,
     requiresReboot: false,
     kind: 'registry',
@@ -650,11 +598,10 @@ const actions = [
   },
   {
     id: 'power-throttling',
-    name: 'Disable Background CPU Power Throttling',
+    name: 'Disable background CPU power throttling',
     category: 'Performance',
-    description:
-      'Prevents Windows from aggressively down-clocking game audio, physics, and render helper threads into low-power EcoQoS states.',
-    note: 'Advanced. On Intel hybrid CPUs with Performance and Efficient cores (12th Gen+ / Core Ultra), disabling EcoQoS globally can let background apps schedule onto P-cores. Recommended for pure desktop architectures or AMD CPUs.',
+    description: 'Disables Windows Power Throttling globally.',
+    note: 'Advanced. On Intel hybrid CPUs (12th Gen+ / Core Ultra), this can let background apps schedule onto P-cores. Recommended only if you understand the trade-off.',
     impact: 'medium',
     risk: 'advanced',
     requiresAdmin: true,
@@ -679,10 +626,10 @@ const actions = [
   },
   {
     id: 'fullscreen-optimizations',
-    name: 'Exclusive Fullscreen for Older Games',
+    name: 'Exclusive fullscreen for older games',
     category: 'Gaming',
     description:
-      'Tells Windows to let games use true exclusive fullscreen instead of the borderless compatibility layer, which can lower input latency and frame-time spikes in older DirectX 9/11 titles.',
+      'Tells Windows to let older games use true exclusive fullscreen instead of the borderless compatibility layer.',
     note: 'Modern games already use flip-model presentation, so expect little change there. Fully reversible.',
     impact: 'low',
     risk: 'safe',
@@ -705,13 +652,12 @@ const actions = [
   },
   regAction({
     id: 'paging-executive',
-    name: 'Keep Windows Kernel & Drivers in RAM',
+    name: 'Keep Windows kernel and drivers in RAM',
     category: 'Performance',
-    description:
-      'Forces executive-level Windows kernel code and device drivers to stay resident in physical RAM instead of being paged to disk. Prevents driver page-fault micro-stutter during gaming.',
-    note: 'Recommended for PCs with 16 GB+ RAM. Keeps system and input responsiveness instantaneous.',
+    description: 'Keeps Windows kernel code and drivers resident in physical RAM instead of paging them to disk.',
+    note: 'Caution. Most useful on systems with 16 GB+ RAM. On 8 GB systems it can increase memory pressure. Reversible.',
     impact: 'high',
-    risk: 'safe',
+    risk: 'caution',
     requiresAdmin: true,
     requiresReboot: false,
     writes: [
@@ -729,11 +675,10 @@ const actions = [
   }),
   regAction({
     id: 'fast-startup',
-    name: 'Clean Kernel State on Boot (Disable Fast Startup)',
+    name: 'Clean kernel state on boot (disable Fast Startup)',
     category: 'Performance',
-    description:
-      'Ensures Windows cleanly resets kernel memory, driver handles, and hardware clocks on every boot instead of restoring days-old hibernated driver sessions that accumulate micro-stutter.',
-    note: 'Eliminates multi-day driver memory leaks and ghost uptime. Reversible anytime.',
+    description: 'Disables Windows Fast Startup so shutdown performs a full cold boot, resetting kernel and driver state each time.',
+    note: 'Boot may take slightly longer, but drivers and kernel state are refreshed. Reversible.',
     impact: 'medium',
     risk: 'safe',
     requiresAdmin: true,
@@ -752,65 +697,11 @@ const actions = [
       isNumber(snapshot?.state?.fastStartup, 0) ? 'Clean boot (0)' : 'Fast startup active (Default)',
   }),
   regAction({
-    id: 'usb-polling',
-    name: 'Disable USB Selective Suspend for Input Devices',
-    category: 'Gaming',
-    description:
-      'Prevents Windows from putting USB root hubs into low-power sleep states, guaranteeing uninterrupted 1000Hz+ polling on gaming mice and keyboards.',
-    note: 'Stops input stutter and missed polling ticks after pauses in movement.',
-    impact: 'medium',
-    risk: 'safe',
-    requiresAdmin: true,
-    requiresReboot: false,
-    writes: [
-      {
-        hive: HKLM,
-        path: 'SYSTEM\\CurrentControlSet\\Services\\USB',
-        name: 'DisableSelectiveSuspend',
-        kind: 'DWord',
-        value: 1,
-      },
-    ],
-    isOptimized: (snapshot) => isNumber(snapshot?.state?.usbSelectiveSuspend, 1),
-    currentValue: (snapshot) =>
-      isNumber(snapshot?.state?.usbSelectiveSuspend, 1) ? 'Suspend disabled (1)' : 'Selective suspend allowed',
-  }),
-  regAction({
-    id: 'tdr-delay',
-    name: 'Prevent GPU Shader Timeout Crashes (TdrDelay)',
-    category: 'Gaming',
-    description:
-      'Extends the Windows GPU Timeout Detection and Recovery (TDR) threshold from 2 seconds to 8 seconds to prevent driver crashes during intense shader compilation and frame spikes.',
-    note: 'Prevents DXGI_ERROR_DEVICE_REMOVED crashes in Unreal Engine 5 and heavy DX12 titles.',
-    impact: 'medium',
-    risk: 'safe',
-    requiresAdmin: true,
-    requiresReboot: false,
-    writes: [
-      {
-        hive: HKLM,
-        path: 'SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers',
-        name: 'TdrDelay',
-        kind: 'DWord',
-        value: 8,
-      },
-    ],
-    isOptimized: (snapshot) => {
-      const v = nodeValue(snapshot?.state?.tdrDelay);
-      return Number(v) >= 8;
-    },
-    currentValue: (snapshot) => {
-      const v = nodeValue(snapshot?.state?.tdrDelay);
-      return Number(v) >= 8 ? `${v}s (Extended)` : `${v ?? 2}s (Default)`;
-    },
-  }),
-  regAction({
     id: 'telemetry-stutter',
-    name: 'Disable Background Diagnostics & Telemetry Spikes',
+    name: 'Reduce Windows diagnostic data collection',
     category: 'Performance',
-    description:
-      'Stops Windows Connected User Experiences and Telemetry (DiagTrack) from scanning and uploading diagnostic bundles during active gaming sessions.',
-    note: 'Uses official Microsoft Group Policy registry key. Completely safe and reversible.',
+    description: 'Sets the documented AllowTelemetry policy to 0 to reduce Windows diagnostic data collection.',
+    note: 'Windows 10/11 Pro may treat 0 as Basic instead of fully off; Enterprise/Education honor 0. This is a privacy setting, not an FPS tweak.',
     impact: 'medium',
     risk: 'safe',
     requiresAdmin: true,
@@ -826,15 +717,14 @@ const actions = [
     ],
     isOptimized: (snapshot) => isNumber(snapshot?.state?.allowTelemetry, 0),
     currentValue: (snapshot) =>
-      isNumber(snapshot?.state?.allowTelemetry, 0) ? 'Telemetry disabled (0)' : 'Diagnostic uploads active',
+      isNumber(snapshot?.state?.allowTelemetry, 0) ? 'Telemetry policy = 0' : 'Diagnostic uploads active',
   }),
   regAction({
     id: 'window-animations',
-    name: 'Instant Alt-Tab & Window Animation Bypass',
+    name: 'Disable window animations',
     category: 'Performance',
-    description:
-      'Disables window minimize and maximize animations in the Windows Desktop Window Manager (DWM) for instantaneous Alt-Tab switching and zero compositor delay.',
-    note: 'User-level tweak. Does not require admin rights. Immediate effect.',
+    description: 'Disables window minimize and maximize animations.',
+    note: 'User-level visual setting. Immediate effect.',
     impact: 'low',
     risk: 'safe',
     requiresAdmin: false,
@@ -854,13 +744,12 @@ const actions = [
   }),
   regAction({
     id: 'fast-udp',
-    name: 'AFD Fast Datagram Transmit (UDP Ping Reducer)',
+    name: 'AFD fast datagram transmit',
     category: 'Network',
-    description:
-      'Bypasses the Windows kernel AFD network buffering queue for all UDP datagrams up to 1,500 bytes (MTU). Transmits multiplayer game packets (Fortnite, CS2, Valorant, Minecraft, Apex, Warzone) immediately onto the wire without driver staging latency.',
-    note: 'Safe and reversible. Eliminates UDP socket buffer jitter and cuts input-to-server latency.',
+    description: 'Sets the AFD FastSendDatagramThreshold to 1,500 bytes and clears DoNotUseFastDatagram.',
+    note: 'Advanced. This can reduce kernel buffering for small UDP packets on some systems, but Microsoft does not document a latency guarantee. Results vary; some systems see no change.',
     impact: 'high',
-    risk: 'safe',
+    risk: 'advanced',
     requiresAdmin: true,
     requiresReboot: false,
     writes: [
@@ -882,13 +771,13 @@ const actions = [
   }),
   regAction({
     id: 'dscp-qos',
-    name: 'Enable Network QoS & DSCP 46 Game Packet Tagging',
+    name: 'Enable network QoS and DSCP 46 tagging',
     category: 'Network',
     description:
-      'Configures Windows TCP/IP QoS and active registry policies to tag competitive game packets (CS2, Fortnite, Roblox, Minecraft, Valorant, Apex) with DSCP 46 (Expedited Forwarding). Allows home and ISP routers to prioritize gaming traffic ahead of background downloads, streaming, and bufferbloat.',
-    note: 'Official Windows QoS engine. Completely safe, non-destructive, and reversible. Applies live immediately via silent Group Policy refresh.',
+      'Creates Windows QoS policies that mark matching game traffic with DSCP 46 (Expedited Forwarding) and removes the default QoS bandwidth reservation.',
+    note: 'Advanced. Your router or ISP must honor DSCP for this to matter; many home routers ignore it. Reversible.',
     impact: 'high',
-    risk: 'safe',
+    risk: 'advanced',
     requiresAdmin: true,
     requiresReboot: false,
     writes: [
@@ -904,18 +793,177 @@ const actions = [
         ? 'DSCP 46 active on game packets'
         : 'Headers stripped (Default 1)',
   }),
+  regAction({
+    id: 'menu-delay',
+    name: 'Remove the menu show delay',
+    category: 'Performance',
+    description: 'Removes the default 400 ms delay before context menus and tooltips appear.',
+    note: 'User-level visual setting. Immediate effect.',
+    impact: 'low',
+    risk: 'safe',
+    requiresAdmin: false,
+    requiresReboot: false,
+    writes: [{ hive: HKCU, path: DESKTOP_PATH, name: 'MenuShowDelay', kind: 'String', value: '0' }],
+    isOptimized: (snapshot) => isString(snapshot?.state?.menuShowDelay, '0'),
+    currentValue: (snapshot) =>
+      isString(snapshot?.state?.menuShowDelay, '0')
+        ? '0 ms (Instant)'
+        : `${nodeValue(snapshot?.state?.menuShowDelay) ?? 400} ms (Default)`,
+  }),
+  regAction({
+    id: 'mpo-bypass',
+    name: 'Disable Multiplane Overlays (MPO)',
+    category: 'Gaming',
+    description: 'Disables Multiplane Overlays (MPO) by setting OverlayTestMode to 5.',
+    note: 'Advanced. Use this only if you see VRR/G-Sync flicker or black screens when Alt-Tabbing on multi-monitor setups. Requires a reboot.',
+    impact: 'medium',
+    risk: 'advanced',
+    requiresAdmin: true,
+    requiresReboot: true,
+    writes: [
+      {
+        hive: HKLM,
+        path: 'SOFTWARE\\Microsoft\\Windows\\Dwm',
+        name: 'OverlayTestMode',
+        kind: 'DWord',
+        value: 5,
+      },
+    ],
+    isOptimized: (snapshot) => isNumber(snapshot?.state?.mpo, 5),
+    currentValue: (snapshot) => (isNumber(snapshot?.state?.mpo, 5) ? 'MPO disabled (5)' : 'Default (MPO enabled)'),
+  }),
+];
+
+// Actions removed from the public set in v1.5.0. They remain resolvable so
+// existing backups from older versions can still be undone. They are never
+// shown in the normal action list and cannot be applied through the API.
+const legacyActions = [
+  regAction({
+    id: 'game-process-priority',
+    name: 'Anti-Cheat-Safe Game CPU & I/O Priority',
+    category: 'Gaming',
+    description:
+      'Configures Windows kernel Image File Execution Options (IFEO) PerfOptions to grant High CPU Priority (3) and High Disk I/O Priority (3) to competitive game executables.',
+    note: 'Removed in v1.5.0. This legacy tweak is undo-only.',
+    impact: 'high',
+    risk: 'safe',
+    requiresAdmin: true,
+    requiresReboot: false,
+    legacy: true,
+    writes: COMPETITIVE_GAMES.flatMap((exe) => [
+      {
+        hive: HKLM,
+        path: `SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\${exe}\\PerfOptions`,
+        name: 'CpuPriorityClass',
+        kind: 'DWord',
+        value: 3,
+      },
+      {
+        hive: HKLM,
+        path: `SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\${exe}\\PerfOptions`,
+        name: 'IoPriority',
+        kind: 'DWord',
+        value: 3,
+      },
+    ]),
+    isOptimized: (snapshot) => snapshot?.state?.gamePriority === true,
+    currentValue: (snapshot) =>
+      snapshot?.state?.gamePriority ? 'High CPU & I/O (3)' : 'Default (Normal)',
+  }),
+  regAction({
+    id: 'gpu-priority',
+    name: 'Raise the Games task priority',
+    category: 'Gaming',
+    description: 'Sets the Windows multimedia Games profile to high priority for GPU and thread scheduling.',
+    note: 'Removed in v1.5.0. This legacy tweak is undo-only.',
+    impact: 'high',
+    risk: 'safe',
+    requiresAdmin: true,
+    requiresReboot: false,
+    legacy: true,
+    writes: [
+      { hive: HKLM, path: GAMES_TASK_PATH, name: 'GPU Priority', kind: 'DWord', value: 8 },
+      { hive: HKLM, path: GAMES_TASK_PATH, name: 'Priority', kind: 'DWord', value: 6 },
+      { hive: HKLM, path: GAMES_TASK_PATH, name: 'Scheduling Category', kind: 'String', value: 'High' },
+      { hive: HKLM, path: GAMES_TASK_PATH, name: 'SFIO Priority', kind: 'String', value: 'High' },
+    ],
+    isOptimized: (snapshot) =>
+      isNumber(snapshot.state.gamesTask.gpuPriority, 8) &&
+      isNumber(snapshot.state.gamesTask.priority, 6) &&
+      isString(snapshot.state.gamesTask.schedulingCategory, 'High') &&
+      isString(snapshot.state.gamesTask.sfioPriority, 'High'),
+    currentValue: (snapshot) => {
+      const cat = nodeValue(snapshot.state?.gamesTask?.schedulingCategory) || 'Medium';
+      const gpu = nodeValue(snapshot.state?.gamesTask?.gpuPriority) ?? 2;
+      return `${cat} · GPU Priority ${gpu}`;
+    },
+  }),
+  regAction({
+    id: 'usb-polling',
+    name: 'Disable USB Selective Suspend for Input Devices',
+    category: 'Gaming',
+    description: 'Prevents Windows from putting USB root hubs into low-power sleep states.',
+    note: 'Removed in v1.5.0. This legacy tweak is undo-only.',
+    impact: 'medium',
+    risk: 'safe',
+    requiresAdmin: true,
+    requiresReboot: false,
+    legacy: true,
+    writes: [
+      {
+        hive: HKLM,
+        path: 'SYSTEM\\CurrentControlSet\\Services\\USB',
+        name: 'DisableSelectiveSuspend',
+        kind: 'DWord',
+        value: 1,
+      },
+    ],
+    isOptimized: (snapshot) => isNumber(snapshot?.state?.usbSelectiveSuspend, 1),
+    currentValue: (snapshot) =>
+      isNumber(snapshot?.state?.usbSelectiveSuspend, 1) ? 'Suspend disabled (1)' : 'Selective suspend allowed',
+  }),
+  regAction({
+    id: 'tdr-delay',
+    name: 'Prevent GPU Shader Timeout Crashes (TdrDelay)',
+    category: 'Gaming',
+    description: 'Extends the Windows GPU Timeout Detection and Recovery (TDR) threshold from 2 seconds to 8 seconds.',
+    note: 'Removed in v1.5.0. This legacy tweak is undo-only.',
+    impact: 'medium',
+    risk: 'safe',
+    requiresAdmin: true,
+    requiresReboot: false,
+    legacy: true,
+    writes: [
+      {
+        hive: HKLM,
+        path: 'SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers',
+        name: 'TdrDelay',
+        kind: 'DWord',
+        value: 8,
+      },
+    ],
+    isOptimized: (snapshot) => {
+      const v = nodeValue(snapshot?.state?.tdrDelay);
+      return Number(v) >= 8;
+    },
+    currentValue: (snapshot) => {
+      const v = nodeValue(snapshot?.state?.tdrDelay);
+      return Number(v) >= 8 ? `${v}s (Extended)` : `${v ?? 2}s (Default)`;
+    },
+  }),
   {
     id: 'nic-low-jitter',
     name: 'NIC Hardware De-Jitter (Disable EEE & Flow Control)',
     category: 'Network',
     description:
-      'Disables IEEE 802.3az Energy-Efficient Ethernet (EEE), Green Ethernet PHY sleep states, and Flow Control pause frames on your physical Ethernet adapter to eliminate packet burst wake-up jitter (1–3 ms spikes).',
-    note: 'Safe and reversible hardware setting. Requires system restart (or adapter reconnect) to re-initialize hardware PHY without EEE.',
+      'Disables IEEE 802.3az Energy-Efficient Ethernet (EEE), Green Ethernet PHY sleep states, and Flow Control pause frames on physical Ethernet adapters.',
+    note: 'Removed in v1.5.0. This legacy tweak is undo-only.',
     impact: 'high',
     risk: 'safe',
     requiresAdmin: true,
     requiresReboot: true,
     kind: 'nic-low-jitter',
+    legacy: true,
     appliesTo: (snapshot) => connectedAdapters(snapshot).some((a) => a.mediaType === '802.3'),
     isOptimized: (snapshot) => Boolean(snapshot?.state?.nicDejitter?.optimized),
     currentValue: (snapshot) =>
@@ -939,13 +987,13 @@ const actions = [
     id: 'audio-priority',
     name: 'MMCSS Low-Latency Audio Scheduling',
     category: 'Performance',
-    description:
-      'Sets the Windows Multimedia Class Scheduler Service (MMCSS) Audio task profile to match the Games profile (GPU Priority 8, Priority 6, High Scheduling), preventing audiodg.exe audio driver buffer underruns from stealing CPU cycles and causing 1% low FPS dips.',
-    note: 'Directly improves frame consistency and prevents micro-stutters during heavy combat and sound effects.',
+    description: 'Sets the Windows Multimedia Class Scheduler Service (MMCSS) Audio task profile to match the Games profile.',
+    note: 'Removed in v1.5.0. This legacy tweak is undo-only.',
     impact: 'medium',
     risk: 'safe',
     requiresAdmin: true,
     requiresReboot: false,
+    legacy: true,
     writes: [
       { hive: HKLM, path: AUDIO_TASK_PATH, name: 'GPU Priority', kind: 'DWord', value: 8 },
       { hive: HKLM, path: AUDIO_TASK_PATH, name: 'Priority', kind: 'DWord', value: 6 },
@@ -963,59 +1011,19 @@ const actions = [
       return `${cat} · GPU Priority ${gpu}`;
     },
   }),
-  regAction({
-    id: 'menu-delay',
-    name: 'Instant Menu & UI Response (0ms MenuShowDelay)',
-    category: 'Performance',
-    description:
-      'Removes the default 400ms Windows Desktop Window Manager delay for opening context menus, tooltips, and app interactions.',
-    note: 'Instantaneous desktop responsiveness. Safe user-level setting.',
-    impact: 'low',
-    risk: 'safe',
-    requiresAdmin: false,
-    requiresReboot: false,
-    writes: [{ hive: HKCU, path: DESKTOP_PATH, name: 'MenuShowDelay', kind: 'String', value: '0' }],
-    isOptimized: (snapshot) => isString(snapshot?.state?.menuShowDelay, '0'),
-    currentValue: (snapshot) =>
-      isString(snapshot?.state?.menuShowDelay, '0')
-        ? '0 ms (Instant)'
-        : `${nodeValue(snapshot?.state?.menuShowDelay) ?? 400} ms (Default)`,
-  }),
-  regAction({
-    id: 'mpo-bypass',
-    name: 'Disable Multiplane Overlays (MPO Bypass)',
-    category: 'Gaming',
-    description:
-      'Disables Desktop Window Manager Multiplane Overlays (MPO) by setting OverlayTestMode to 5. Eliminates VRR/G-Sync screen flickering, micro-stutters, and black screen driver freezes during Alt-Tabbing on multi-monitor high-refresh setups.',
-    note: 'Advanced. Recommended if you experience G-Sync/FreeSync flickering or black screen driver timeouts when Alt-Tabbing. Requires reboot.',
-    impact: 'medium',
-    risk: 'advanced',
-    requiresAdmin: true,
-    requiresReboot: true,
-    writes: [
-      {
-        hive: HKLM,
-        path: 'SOFTWARE\\Microsoft\\Windows\\Dwm',
-        name: 'OverlayTestMode',
-        kind: 'DWord',
-        value: 5,
-      },
-    ],
-    isOptimized: (snapshot) => isNumber(snapshot?.state?.mpo, 5),
-    currentValue: (snapshot) => (isNumber(snapshot?.state?.mpo, 5) ? 'MPO disabled (5)' : 'Default (MPO enabled)'),
-  }),
   {
     id: 'pcie-msi-mode',
     name: 'Enable PCIe Message Signaled Interrupts (MSI Mode)',
     category: 'Gaming',
     description:
-      'Switches your primary GPU and PCIe Ethernet controller from legacy shared pin interrupts (INTx) to Message Signaled Interrupts (MSI). Eliminates IRQ conflicts, lowers CPU interrupt latency, and prevents frame drops during intense gameplay.',
-    note: 'Advanced hardware setting. Safe and reversible. Requires system reboot to reinitialize hardware interrupt vectors.',
+      'Switches the primary GPU and PCIe Ethernet controller from legacy shared pin interrupts (INTx) to Message Signaled Interrupts (MSI).',
+    note: 'Removed in v1.5.0. This legacy tweak is undo-only.',
     impact: 'high',
     risk: 'advanced',
     requiresAdmin: true,
     requiresReboot: true,
     kind: 'pcie-msi-mode',
+    legacy: true,
     appliesTo: (snapshot) =>
       Boolean(snapshot?.state?.msiMode?.gpuSupported !== false || snapshot?.state?.msiMode?.nicSupported !== false),
     isOptimized: (snapshot) => Boolean(snapshot?.state?.msiMode?.optimized),
@@ -1040,7 +1048,7 @@ const actions = [
   },
 ];
 
-const byId = new Map(actions.map((action) => [action.id, action]));
+const byId = new Map([...actions, ...legacyActions].map((action) => [action.id, action]));
 
 function getAction(id) {
   return byId.get(id) || null;
@@ -1079,6 +1087,7 @@ function serializeAction(action, snapshot, applied = {}) {
     requiresAdmin: !!action.requiresAdmin,
     requiresReboot: !!action.requiresReboot,
     kind: action.kind,
+    legacy: Boolean(action.legacy),
     applicable,
     optimized,
     appliedByNexa: isAppliedByNexa,
@@ -1088,7 +1097,11 @@ function serializeAction(action, snapshot, applied = {}) {
 }
 
 function getPublicActions(snapshot, applied = {}) {
-  return actions.map((action) => serializeAction(action, snapshot, applied));
+  const active = actions.map((action) => serializeAction(action, snapshot, applied));
+  const legacy = legacyActions
+    .filter((action) => applied && applied[action.id])
+    .map((action) => serializeAction(action, snapshot, applied));
+  return [...active, ...legacy];
 }
 
-module.exports = { actions, getAction, getPublicActions, serializeAction };
+module.exports = { actions, legacyActions, getAction, getPublicActions, serializeAction };

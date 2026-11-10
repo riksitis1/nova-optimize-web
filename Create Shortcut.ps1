@@ -1,43 +1,30 @@
-#requires -Version 5.1
-<#
-  Creates the "NEXA" Desktop (and Start Menu) shortcut with the Nova icon.
-  The shortcut starts NexaOptimize.vbs with wscript.exe, so no console window
-  appears.
-#>
-
 $ErrorActionPreference = 'Stop'
-
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $launcher = Join-Path $root 'NexaOptimize.vbs'
 $server = Join-Path $root 'server\server.js'
 $icon = Join-Path $root 'public\assets\nexa.ico'
-
 if (-not (Test-Path -LiteralPath $launcher)) {
   throw 'NexaOptimize.vbs was not found. Keep this script inside the Nova Optimize folder.'
 }
 if (-not (Test-Path -LiteralPath $server)) {
   throw 'server\server.js was not found. The Nova Optimize folder looks incomplete.'
 }
-
 $desktop = [Environment]::GetFolderPath('Desktop')
 if ([string]::IsNullOrWhiteSpace($desktop) -or -not (Test-Path -LiteralPath $desktop)) {
   $desktop = Join-Path $env:USERPROFILE 'Desktop'
 }
-
-# Remove legacy "Nova Optimize.lnk" or "NOVA.lnk" if present so only "NEXA" appears
 $legacyPaths = @(
   (Join-Path $desktop 'Nova Optimize.lnk'),
-  (Join-Path $desktop 'NOVA.lnk')
+  (Join-Path $desktop 'NOVA.lnk'),
+  (Join-Path $desktop 'Nexa Optimize.lnk')
 )
 foreach ($lp in $legacyPaths) {
   if (Test-Path -LiteralPath $lp) {
     Remove-Item -LiteralPath $lp -Force -ErrorAction SilentlyContinue
   }
 }
-
 $shortcutPath = Join-Path $desktop 'NEXA.lnk'
 $wscript = Join-Path $env:SystemRoot 'System32\wscript.exe'
-
 $shell = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut($shortcutPath)
 $shortcut.TargetPath = $wscript
@@ -50,7 +37,12 @@ if (Test-Path -LiteralPath $icon) {
 }
 $shortcut.Save()
 
-# Also register in Start Menu Programs so searching "NEXA" in Windows Start works
+try {
+  $bytes = [System.IO.File]::ReadAllBytes($shortcutPath)
+  $bytes[0x15] = $bytes[0x15] -bor 0x20
+  [System.IO.File]::WriteAllBytes($shortcutPath, $bytes)
+} catch { }
+
 try {
   $startMenu = [Environment]::GetFolderPath('Programs')
   if ($startMenu -and (Test-Path -LiteralPath $startMenu)) {
@@ -65,9 +57,13 @@ try {
       $startShortcut.IconLocation = "$icon,0"
     }
     $startShortcut.Save()
+    try {
+      $sBytes = [System.IO.File]::ReadAllBytes($startShortcutPath)
+      $sBytes[0x15] = $sBytes[0x15] -bor 0x20
+      [System.IO.File]::WriteAllBytes($startShortcutPath, $sBytes)
+    } catch { }
   }
 } catch { }
-
 Write-Host ''
 Write-Host '  Created Desktop shortcut: ' -NoNewline
 Write-Host $shortcutPath -ForegroundColor Green

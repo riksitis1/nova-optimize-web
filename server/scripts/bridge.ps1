@@ -839,7 +839,14 @@ function Get-Snapshot {
       threshold1 = Read-RegValue @{ hive = 'HKCU'; path = 'Control Panel\Mouse'; name = 'MouseThreshold1' }
       threshold2 = Read-RegValue @{ hive = 'HKCU'; path = 'Control Panel\Mouse'; name = 'MouseThreshold2' }
     }
-    deliveryOptimization = Read-RegValue @{ hive = 'HKCU'; path = 'Software\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config'; name = 'DODownloadMode' }
+    deliveryOptimization = $(
+      $doPolicy = Read-RegValue @{ hive = 'HKLM'; path = 'SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization'; name = 'DODownloadMode' }
+      if ($doPolicy.exists) {
+        $doPolicy
+      } else {
+        Read-RegValue @{ hive = 'HKCU'; path = 'Software\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config'; name = 'DODownloadMode' }
+      }
+    )
     win32PrioritySeparation = Read-RegValue @{ hive = 'HKLM'; path = 'SYSTEM\CurrentControlSet\Control\PriorityControl'; name = 'Win32PrioritySeparation' }
     powerThrottlingOff = Read-RegValue @{ hive = 'HKLM'; path = 'SYSTEM\CurrentControlSet\Control\Power\PowerThrottling'; name = 'PowerThrottlingOff' }
     tcpAutotuning = Get-TcpGlobalState

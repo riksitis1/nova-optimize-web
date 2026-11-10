@@ -212,12 +212,12 @@ export async function applySafe() {
 
   if (!state.snapshot?.admin && blocked.length > 0) {
     openModal({
-      title: 'Administrator Rights Needed for Full Optimization',
+      title: 'Administrator Rights Needed for Some Safe Fixes',
       body: `
-        <p>Windows requires Administrator rights to configure low-latency network throttling, multimedia scheduling, and high-performance power plans.</p>
+        <p>Windows requires Administrator rights for some safe fixes, including the power plan and system-wide registry settings.</p>
         <ul class="modal-list">
-          <li><strong>${blocked.length} system optimizations</strong> need Administrator rights to reach <strong>95–100/100</strong>.</li>
-          <li>${available.length ? `Only ${available.length} user settings can be applied without administrator rights (Score: ~70–75).` : 'All remaining optimizations require Administrator rights.'}</li>
+          <li><strong>${blocked.length} safe fix${blocked.length === 1 ? '' : 'es'}</strong> need Administrator rights.</li>
+          <li>${available.length ? `You can apply ${available.length} user-level fix${available.length === 1 ? '' : 'es'} now without administrator rights.` : 'All remaining safe fixes require Administrator rights.'}</li>
         </ul>
         <p class="small muted" style="margin-top:12px">Click below to approve the Windows prompt and restart Nexa as Administrator.</p>
       `,
@@ -233,7 +233,7 @@ export async function applySafe() {
               if (failed.length) {
                 toast('warn', 'Some changes were skipped', failed.map((result) => result.error).join(' · '));
               } else {
-                toast('success', 'Safe fixes applied', `${available.length} settings updated. Restart as admin for full 95+ score.`);
+                toast('success', 'Safe fixes applied', `${available.length} setting${available.length === 1 ? '' : 's'} updated.`);
               }
             } catch (error) {
               toast('error', 'Could not apply safe fixes', error.message);

@@ -2,29 +2,30 @@
 
 [![CI](https://github.com/riksitis1/nova-optimize-web/actions/workflows/ci.yml/badge.svg)](https://github.com/riksitis1/nova-optimize-web/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/Release-v1.4.0-b8ff2c.svg)](https://github.com/riksitis1/nova-optimize-web/releases)
+[![Release](https://img.shields.io/badge/Release-v1.5.0-b8ff2c.svg)](https://github.com/riksitis1/nova-optimize-web/releases)
 [![Anti-Cheat Safe](https://img.shields.io/badge/Anti--Cheat-Safe-38ef7d.svg)](SECURITY.md)
 
 A free, local-first Windows gaming performance, latency reduction, and system configuration suite. Zero accounts, zero ads, zero telemetry, zero background daemons, and zero paywalls.
 
 Nexa scans your PC, explains what is actually worth changing, applies only the changes you select, backs up every value before modification, and lets you undo individual settings or all changes in 1 click.
 
-![Nexa Optimize](assets/logo.svg)
+![Nexa Optimize](public/assets/logo.svg)
 
 ---
 
 ## What It Does
 
-- **Hardware-Aware Readiness Scan:** Transparent configuration score with hardware protection (AMD Dual-CCD 3D V-Cache parking preservation and Intel 12th+ Gen EcoQoS hybrid core preservation).
-- **32 Documented System Optimizations:**
-  - **CPU & Scheduling:** Anti-cheat safe IFEO process priority, Foreground CPU Quantum Boost (`Win32PrioritySeparation = 0x26`), MMCSS low-latency audio scheduling, Background CPU Power Throttling management, and paging executive kernel lock.
-  - **Low-Latency Network & QoS:** Active DSCP 46 (Expedited Forwarding) kernel packet tagging for competitive titles (CS2, Fortnite, Valorant, Roblox, Apex, Minecraft), AFD Fast Datagram Transmit (UDP ping reducer), NIC Hardware De-Jitter (disabling Energy Efficient Ethernet & Flow Control), TCP Auto-Tuning, and Receive-Side Scaling (RSS).
-  - **GPU & Presentation:** DirectFlip DX10/11 windowed optimizations (`SwapEffectUpgradeEnable`), Hardware-Accelerated GPU Scheduling (HAGS), PCIe Message Signaled Interrupts (MSI Mode), TdrDelay shader timeout protection, and Multiplane Overlay (MPO) bypass.
-  - **Input & Display:** 1:1 linear mouse response, USB selective suspend bypass for input devices, instant menu show delay, and window animation bypass.
-- **Smart Stale Shader Cache Cleanup:** Safely purges stale compiled shader files (>30 days old) from `DXCache`, `GLCache`, and `D3DSCache` to reclaim tens of gigabytes of disk space while keeping active shaders intact to prevent in-game compilation stutter.
+- **Hardware-Aware Readiness Scan:** A transparent configuration score based on safe, reversible settings and real system findings. It does not promise a specific FPS gain.
+- **25 Documented, Reversible Optimizations:**
+  - **Safe (12):** Game Mode, Game DVR background recording off, windowed flip-model presentation, background app limits, transparency effects, high-performance power plan, Delivery Optimization P2P off, exclusive fullscreen for older games, Fast Startup off, reduced diagnostic data collection, window animations off, and menu show delay.
+  - **Caution (3):** Hardware-accelerated GPU scheduling, network adapter power saving, and keeping kernel/drivers in RAM.
+  - **Advanced, opt-in (10):** Multimedia network throttling, system responsiveness, mouse acceleration, Nagle/TCP acknowledgements, TCP auto-tuning/RSS, Win32 priority separation, global power throttling, AFD fast datagram, DSCP 46 QoS, and MPO bypass.
+  - Advanced and caution controls are excluded from the readiness score and from the one-click safe fix. Apply them one at a time and undo anything that does not help.
+- **Legacy Undo:** Seven tweaks removed in v1.5.0 (IFEO priorities, MMCSS audio, USB selective suspend, TDR delay, NIC EEE/flow control, PCIe MSI) remain undoable if an older version applied them.
+- **Smart Stale Shader Cache Cleanup:** Purges stale compiled shader files (older than 30 days) from `DXCache`, `GLCache`, and `D3DSCache` while keeping recent shaders intact. This can reclaim disk space and reduce unnecessary shader recompilation.
 - **Per-Game Video Profiles:** Clean, reversible visual config editors for **Fortnite** (`GameUserSettings.ini`), **Counter-Strike 2** (`cs2_video.txt`), and **Minecraft: Java Edition** (`options.txt`).
 - **Network Lab:** Game-route latency diagnostics over ICMP/TCP, packet jitter, packet loss, DNS benchmark, DNS flush, and speed testing with bufferbloat grading.
-- **Activity & Emergency Restore:** Cryptographic per-action backups stored in `data/state.json`, full audit trail, and 1-click "Undo all".
+- **Activity & Emergency Restore:** Exact per-action backups stored in `data/state.json`, a full audit trail, and 1-click "Undo all".
 
 ---
 
@@ -34,10 +35,10 @@ To verify the integrity of your downloaded installer or archive using Windows Po
 
 ```powershell
 # For the Self-Extracting Setup
-Get-FileHash .\Nexa-Optimize-Setup-v1.4.0.cmd -Algorithm SHA256
+Get-FileHash .\Nexa-Optimize-Setup-v1.5.0.cmd -Algorithm SHA256
 
 # For the Portable Source Archive
-Get-FileHash .\Nexa-Optimize-v1.4.0.zip -Algorithm SHA256
+Get-FileHash .\Nexa-Optimize-v1.5.0.zip -Algorithm SHA256
 ```
 
 Official SHA-256 release hashes are published and attested on the [GitHub Releases](https://github.com/riksitis1/nova-optimize-web/releases) page and [Official Portal](https://nova-optimize.onrender.com).
@@ -46,11 +47,12 @@ Official SHA-256 release hashes are published and attested on the [GitHub Releas
 
 ## Security & Anti-Cheat Compliance
 
-Nexa Optimize strictly follows an elite systems engineering safety standard:
+Nexa Optimize follows a conservative, auditable safety standard:
 
-- **100% Anti-Cheat Compatible:** Compliant with Valve Anti-Cheat (VAC), Easy Anti-Cheat (EAC), BattlEye, Riot Vanguard, and Roblox Hyperion. Nexa **never** injects DLLs, never hooks game memory, and bundles no kernel drivers (`.sys`).
+- **No Kernel Drivers or Game Memory Access:** Nexa does not install kernel drivers (`.sys`), inject DLLs, hook game memory, or attach debuggers. It avoids the techniques anti-cheat systems commonly flag, but no software can guarantee compatibility with every anti-cheat update.
 - **Loopback Only:** Binds strictly to `127.0.0.1` with a random per-launch bearer token.
-- **Zero Telemetry:** No user tracking, no metrics, and no network analytics. Everything remains 100% local on your PC.
+- **Zero Telemetry:** No user tracking, no metrics, and no network analytics. Everything remains local on your PC.
+- **No Destructive System Changes:** Nexa does not disable Windows Defender, Windows Firewall, SmartScreen, UAC, Core Isolation, or Windows Update. It does not install drivers, overclock hardware, or delete personal files.
 
 For detailed security specifications, see [SECURITY.md](SECURITY.md).
 
@@ -60,7 +62,7 @@ For detailed security specifications, see [SECURITY.md](SECURITY.md).
 
 1. **Windows 10 or Windows 11 (64-bit)**
 2. **Node.js 18+ LTS** (Installer auto-detects and installs via `winget` if missing)
-3. Run `Nexa-Optimize-Setup-v1.4.0.cmd` or extract `Nexa-Optimize-v1.4.0.zip` and run `Install Nexa.bat`.
+3. Run `Nexa-Optimize-Setup-v1.5.0.cmd` or extract `Nexa-Optimize-v1.5.0.zip` and run `Install Nexa.bat`.
 
 ---
 

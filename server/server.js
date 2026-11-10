@@ -306,6 +306,10 @@ async function handleApi(req, res, url) {
         results.push({ id, ok: false, error: 'Unknown action.' });
         continue;
       }
+      if (action.legacy) {
+        results.push({ id, ok: false, error: 'This legacy tweak is undo-only. Use Undo to restore its previous value.' });
+        continue;
+      }
       if (getApplied()[id] && action.isOptimized(snapshot)) {
         results.push({ id, ok: true, skipped: true, message: 'Already applied and optimized.' });
         continue;

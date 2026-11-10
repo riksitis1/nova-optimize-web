@@ -1,10 +1,10 @@
 'use strict';
 
-const { actions, serializeAction } = require('./actions');
+const { actions, getPublicActions } = require('./actions');
 
 const SEVERITY_POINTS = { high: 14, medium: 7, low: 3, info: 0 };
 const SYSTEM_SEVERITY_POINTS = { high: 14, medium: 7, low: 3, info: 0 };
-const ACTION_SEVERITY_POINTS = { high: 1.8, medium: 1.0, low: 0.5, info: 0 };
+const ACTION_SEVERITY_POINTS = { high: 3, medium: 2, low: 1, info: 0 };
 
 function getFindingDeduction(finding) {
   if (!finding.scored || finding.severity === 'info') return 0;
@@ -55,7 +55,7 @@ function addFinding(findings, finding) {
 function analyze(snapshot, applied = {}) {
   const findings = [];
   const optimized = [];
-  const publicActions = actions.map((action) => serializeAction(action, snapshot, applied));
+  const publicActions = getPublicActions(snapshot, applied);
 
   for (const action of actions) {
     const info = publicActions.find((item) => item.id === action.id);
@@ -72,7 +72,7 @@ function analyze(snapshot, applied = {}) {
       description: action.description,
       detail: action.note,
       actionId: action.id,
-      scored: action.risk !== 'advanced',
+      scored: action.risk === 'safe',
       risk: action.risk,
       requiresAdmin: !!action.requiresAdmin,
       requiresReboot: !!action.requiresReboot,
@@ -359,13 +359,13 @@ function analyze(snapshot, applied = {}) {
   const summary =
     score >= 90
       ? scoredFindings.length === 0
-        ? 'All recommended Windows gaming, power, and network parameters are active.'
-        : `Core configuration is optimized, with ${scoredFindings.length} optional adjustment${scoredFindings.length === 1 ? '' : 's'} listed below.`
+        ? 'No safe recommendations or system issues are pending. Advanced controls remain optional.'
+        : `${scoredFindings.length} item${scoredFindings.length === 1 ? '' : 's'} still need${scoredFindings.length === 1 ? 's' : ''} attention. Advanced controls are excluded from this score.`
       : score >= 75
-        ? 'Most settings are configured well. Review the recommended items below to finish tuning.'
+        ? 'Most settings are in good shape. Review the safe recommendations and system notes below.'
         : score >= 60
-          ? 'Several Windows power, scheduling, or network settings can be improved. Apply changes below and test in-game.'
-          : 'Multiple high-impact settings are reducing performance or adding latency. Apply the recommended fixes below first.';
+          ? 'Several settings or system conditions can be improved. Apply safe changes one at a time and test in-game.'
+          : 'Multiple system issues or safe configuration gaps need attention. Review the findings below before applying tweaks.';
 
   const quickWins = findings
     .filter((finding) => finding.scored && finding.severity !== 'info' && (finding.actionId || finding.page))

@@ -1,13 +1,14 @@
 {
-    "version": "1.4.4",
-    "releasedAt": "2026-11-09",
-    "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v1.4.4.zip",
-    "sha256": "b109cbbec8389fd660bb2f55dbeedb58daa4d3fd11ea5205e059e56478caf83a",
+    "version": "1.5.0",
+    "releasedAt": "2026-11-10",
+    "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v1.5.0.zip",
+    "sha256": "aae991b622013c8437ef9b57429b8d1388ef4c8c1f7a4e2661a6586b2f3950df",
     "notes": [
-        "Eliminated Score Glow Box Border: Replaced raster drop-shadow filters with mathematical layered vector bloom for perfectly smooth, artifact-free circular glow on all displays",
-        "Streamlined One-Click Optimization: Direct front-page 'One-Click Optimize' action instantly applies all safe tweaks with live progress tracking",
-        "Network & Service Resilience: Automatic transient retry and fail-soft inline retry cards for Startup, Cleanup, and Games pages (eliminating infinite spinners)",
-        "Intelligent Request Deduplication & Caching: Rapid tab switching is instant with disk scanning cache and shared in-flight promises",
-        "Automatic Administrator Elevation: Prompts Windows UAC on launch so all 25 performance optimizations apply without permission blocks"
+        "Reworked Optimizer Core: 25 documented actions split into 12 safe, 3 caution, and 10 advanced controls",
+        "Conservative Scoring: only safe actions and real system findings affect the readiness score; caution and advanced controls are opt-in and excluded",
+        "Fixed Delivery Optimization: now uses the documented HKLM policy path instead of the ineffective HKCU key",
+        "Honest Copy and Claims: removed guaranteed FPS/score promises and corrected the website transparency data",
+        "Legacy Undo Preserved: seven older tweaks removed from the public set remain undoable from Activity",
+        "Update Compatibility: older installed versions can update in place through the existing SHA-256 verified manifest"
     ]
 }
