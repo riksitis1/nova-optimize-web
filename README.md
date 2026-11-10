@@ -1,11 +1,11 @@
 # Nexa Optimize
 
 [![CI](https://github.com/riksitis1/nova-optimize-web/actions/workflows/ci.yml/badge.svg)](https://github.com/riksitis1/nova-optimize-web/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: Proprietary Freeware](https://img.shields.io/badge/License-Proprietary%20Freeware-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/badge/Release-v1.5.0-b8ff2c.svg)](https://github.com/riksitis1/nova-optimize-web/releases)
-[![Anti-Cheat Safe](https://img.shields.io/badge/Anti--Cheat-Safe-38ef7d.svg)](SECURITY.md)
+[![No Kernel Drivers](https://img.shields.io/badge/No%20Kernel%20Drivers-38ef7d.svg)](SECURITY.md)
 
-A free, local-first Windows gaming performance, latency reduction, and system configuration suite. Zero accounts, zero ads, zero telemetry, zero background daemons, and zero paywalls.
+A free, local-first Windows gaming performance, latency diagnostics, and system configuration suite. Zero accounts, zero ads, zero telemetry, zero background daemons, and zero paywalls.
 
 Nexa scans your PC, explains what is actually worth changing, applies only the changes you select, backs up every value before modification, and lets you undo individual settings or all changes in 1 click.
 
@@ -41,11 +41,11 @@ Get-FileHash .\Nexa-Optimize-Setup-v1.5.0.cmd -Algorithm SHA256
 Get-FileHash .\Nexa-Optimize-v1.5.0.zip -Algorithm SHA256
 ```
 
-Official SHA-256 release hashes are published and attested on the [GitHub Releases](https://github.com/riksitis1/nova-optimize-web/releases) page and [Official Portal](https://nova-optimize.onrender.com).
+Official SHA-256 checksums are published in `version.json` and on the download page. The built-in updater verifies the checksum before installing an update.
 
 ---
 
-## Security & Anti-Cheat Compliance
+## Security & Anti-Cheat Boundaries
 
 Nexa Optimize follows a conservative, auditable safety standard:
 
@@ -78,11 +78,11 @@ node tools/check.js
 node tools/test.js
 
 # Rebuild release packages and update checksums
-powershell -ExecutionPolicy Bypass -File tools/build.ps1
+node tools/build.js
 ```
 
 ---
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for full legal text and disclaimers.
+Proprietary Freeware. See [LICENSE](LICENSE) for the full EULA and disclaimers.

@@ -2,7 +2,7 @@
     "version": "1.5.0",
     "releasedAt": "2026-11-10",
     "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v1.5.0.zip",
-    "sha256": "aae991b622013c8437ef9b57429b8d1388ef4c8c1f7a4e2661a6586b2f3950df",
+    "sha256": "fb85326edae10edf5c67498144ab875d0e5310cacaab24cbb673eff8e2acb30b",
     "notes": [
         "Reworked Optimizer Core: 25 documented actions split into 12 safe, 3 caution, and 10 advanced controls",
         "Conservative Scoring: only safe actions and real system findings affect the readiness score; caution and advanced controls are opt-in and excluded",
