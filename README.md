@@ -1,6 +1,5 @@
 # Nexa Optimize
 
-[![CI](https://github.com/riksitis1/nova-optimize-web/actions/workflows/ci.yml/badge.svg)](https://github.com/riksitis1/nova-optimize-web/actions/workflows/ci.yml)
 [![License: Proprietary Freeware](https://img.shields.io/badge/License-Proprietary%20Freeware-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/badge/Release-v1.5.0-b8ff2c.svg)](https://github.com/riksitis1/nova-optimize-web/releases)
 [![No Kernel Drivers](https://img.shields.io/badge/No%20Kernel%20Drivers-38ef7d.svg)](SECURITY.md)
