@@ -315,8 +315,8 @@ function Get-CleanupDefinitions {
     }
     'stale-shader-cache' = [ordered]@{
       label = 'Stale GPU shader caches (>30 days)'
-      description = 'DirectX, NVIDIA, and AMD compiled shaders untouched for over 30 days. Safe to clear: reclaims space from old games and updates without causing stutters in your current games.'
-      risk = 'safe'
+      description = 'Older compiled GPU shaders. Clearing them frees space, but a game may stutter the next time it rebuilds its shaders.'
+      risk = 'caution'
       paths = @(
         (Join-Path $local 'D3DSCache'),
         (Join-Path $local 'NVIDIA\DXCache'),
@@ -1042,77 +1042,15 @@ function Get-Snapshot {
 
 function Activate-NexaPowerPlan {
   $original = Get-PowerPlan
-  $list = (& powercfg /list 2>$null | Out-String)
-  $novaGuid = $null
-  $lines = @($list -split "`r?`n")
-  foreach ($line in $lines) {
-    if ($line -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\s+\(Nexa Gaming\)') {
-      $novaGuid = $Matches[1].ToLowerInvariant()
-      break
-    }
+  if (-not $original.guid) { throw 'Could not identify the active Windows power plan.' }
+  $guid = '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
+  $plans = & powercfg /list | Out-String
+  if ($LASTEXITCODE -ne 0 -or $plans -notmatch $guid) {
+    throw 'The standard High performance plan is unavailable on this PC.'
   }
-  $created = $false
-  if (-not $novaGuid) {
-    $schemesToTry = @(
-      '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c', # High Performance
-      'e9a42b02-d5df-448d-aa00-03f14749eb61', # Ultimate Performance
-      '381b4222-f694-41f0-9685-ff5bb260df2e'  # Balanced (standard on all Windows versions)
-    )
-    foreach ($scheme in $schemesToTry) {
-      $output = (& powercfg -duplicatescheme $scheme 2>$null | Out-String)
-      if ($output -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})') {
-        $novaGuid = $Matches[1].ToLowerInvariant()
-        $created = $true
-        & powercfg -changename $novaGuid 'Nexa Gaming' 'High performance plan created by Nexa Optimize' 2>$null | Out-Null
-        break
-      }
-    }
-  }
-  if (-not $novaGuid) { throw 'Could not create the Nexa Gaming power plan.' }
-  # Check for dual-CCD AMD 3D V-Cache CPUs (7900X3D, 7950X3D, 9900X3D, 9950X3D).
-  # On dual-CCD X3D chips, the AMD PPM driver and Windows Game Mode require core parking
-  # to park the standard frequency CCD and keep game threads scheduled on the 3D V-Cache CCD.
-  $isDualCcdX3D = $false
-  try {
-    $procName = (Get-CimInstance Win32_Processor -Property Name -ErrorAction SilentlyContinue | Select-Object -First 1).Name
-    if ($procName -match '(7900X3D|7950X3D|9900X3D|9950X3D)') {
-      $isDualCcdX3D = $true
-    }
-  } catch { }
-
-  $setPowerVal = {
-    param($subgroup, $setting, $val)
-    try {
-      & powercfg -setacvalueindex $novaGuid $subgroup $setting $val 2>$null | Out-Null
-      & powercfg -setdcvalueindex $novaGuid $subgroup $setting $val 2>$null | Out-Null
-    } catch { }
-  }
-
-  if (-not $isDualCcdX3D) {
-    # 1. Unpark 100% of CPU cores (min and max unparked cores on AC and DC)
-    & $setPowerVal '54533251-82be-4824-96c1-47b60b740d00' '0cc5b647-c1df-4637-891a-dec35c318583' 100
-    & $setPowerVal '54533251-82be-4824-96c1-47b60b740d00' 'ea062031-0e34-4ff1-9b6d-eb10593ac08f' 100
-  }
-  # 2. Set min processor state to 5% to preserve idle C-states and thermal boost headroom, max to 100%
-  & $setPowerVal '54533251-82be-4824-96c1-47b60b740d00' 'bc5038f7-23e0-4960-96da-33abaf5935ec' 5
-  & $setPowerVal '54533251-82be-4824-96c1-47b60b740d00' '893dee8e-2bef-41e0-89c6-b55d0929964c' 100
-  # 3. Disable PCI Express Active State Power Management (ASPM) - stops GPU bus sleep latency
-  & $setPowerVal '501a4d13-42af-4429-9e56-424f202b8e20' 'ee12f906-d277-404b-b6da-e5fa1a576df5' 0
-  # 4. Disable storage disk spin-down idle timeout (stops asset loading hitches)
-  & $setPowerVal '0012ee47-9041-4b5d-9b77-535fba8b1442' '6738e2c4-e8a5-4142-f12e-a0e487c195e7' 0
-  # 5. Aggressive processor performance increase threshold (10% load triggers instant max clocks)
-  & $setPowerVal '54533251-82be-4824-96c1-47b60b740d00' '060244e2-f31e-4e64-a494-b1a11f3739d4' 10
-
-  $global:LASTEXITCODE = 0
-  & powercfg /setactive $novaGuid 2>$null | Out-Null
-  if ($LASTEXITCODE -ne 0) { throw 'Windows refused to activate the Nexa Gaming power plan. Run Nexa as administrator.' }
-  $active = Get-PowerPlan
-  return [ordered]@{
-    original = $original
-    active = $active
-    novaGuid = $novaGuid
-    created = $created
-  }
+  & powercfg /setactive $guid | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw 'Windows refused to activate the High performance plan.' }
+  return [ordered]@{ original = $original; novaGuid = $guid; created = $false }
 }
 
 function Get-TcpGlobalState {
@@ -1203,36 +1141,73 @@ public static class NexaMem {
   }
 }
 
+function Get-OptionalAppPackages {
+  param([string[]]$Names)
+  Get-AppxPackage -PackageTypeFilter Main,Bundle | Where-Object {
+    $_.Name -in $Names -and $_.PublisherId -eq '8wekyb3d8bbwe' -and
+      -not ($_.NonRemovable -or $_.IsFramework -or $_.IsResourcePackage)
+  }
+}
+
+function Get-SessionApps {
+  param([string[]]$Names)
+  $valid = @($Names | Where-Object { $_ -match '^[A-Za-z0-9._-]{1,40}$' })
+  if ($valid.Count -eq 0) { return }
+  $sessionId = (Get-Process -Id $PID).SessionId
+  Get-Process -Name $valid -ErrorAction SilentlyContinue | Where-Object { $_.SessionId -eq $sessionId }
+}
+
 function Get-RunningApps {
   param([string[]]$Names)
-  $rows = New-Object System.Collections.Generic.List[object]
-  foreach ($name in @($Names)) {
-    if ([string]$name -notmatch '^[A-Za-z0-9._-]{1,40}$') { continue }
-    $procs = @(Get-Process -Name ([string]$name) -ErrorAction SilentlyContinue)
-    if ($procs.Count -eq 0) { continue }
-    $memory = [int64]0
-    foreach ($proc in $procs) { try { $memory += [int64]$proc.WorkingSet64 } catch { } }
-    $rows.Add([ordered]@{ name = [string]$name; count = $procs.Count; memory = $memory })
+  $before = @{}
+  foreach ($proc in @(Get-SessionApps -Names $Names)) {
+    try { $before[$proc.Id] = @{ started = $proc.StartTime; cpu = [double]$proc.CPU } } catch { }
   }
-  return @($rows)
+  if ($before.Count -eq 0) { return }
+  $clock = [Diagnostics.Stopwatch]::StartNew()
+  Start-Sleep -Milliseconds 500
+  $processes = @(Get-SessionApps -Names $Names)
+  $capacity = $clock.Elapsed.TotalSeconds * [Environment]::ProcessorCount
+  foreach ($group in @($processes | Group-Object -Property ProcessName)) {
+    if (-not ($group.Group | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1)) { continue }
+    $cpu = 0.0
+    $memory = [int64]0
+    foreach ($proc in $group.Group) {
+      try {
+        $memory += [int64]$proc.WorkingSet64
+        $previous = $before[$proc.Id]
+        if ($previous -and $previous.started -eq $proc.StartTime) {
+          $cpu += [Math]::Max(0, [double]$proc.CPU - $previous.cpu)
+        }
+      } catch { }
+    }
+    [ordered]@{ name = $group.Name; count = $group.Count; memory = $memory; cpuPercent = [Math]::Round([Math]::Min(100, 100 * $cpu / $capacity), 1) }
+  }
 }
 
 function Close-AppsGracefully {
   param([string[]]$Names)
-  $rows = New-Object System.Collections.Generic.List[object]
-  foreach ($name in @($Names)) {
-    if ([string]$name -notmatch '^[A-Za-z0-9._-]{1,40}$') { continue }
-    $procs = @(Get-Process -Name ([string]$name) -ErrorAction SilentlyContinue)
-    if ($procs.Count -eq 0) { continue }
-    foreach ($proc in $procs) { try { [void]$proc.CloseMainWindow() } catch { } }
-    $deadline = (Get-Date).AddSeconds(3)
-    do {
-      Start-Sleep -Milliseconds 250
-      $left = @(Get-Process -Name ([string]$name) -ErrorAction SilentlyContinue)
-    } while ($left.Count -gt 0 -and (Get-Date) -lt $deadline)
-    $rows.Add([ordered]@{ name = [string]$name; closed = [Math]::Max(0, $procs.Count - $left.Count); stillRunning = $left.Count })
+  $groups = @(Get-SessionApps -Names $Names | Group-Object -Property ProcessName)
+  $requested = $false
+  foreach ($group in $groups) {
+    foreach ($proc in $group.Group) {
+      try { if ($proc.CloseMainWindow()) { $requested = $true } } catch { }
+    }
   }
-  return @($rows)
+  if ($requested) {
+    $clock = [Diagnostics.Stopwatch]::StartNew()
+    do {
+      Start-Sleep -Milliseconds 150
+      $left = @(Get-SessionApps -Names $Names)
+    } while ($left.Count -gt 0 -and $clock.Elapsed.TotalSeconds -lt 3)
+  } else {
+    $left = @(Get-SessionApps -Names $Names)
+  }
+  foreach ($group in $groups) {
+    $remaining = @($left | Where-Object { $_.ProcessName -eq $group.Name }).Count
+    $exited = @($group.Group | Where-Object { $_.HasExited }).Count
+    [ordered]@{ name = $group.Name; closed = $exited; stillRunning = $remaining }
+  }
 }
 
 function Set-NicLowJitter {
@@ -1557,8 +1532,21 @@ try {
     'ping' { Send-Result (Invoke-Ping -HostName ([string]$p.host) -Count ([int]$p.count)) }
     'processes' { Send-Result (Get-ProcessSnapshot) }
     'memory.trim' { Send-Result (Invoke-MemoryTrim) }
-    'apps.running' { Send-Result (Get-RunningApps -Names @($p.names)) }
-    'apps.close' { Send-Result (Close-AppsGracefully -Names @($p.names)) }
+    'optionalApps.list' {
+      $names = @(Get-OptionalAppPackages -Names @($p.names) | Select-Object -ExpandProperty Name -Unique)
+      Send-Result $names
+    }
+    'optionalApps.remove' {
+      $packages = @(Get-OptionalAppPackages -Names @($p.name))
+      $bundles = @($packages | Where-Object { $_.IsBundle })
+      $targets = if ($bundles.Count) { $bundles } else { $packages }
+      foreach ($package in $targets) {
+        Remove-AppxPackage -Package $package.PackageFullName -ErrorAction Stop
+      }
+      Send-Result ($packages.Count -gt 0)
+    }
+    'apps.running' { Send-Result @(Get-RunningApps -Names @($p.names)) }
+    'apps.close' { Send-Result @(Close-AppsGracefully -Names @($p.names)) }
     'net.tcpAutotune' {
       $before = Get-TcpGlobalState
       $level = if ($p.autoTuning) { [string]$p.autoTuning } else { 'normal' }

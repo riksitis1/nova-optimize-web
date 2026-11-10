@@ -9,7 +9,7 @@ import {
   api,
   requestRender,
 } from '../core.js';
-import { emptyState, sectionHead } from '../ui.js';
+import { emptyState } from '../ui.js';
 
 function riskBadge(risk) {
   if (risk === 'caution') return '<span class="badge amber">Caution</span>';
@@ -51,7 +51,57 @@ function resultsHtml() {
     </div>`;
 }
 
+function renderOptionalApps() {
+  return `
+    <div class="card card-pad" style="margin-bottom:14px">
+      <div class="card-header">
+        <div>
+          <h2>Optional Windows apps</h2>
+          <p>Review removable apps installed for your Windows account.</p>
+        </div>
+        <button class="button button-small" type="button" id="review-optional-apps">${icon('scan')} Review installed apps</button>
+      </div>
+    </div>`;
+}
+
+async function reviewOptionalApps(button) {
+  button.disabled = true;
+  try {
+    const { apps } = await api('/api/optional-apps');
+    if (!apps.length) {
+      toast('info', 'No optional apps found', 'None of the supported apps are installed for this account.');
+      return;
+    }
+    openModal({
+      title: 'Remove an optional Windows app',
+      body: `<p>Choose one app to uninstall for your account. App data may be deleted. You can look for the app in the Microsoft Store to reinstall it.</p>
+        <label for="optional-app">App to remove</label>
+        <select id="optional-app">
+          <option value="">Select an app</option>
+          ${apps.map((app) => `<option value="${escapeHtml(app.id)}">${escapeHtml(app.name)}</option>`).join('')}
+        </select>`,
+      confirmLabel: 'Uninstall selected app',
+      danger: true,
+      onConfirm: async () => {
+        const app = apps.find(({ id }) => id === document.getElementById('optional-app')?.value);
+        if (!app) throw new Error('Select an app to uninstall.');
+        const { removed } = await api('/api/optional-apps/remove', { method: 'POST', body: { id: app.id } });
+        state.history = null;
+        toast(removed ? 'success' : 'info', removed ? 'App uninstalled' : 'App already absent', app.name);
+      },
+    });
+  } catch (error) {
+    toast('error', 'Could not list optional apps', error.message);
+  } finally {
+    button.disabled = false;
+  }
+}
+
 export function renderCleanup() {
+  return renderOptionalApps() + renderTemporaryFiles();
+}
+
+function renderTemporaryFiles() {
   if (state.cleanupError) {
     return `
       <div class="empty-state" style="margin:40px auto;max-width:480px;text-align:center">
@@ -73,17 +123,6 @@ export function renderCleanup() {
   const admin = state.snapshot?.admin === true;
   return `
     ${!admin ? `<div class="callout warn" style="margin-bottom:12px">${icon('lock')}<div><strong>System temp folders require administrator access.</strong> <button class="button button-small" type="button" data-action="elevate" style="margin-left:8px">Restart as admin</button></div></div>` : ''}
-    <div class="panel" style="margin-bottom:14px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:12px">
-      <div style="display:flex;align-items:center;gap:12px">
-        <span style="font-size:22px">🧹</span>
-        <div>
-          <strong style="font-size:13px;font-weight:650;display:block">Safe Cache &amp; Shader Cleaner</strong>
-          <small style="color:var(--muted);font-size:11px;display:block;margin-top:2px">
-            Removes stale GPU shader files and DirectX logs that build up over time. Your personal files, photos, downloads, and game saves are 100% safe.
-          </small>
-        </div>
-      </div>
-    </div>
     <div class="card card-pad">
       <div class="card-header">
         <div>
@@ -171,6 +210,7 @@ function toggleCategory(id) {
 }
 
 export function bindCleanup() {
+  document.getElementById('review-optional-apps')?.addEventListener('click', (event) => reviewOptionalApps(event.currentTarget));
   document.getElementById('retry-cleanup-btn')?.addEventListener('click', async () => {
     state.cleanupError = null;
     state.cleanup = null;

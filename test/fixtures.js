@@ -15,6 +15,7 @@ function makeSnapshot(overrides = {}) {
       name: 'NOVA-TEST',
       manufacturer: 'Test',
       model: 'Test rig',
+      isLaptop: false,
       totalRam: 32 * 1024 ** 3,
       memoryUsagePercent: 40,
     },

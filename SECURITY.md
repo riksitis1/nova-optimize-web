@@ -28,7 +28,8 @@ Nexa Optimize is designed to avoid the techniques that modern anti-cheat platfor
 
 - **Automated Pre-Change Backups:** Before applying any tweak, Nexa records the exact pre-existing registry values, types, and existence states into `data/state.json`.
 - **Atomic Revert:** Restoring an action (`Undo`) restores the recorded state or deletes values that did not exist. It does not guarantee that third-party software or later Windows updates will not change the same values again.
-- **Conservative Public Action Set:** v1.5.0 exposes 25 actions: 12 safe, 3 caution, and 10 advanced. Caution and advanced actions are excluded from the readiness score and the one-click safe fix. Seven older tweaks are undo-only.
+- **One-click changes:** Windows Game Mode is the only setting applied by the one-click action. Existing backups, including those for seven undo-only legacy actions, remain available.
+- **Optional Windows apps:** Only exact packages from a fixed allowlist can be removed for the current user, with explicit confirmation through Cleanup.
 - **System Restore Checkpoints:** Nexa integrates directly with Windows System Restore, enabling full system restore points before applying batches of optimizations.
 
 ---

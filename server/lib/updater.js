@@ -16,8 +16,9 @@ function parseSemver(version) {
     .trim()
     .replace(/^v/i, '')
     .split('-')[0];
-  const parts = clean.split('.').map((n) => Number.parseInt(n, 10));
-  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n) || n < 0)) return null;
+  if (!/^\d+\.\d+\.\d+$/.test(clean)) return null;
+  const parts = clean.split('.').map(Number);
+  if (!parts.every(Number.isSafeInteger)) return null;
   return parts;
 }
 
@@ -59,7 +60,7 @@ async function fetchManifest(manifestUrl = DEFAULT_MANIFEST_URL) {
     throw new Error('Update manifest is missing a valid SHA-256 checksum.');
   }
   return {
-    version: String(data.version).replace(/^v/i, ''),
+    version: String(data.version).trim().replace(/^v/i, ''),
     releasedAt: data.releasedAt || null,
     downloadUrl: data.downloadUrl,
     sha256: data.sha256.toLowerCase(),
@@ -122,10 +123,17 @@ async function downloadAndStageUpdate(currentVersion) {
     Expand-Archive -LiteralPath $zip -DestinationPath $stage -Force
     $inner = Join-Path $stage 'Nexa-Optimize'
     $sourceRoot = if (Test-Path -LiteralPath $inner) { $inner } else { $stage }
-    Get-ChildItem -LiteralPath $sourceRoot -Force | ForEach-Object {
-      if ($_.Name -eq 'data' -or $_.Name -eq '.git' -or $_.Name -eq 'website') { return }
-      $target = Join-Path $dest $_.Name
-      Copy-Item -LiteralPath $_.FullName -Destination $target -Recurse -Force
+    $package = Get-Content -Raw -LiteralPath (Join-Path $sourceRoot 'package.json') | ConvertFrom-Json
+    if ($package.version -ne ${psQuote(manifest.version)} -or
+        -not (Test-Path -LiteralPath (Join-Path $sourceRoot 'server/server.js') -PathType Leaf)) {
+      throw 'The update package does not match the manifest.'
+    }
+    foreach ($file in (Get-ChildItem -LiteralPath $sourceRoot -Recurse -File -Force)) {
+      $relative = $file.FullName.Substring($sourceRoot.Length + 1)
+      if (($relative -split '[\\\\/]')[0] -in @('data', '.git', 'website')) { continue }
+      $target = Join-Path $dest $relative
+      [void][IO.Directory]::CreateDirectory((Split-Path -Parent $target))
+      Copy-Item -LiteralPath $file.FullName -Destination $target -Force
     }
     Remove-Item -LiteralPath $zip -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue

@@ -54,8 +54,8 @@ function heroHtml(scan) {
         <p>${escapeHtml(scan.summary)}</p>
         <div class="hero-actions">
           ${unappliedCount > 0
-            ? `<button class="button button-primary button-large" type="button" data-action="apply-safe" style="background:var(--lime);color:#0a0d14;font-weight:700;box-shadow:0 0 24px rgba(184,249,54,0.35);padding:11px 22px">${icon('zap')} One-Click Optimize (${unappliedCount} safe fixes)</button>`
-            : `<button class="button button-large" type="button" data-action="scan" style="border-color:var(--lime);color:var(--lime)">${icon('check')} System Fully Optimized · Re-scan</button>`}
+            ? `<button class="button button-primary button-large" type="button" data-action="apply-safe" style="background:var(--lime);color:#0a0d14;font-weight:700;box-shadow:0 0 24px rgba(184,249,54,0.35);padding:11px 22px">${icon('zap')} Enable Windows Game Mode</button>`
+            : `<button class="button button-large" type="button" data-action="scan" style="border-color:var(--lime);color:var(--lime)">${icon('check')} Run readiness scan</button>`}
           <button class="button button-large" type="button" data-nav="optimize">${icon('sliders')} Review tweaks</button>
           <button class="button button-large" type="button" data-action="trim-ram">${icon('zap')} Pre-game boost</button>
           <button class="button button-large" type="button" data-nav="games">${icon('gamepad')} Game settings</button>

@@ -278,6 +278,7 @@ test('pre-game boost only accepts apps from the fixed allowlist', () => {
   assert.deepEqual(cleanBoostApps(['onedrive', 'Chrome', 'chrome']), ['OneDrive', 'chrome']);
   assert.deepEqual(cleanBoostApps(undefined), []);
   assert.throws(() => cleanBoostApps(['lsass']), /not on the Nexa pre-game list/);
+  assert.throws(() => cleanBoostApps(['steam']), /not on the Nexa pre-game list/);
   assert.throws(() => cleanBoostApps(['msedge']), /not on the Nexa pre-game list/);
   assert.throws(() => cleanBoostApps('chrome'), /list of app names/);
 });

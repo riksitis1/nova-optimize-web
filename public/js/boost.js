@@ -1,48 +1,48 @@
-import { state, icon, escapeHtml, formatBytes, toast, openModal, api, hydrateIcons } from './core.js';
+import { icon, escapeHtml, formatBytes, toast, openModal, api, hydrateIcons } from './core.js';
 
-/**
- * Pre-game boost: flush DNS, reclaim idle RAM, and (optionally) politely close
- * a fixed list of background apps. Nothing is force-killed.
- */
-export async function openBoostModal() {
-  let apps = [];
+export async function openBoostModal(button) {
+  if (button?.disabled) return;
+  if (button) button.disabled = true;
+  let apps;
   try {
     const data = await api('/api/boost/apps');
-    apps = data.apps || [];
-  } catch {
-    apps = [];
+    apps = data.apps;
+  } catch (error) {
+    toast('error', 'Could not measure background apps', error.message);
+    return;
+  } finally {
+    if (button) button.disabled = false;
   }
 
   const rows = apps.length
     ? apps.map((app) => `
         <label class="boost-app">
-          <input type="checkbox" value="${escapeHtml(app.name)}" ${app.defaultOn ? 'checked' : ''}>
+          <input type="checkbox" value="${escapeHtml(app.name)}">
           <span class="boost-app-name">${escapeHtml(app.label)}</span>
-          <span class="boost-app-mem mono">${formatBytes(app.memory)}</span>
+          <span class="boost-app-mem mono">${app.cpuPercent.toFixed(1)}% CPU · ${formatBytes(app.memory)} RAM</span>
         </label>`).join('')
-    : '<p class="small muted" style="margin:0">None of the optional background apps are running right now. Nexa will still flush DNS and trim idle RAM.</p>';
+    : '<p class="small muted">No supported apps with an open window were found.</p>';
 
   openModal({
     title: 'Pre-game boost',
     body: `
-      <p>Before you play, Nexa will flush the DNS cache and give back RAM that idle background programs are holding. You can also ask these apps to close like pressing their X button. Nothing is force-killed, so unsaved work can still prompt you.</p>
-      <div class="boost-list" id="boost-apps">${rows}</div>
-      <p class="small muted" style="margin:12px 0 0">Microsoft Edge is never on this list because Nexa runs in it.</p>`,
-    confirmLabel: 'Boost now',
-    onConfirm: async () => {
+      <p>CPU use is sampled for half a second. Close apps only if you can pause their work. Save your work first.</p>
+      <div class="boost-list" id="boost-apps">${rows}</div>`,
+    confirmLabel: apps.length ? 'Close selected apps' : 'Done',
+    hideCancel: !apps.length,
+    onConfirm: apps.length ? async () => {
       const closeApps = Array.from(document.querySelectorAll('#boost-apps input:checked')).map((input) => input.value);
-      const data = await api('/api/boost', { method: 'POST', body: { closeApps } });
-      if (data.telemetry) state.telemetry = data.telemetry;
-      const freedMb = Math.round(((Number(data.result?.memory?.freedBytes) || 0) / 1024 ** 2) * 10) / 10;
-      const closed = (data.result?.closed || []).reduce((sum, item) => sum + (Number(item.closed) || 0), 0);
-      const stuck = (data.result?.closed || []).filter((item) => item.stillRunning > 0).map((item) => item.name);
-      toast(
-        'success',
-        'Ready to play',
-        `${closed ? `Closed ${closed} process${closed === 1 ? '' : 'es'} · ` : ''}${freedMb > 0 ? `${freedMb} MB RAM freed · ` : ''}DNS flushed`,
-      );
-      if (stuck.length) toast('info', 'Still running', `${stuck.join(', ')} asked to stay open (a save prompt may be waiting).`);
-    },
+      if (!closeApps.length) return;
+      const { result } = await api('/api/boost', { method: 'POST', body: { closeApps } });
+      const closed = result.closed.reduce((sum, item) => sum + item.closed, 0);
+      const remaining = result.closed.filter((item) => item.stillRunning > 0).map((item) => item.name);
+      const detail = closed ? `${closed} process${closed === 1 ? '' : 'es'} exited.` : 'No selected processes exited.';
+      if (remaining.length) {
+        toast('info', 'Some apps are still running', `${detail} Check ${remaining.join(', ')} for save prompts or tray activity.`);
+      } else {
+        toast(closed ? 'success' : 'info', 'Background app check complete', detail);
+      }
+    } : null,
   });
   hydrateIcons(document.getElementById('modal-root'));
 }

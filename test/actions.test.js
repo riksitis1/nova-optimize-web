@@ -97,6 +97,23 @@ test('registry apply surfaces bridge failures', async () => {
   );
 });
 
+test('a partial registry write rolls back the values that changed', async () => {
+  const action = getAction('game-mode');
+  const entry = { ...action.writes[0], exists: true, value: 0 };
+  const calls = [];
+  const ps = async (op, args) => {
+    calls.push({ op, args });
+    if (op === 'registry.read') return [entry, { ...action.writes[1], exists: false }];
+    if (calls.length === 2) return [{ ok: true }, { ok: false, error: 'Denied' }];
+    return [{ ok: true }];
+  };
+
+  await assert.rejects(action.apply({ ps }), /Denied/);
+  assert.deepEqual(calls[2].args.operations, [{
+    op: 'set', hive: entry.hive, path: entry.path, name: entry.name, kind: entry.kind, value: 0,
+  }]);
+});
+
 test('the Nagle action writes both TCP values for every adapter', async () => {
   const action = getAction('nagle');
   const snapshot = makeSnapshot({
@@ -395,13 +412,16 @@ test('removed tweaks remain resolvable as hidden undo-only legacy actions', () =
   }
 });
 
-test('the active action set is 25 actions split into 12 safe, 3 caution, and 10 advanced', () => {
+test('the active action set is 25 actions with only Game Mode eligible for bulk apply', () => {
   assert.equal(actions.length, 25);
   const counts = actions.reduce((acc, action) => {
     acc[action.risk] = (acc[action.risk] || 0) + 1;
     return acc;
   }, {});
-  assert.deepEqual(counts, { safe: 12, caution: 3, advanced: 10 });
+  assert.deepEqual(counts, { safe: 1, caution: 14, advanced: 10 });
+  assert.deepEqual(actions.filter((action) => action.risk === 'safe').map((action) => action.id), ['game-mode']);
+  const laptop = makeSnapshot({ computer: { isLaptop: true } });
+  assert.equal(getPublicActions(laptop).find((action) => action.id === 'power-plan').applicable, false);
 });
 
 test('applied legacy actions appear in the public list only when they have a backup', () => {

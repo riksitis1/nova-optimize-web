@@ -1,5 +1,41 @@
+param([switch]$SkipShortcut)
+
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
+function Get-RuntimeSha256([string]$Path) {
+  $sha256 = [Security.Cryptography.SHA256]::Create()
+  try {
+    return [BitConverter]::ToString($sha256.ComputeHash([IO.File]::ReadAllBytes($Path))).Replace('-', '')
+  } finally {
+    $sha256.Dispose()
+  }
+}
+
+# Older updaters copy whole directories into existing directories. Repair only
+# files that match the new release manifest before the updater restarts Nexa.
+$manifestPath = Join-Path $root 'manifest.json'
+$nestedFolders = @('public', 'server') | Where-Object {
+  Test-Path -LiteralPath (Join-Path $root "$_\$_") -PathType Container
+}
+if ($nestedFolders -and (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
+  $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
+  foreach ($entry in $manifest.files.PSObject.Properties) {
+    $parts = $entry.Name.Split('/')
+    $folder = $parts[0]
+    if ($parts.Count -lt 2 -or $folder -notin $nestedFolders -or
+        ($parts | Where-Object { $_ -notmatch '^[A-Za-z0-9_-][A-Za-z0-9_.-]*$' })) { continue }
+    $nested = Join-Path (Join-Path $root $folder) ($parts -join '\')
+    if (-not (Test-Path -LiteralPath $nested -PathType Leaf)) { continue }
+    if ((Get-RuntimeSha256 $nested) -ne $entry.Value) { continue }
+    $target = Join-Path $root ($parts -join '\')
+    if ((Test-Path -LiteralPath $target -PathType Leaf) -and
+        (Get-RuntimeSha256 $target) -eq $entry.Value) { continue }
+    [void][IO.Directory]::CreateDirectory((Split-Path -Parent $target))
+    Copy-Item -LiteralPath $nested -Destination $target -Force
+  }
+}
+if ($SkipShortcut) { return }
+
 $launcher = Join-Path $root 'NexaOptimize.vbs'
 $server = Join-Path $root 'server\server.js'
 $icon = Join-Path $root 'public\assets\nexa.ico'

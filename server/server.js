@@ -30,7 +30,7 @@ const {
   clearDnsApplied,
 } = require('./lib/store');
 const { analyze } = require('./lib/analyze');
-const { getAction, getPublicActions } = require('./lib/actions');
+const { getAction, getPublicActions, serializeAction } = require('./lib/actions');
 const {
   getSnapshot,
   invalidateSnapshot,
@@ -42,6 +42,9 @@ const {
   getProcesses,
   createRestorePoint,
   trimMemory,
+  listOptionalApps,
+  isOptionalApp,
+  removeOptionalApp,
   getTelemetry,
 } = require('./lib/system');
 const {
@@ -59,7 +62,7 @@ const {
 } = require('./lib/validate');
 const { checkForUpdate, downloadAndStageUpdate } = require('./lib/updater');
 const { listGames, describeGame, applyGameSettings, revertGameSettings } = require('./lib/games');
-const { listBoostApps, runBoost } = require('./lib/boost');
+const { cleanBoostApps, listBoostApps, runBoost } = require('./lib/boost');
 
 const execFileAsync = promisify(execFile);
 const VERSION = require('../package.json').version;
@@ -310,13 +313,19 @@ async function handleApi(req, res, url) {
         results.push({ id, ok: false, error: 'This legacy tweak is undo-only. Use Undo to restore its previous value.' });
         continue;
       }
-      if (getApplied()[id] && action.isOptimized(snapshot)) {
-        results.push({ id, ok: true, skipped: true, message: 'Already applied and optimized.' });
+      const info = serializeAction(action, snapshot);
+      if (!info.applicable) {
+        results.push({ id, ok: false, error: 'This action is unavailable on this PC.' });
+        continue;
+      }
+      const originalBackup = getBackup(id);
+      if (info.optimized) {
+        results.push({ id, ok: true, skipped: true, message: 'Already configured.' });
         continue;
       }
       try {
         const backup = await action.apply({ ps: runBridge, snapshot, admin: snapshot.admin });
-        setBackup(id, backup);
+        if (!originalBackup) setBackup(id, backup);
         addActivity({
           type: 'apply',
           title: `Applied ${action.name}`,
@@ -327,6 +336,8 @@ async function handleApi(req, res, url) {
         invalidateSnapshot();
         results.push({ id, ok: true });
       } catch (error) {
+        if (error.backup && !originalBackup) setBackup(id, error.backup);
+        invalidateSnapshot();
         results.push({ id, ok: false, error: error.message });
       }
     }
@@ -440,6 +451,20 @@ async function handleApi(req, res, url) {
       });
     }
     sendJson(res, 200, { ok: true, result, startup: await getStartup() });
+    return;
+  }
+
+  if (method === 'GET' && pathname === '/api/optional-apps') {
+    sendJson(res, 200, { ok: true, apps: await listOptionalApps() });
+    return;
+  }
+
+  if (method === 'POST' && pathname === '/api/optional-apps/remove') {
+    const { id } = await readBody(req);
+    if (!isOptionalApp(id)) throw new HttpError(400, 'Choose an app from the optional Windows apps list.');
+    const removed = await removeOptionalApp(id);
+    if (removed) addActivity({ type: 'cleanup', title: 'Removed optional Windows app', detail: id });
+    sendJson(res, 200, { ok: true, removed });
     return;
   }
 
@@ -629,20 +654,20 @@ async function handleApi(req, res, url) {
     let closeApps;
     try {
       closeApps = body.closeApps;
-      const { cleanBoostApps } = require('./lib/boost');
       cleanBoostApps(closeApps);
     } catch (error) {
       throw new HttpError(400, error.message);
     }
     const result = await runBoost(closeApps);
-    const freedMb = Math.round(((Number(result.memory?.freedBytes) || 0) / 1024 ** 2) * 10) / 10;
-    const closedCount = result.closed.reduce((sum, item) => sum + (Number(item.closed) || 0), 0);
-    addActivity({
-      type: 'system',
-      title: 'Ran the pre-game boost',
-      detail: `Closed ${closedCount} background process${closedCount === 1 ? '' : 'es'}, flushed DNS and reclaimed ${freedMb} MB of RAM.`,
-    });
-    sendJson(res, 200, { ok: true, result, telemetry: await getTelemetry() });
+    if (result.closed.length) {
+      const closedCount = result.closed.reduce((sum, item) => sum + item.closed, 0);
+      addActivity({
+        type: 'system',
+        title: 'Requested background app closure',
+        detail: 'Processes exited: ' + closedCount,
+      });
+    }
+    sendJson(res, 200, { ok: true, result });
     return;
   }
 
@@ -784,6 +809,12 @@ function serveStatic(req, res, url) {
   });
 }
 
+const exclusiveRoutes = new Set([
+  '/api/actions/apply', '/api/actions/revert', '/api/actions/revert-all',
+  '/api/optional-apps/remove', '/api/update/install',
+]);
+let changingSystem = false;
+
 const server = http.createServer((req, res) => {
   try {
     checkHost(req);
@@ -795,7 +826,15 @@ const server = http.createServer((req, res) => {
 
   const url = new URL(req.url, `http://${HOST}:${PORT}`);
   if (url.pathname.startsWith('/api/')) {
-    handleApi(req, res, url).catch((error) => sendError(res, error));
+    const exclusive = req.method === 'POST' && exclusiveRoutes.has(url.pathname);
+    if (exclusive && changingSystem) {
+      sendError(res, new HttpError(409, 'Another change is in progress. Try again when it finishes.'));
+      return;
+    }
+    if (exclusive) changingSystem = true;
+    handleApi(req, res, url).catch((error) => sendError(res, error)).finally(() => {
+      if (exclusive) changingSystem = false;
+    });
     return;
   }
   if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -894,19 +933,6 @@ async function healthCheck() {
   }
 }
 
-function startBackgroundService() {
-  setInterval(async () => {
-    try {
-      const telemetry = await getTelemetry();
-      if (Number(telemetry?.memory?.usagePercent) >= 82) {
-        await trimMemory();
-      }
-    } catch {
-      // Background maintenance stays silent if a single sample fails.
-    }
-  }, 180_000).unref();
-}
-
 function checkIntegrity() {
   const manifestPath = path.join(ROOT, 'manifest.json');
   if (!fs.existsSync(manifestPath)) return { ok: true, verified: false };
@@ -980,7 +1006,6 @@ async function listen(attempt = 0) {
     }
     getSnapshot().catch(() => {});
     getProcesses().catch(() => {});
-    startBackgroundService();
     openApp();
   } catch (error) {
     try {

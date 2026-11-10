@@ -352,38 +352,11 @@ async function runGlobalScan(button) {
   }
 }
 
-async function runRamTrim(button) {
-  if (!button || button.disabled) return;
-  const original = button.innerHTML;
-  button.disabled = true;
-  button.innerHTML = `${icon('refresh')} Trimming…`;
-  try {
-    const data = await api('/api/memory/trim', { method: 'POST', body: {} });
-    if (data.telemetry) {
-      state.telemetry = data.telemetry;
-      if (state.page === 'dashboard') updateOverviewLive();
-    }
-    const freedMb = Math.round(((Number(data.result?.freedBytes) || 0) / 1024 ** 2) * 10) / 10;
-    const count = data.result?.trimmedProcesses || 0;
-    toast(
-      'success',
-      freedMb > 0 ? `Freed ${freedMb} MB of RAM` : 'RAM working sets trimmed',
-      `Compacted ${count} idle background processes for gaming headroom.`,
-    );
-  } catch (error) {
-    toast('error', 'Could not trim RAM', error.message);
-  } finally {
-    button.disabled = false;
-    button.innerHTML = original;
-    hydrateIcons(button);
-  }
-}
-
 function bindChrome() {
   hydrateIcons(document);
   document.getElementById('scan-btn')?.addEventListener('click', (event) => runGlobalScan(event.currentTarget));
   document.getElementById('rescan-btn')?.addEventListener('click', (event) => runGlobalScan(event.currentTarget));
-  document.getElementById('trim-ram-btn')?.addEventListener('click', () => openBoostModal());
+  document.getElementById('trim-ram-btn')?.addEventListener('click', (event) => openBoostModal(event.currentTarget));
   document.getElementById('update-btn')?.addEventListener('click', () => promptAndInstallUpdate());
   document.getElementById('quit-btn')?.addEventListener('click', quitNexa);
   document.getElementById('bg-mode-toggle')?.addEventListener('click', async () => {
@@ -399,7 +372,7 @@ function bindChrome() {
         'info',
         next ? 'Background mode enabled' : 'Background mode disabled',
         next
-          ? 'Nova keeps running in the background and auto-trims idle RAM under load.'
+          ? 'Nexa stays open in the background.'
           : 'Nova pauses when unfocused and stops completely when you close the window.',
       );
     } catch (error) {
@@ -477,9 +450,6 @@ function renderFatal(error) {
 let pollingStarted = false;
 
 function isAppActivelyViewed() {
-  if (state.settings.runInBackground !== false) {
-    return document.visibilityState !== 'hidden';
-  }
   return document.visibilityState === 'visible' && document.hasFocus();
 }
 

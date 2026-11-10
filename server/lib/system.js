@@ -321,6 +321,29 @@ async function createRestorePoint() {
   return runBridge('restorePoint', {}, { timeout: 180_000 });
 }
 
+const OPTIONAL_APPS = new Map([
+  ['Microsoft.BingNews', 'Microsoft News'],
+  ['Microsoft.BingWeather', 'Microsoft Weather'],
+  ['Microsoft.MicrosoftOfficeHub', 'Microsoft 365 app'],
+  ['Microsoft.MicrosoftSolitaireCollection', 'Microsoft Solitaire Collection'],
+  ['Microsoft.People', 'Microsoft People'],
+  ['Microsoft.WindowsFeedbackHub', 'Feedback Hub'],
+]);
+
+function isOptionalApp(id) {
+  return OPTIONAL_APPS.has(id);
+}
+
+async function listOptionalApps() {
+  const ids = await runBridge('optionalApps.list', { names: [...OPTIONAL_APPS.keys()] });
+  return ids.filter(isOptionalApp).map((id) => ({ id, name: OPTIONAL_APPS.get(id) }));
+}
+
+async function removeOptionalApp(id) {
+  if (!isOptionalApp(id)) throw new Error('Unknown optional app.');
+  return runBridge('optionalApps.remove', { name: id });
+}
+
 async function trimMemory() {
   return runBridge('memory.trim', {}, { timeout: 25_000 });
 }
@@ -465,5 +488,8 @@ module.exports = {
   getProcesses,
   createRestorePoint,
   trimMemory,
+  listOptionalApps,
+  isOptionalApp,
+  removeOptionalApp,
   getTelemetry,
 };

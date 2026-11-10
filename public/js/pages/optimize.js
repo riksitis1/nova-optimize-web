@@ -46,7 +46,7 @@ function summaryCard(scan, mode, actionPool = []) {
               <span class="badge muted">${scan.counts.optimized} already optimized</span>
             </div>
             <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">
-              <button class="button button-primary" type="button" data-action="apply-safe">${icon('zap')} Apply safe fixes</button>
+              <button class="button button-primary" type="button" data-action="apply-safe">${icon('zap')} Enable Windows Game Mode</button>
               <button class="button" type="button" data-action="restore-point">${icon('shield')} Create restore point</button>
             </div>
           </div>
@@ -108,7 +108,7 @@ function appliedSection(scan) {
   return `
     ${sectionHead('Applied by Nexa', 'Backed up and reversible. Undo one at a time or from the Activity page.')}
     <div class="card card-pad">
-      <div class="chip-row">${applied.map((action) => `<span class="badge lime">${icon('check')} ${escapeHtml(action.name)}</span>`).join('')}</div>
+      <div class="chip-row">${applied.map((action) => `<button class="button button-small" type="button" data-undo-action="${escapeHtml(action.id)}">${icon('check')} ${escapeHtml(action.name)} · Undo</button>`).join('')}</div>
       <p class="small muted" style="margin:12px 0 0">Some changes need a restart to fully revert.</p>
     </div>`;
 }
@@ -138,10 +138,10 @@ export function renderOptimize(mode = 'safe') {
 
   return `
     ${summaryCard(scan, mode, actionPool)}
-    ${sectionHead('Safe optimizations', 'Recommended, reversible changes with no side effects for normal use.', `<span class="badge muted">${safeReady.length} ready</span>`)}
+    ${sectionHead('Safe optimizations', 'Windows Game Mode reduces background interruptions during play.', `<span class="badge muted">${safeReady.length} ready</span>`)}
     ${safePool.length ? `<div class="action-grid">${safePool.map((action) => actionCard(action)).join('')}</div>` : emptyState('check', 'Nothing to apply here', 'Every safe setting is already in the recommended state.')}
     ${cautionPool.length ? `
-      ${sectionHead('Situational optimizations', 'Hardware-dependent settings. Review the notes below before enabling; these are excluded from "Apply safe fixes".', `<span class="badge amber">${cautionReady.length} review</span>`)}
+      ${sectionHead('Situational optimizations', 'These change Windows behavior or depend on your hardware. Compare frame times before and after changing one setting.', `<span class="badge amber">${cautionReady.length} review</span>`)}
       <div class="action-grid">${cautionPool.map((action) => actionCard(action)).join('')}</div>
     ` : ''}
     ${primaryFindings.length ? `${sectionHead('System advisories', 'Hardware or OS conditions that require manual review.')}<div>${primaryFindings.map(findingCard).join('')}</div>` : ''}
@@ -207,59 +207,13 @@ export async function applySafe() {
     toast('info', 'Nothing to apply', 'Every safe optimization is already active.');
     return;
   }
-  const blocked = !state.snapshot?.admin ? candidates.filter((action) => action.requiresAdmin) : [];
-  const available = candidates.filter((action) => !blocked.includes(action));
-
-  if (!state.snapshot?.admin && blocked.length > 0) {
-    openModal({
-      title: 'Administrator Rights Needed for Some Safe Fixes',
-      body: `
-        <p>Windows requires Administrator rights for some safe fixes, including the power plan and system-wide registry settings.</p>
-        <ul class="modal-list">
-          <li><strong>${blocked.length} safe fix${blocked.length === 1 ? '' : 'es'}</strong> need Administrator rights.</li>
-          <li>${available.length ? `You can apply ${available.length} user-level fix${available.length === 1 ? '' : 'es'} now without administrator rights.` : 'All remaining safe fixes require Administrator rights.'}</li>
-        </ul>
-        <p class="small muted" style="margin-top:12px">Click below to approve the Windows prompt and restart Nexa as Administrator.</p>
-      `,
-      confirmLabel: 'Restart as Administrator (Recommended)',
-      cancelLabel: available.length ? 'Apply Standard Fixes Only' : 'Cancel',
-      danger: false,
-      onConfirm: elevate,
-      onCancel: available.length
-        ? async () => {
-            try {
-              const response = await applyActions(available.map((action) => action.id));
-              const failed = (response.results || []).filter((result) => !result.ok);
-              if (failed.length) {
-                toast('warn', 'Some changes were skipped', failed.map((result) => result.error).join(' · '));
-              } else {
-                toast('success', 'Safe fixes applied', `${available.length} setting${available.length === 1 ? '' : 's'} updated.`);
-              }
-            } catch (error) {
-              toast('error', 'Could not apply safe fixes', error.message);
-            }
-          }
-        : null,
-    });
-    return;
-  }
-
-  if (!available.length) {
-    openModal({
-      title: 'Administrator access needed',
-      body: '<p>The remaining safe fixes change system-wide settings. Restart Nexa with administrator rights to continue.</p>',
-      confirmLabel: 'Restart as administrator',
-      onConfirm: elevate,
-    });
-    return;
-  }
   try {
-    const response = await applyActions(available.map((action) => action.id));
+    const response = await applyActions(candidates.map((action) => action.id));
     const failed = (response.results || []).filter((result) => !result.ok);
     if (failed.length) {
       toast('warn', 'Some changes were skipped', failed.map((result) => result.error).join(' · '));
     } else {
-      toast('success', 'Safe fixes applied', `${available.length} settings updated.`);
+      toast('success', 'Safe fixes applied', 'Windows Game Mode is configured.');
     }
   } catch (error) {
     toast('error', 'Could not apply safe fixes', error.message);

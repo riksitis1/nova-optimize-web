@@ -75,7 +75,7 @@ export const state = {
     new URLSearchParams(window.location.search).get('token') ||
     document.querySelector('meta[name="nexa-token"]')?.getAttribute('content') ||
     '',
-  version: '1.5.0',
+  version: '1.6.0',
   port: null,
   dataDir: '',
   settings: {},
@@ -854,7 +854,7 @@ async function runInPlaceUpdate(targetVersion) {
   if (overlay) overlay.hidden = false;
 
   try {
-    await api('/api/update/install', { method: 'POST', body: {} });
+    const { installedVersion } = await api('/api/update/install', { method: 'POST', body: {} });
     if (status) status.textContent = 'Update installed. Waiting for Nexa to restart…';
     for (let attempt = 0; attempt < 35; attempt += 1) {
       await new Promise((resolve) => setTimeout(resolve, 900));
@@ -862,7 +862,7 @@ async function runInPlaceUpdate(targetVersion) {
         const res = await fetch('/api/health', { cache: 'no-store' });
         if (res.ok) {
           const health = await res.json();
-          if (health && health.ok) {
+          if (health?.ok && health.version === installedVersion) {
             if (status) status.textContent = `Restarted on v${health.version}. Reloading UI…`;
             setTimeout(() => window.location.reload(), 400);
             return;

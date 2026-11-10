@@ -33,13 +33,31 @@ function registryApply(writes) {
       kind: write.kind || 'DWord',
       value: write.value,
     }));
-    const results = await ctx.ps('registry.apply', { operations });
-    const failed = results.filter((result) => !result.ok);
-    if (failed.length) {
-      throw new Error(failed.map((result) => `${result.name}: ${result.error}`).join('; '));
-    }
-    return { kind: 'registry', entries: backup };
+    return applyRegistryOperations(ctx, operations, backup);
   };
+}
+
+async function applyRegistryOperations(ctx, operations, entries) {
+  const backup = { kind: 'registry', entries };
+  let message;
+  let changed = entries;
+  try {
+    const results = await ctx.ps('registry.apply', { operations });
+    const failures = results.filter((result) => !result.ok);
+    if (!failures.length && results.length === entries.length) return backup;
+    message = failures.map((result) => [result.name, result.error].join(': ')).join('; ') || 'Incomplete registry response.';
+    changed = entries.filter((_, index) => results[index]?.ok !== false);
+  } catch (error) {
+    message = error.message;
+  }
+  if (changed.length) {
+    try {
+      await registryRevert(ctx, { ...backup, entries: changed });
+    } catch (error) {
+      throw Object.assign(new Error(message + ' | Rollback failed: ' + error.message), { backup });
+    }
+  }
+  throw new Error(message);
 }
 
 function registryRevert(ctx, backup) {
@@ -154,9 +172,7 @@ function qosPolicyWrites(policyName, exe) {
   ];
 }
 
-// The public action set is intentionally conservative: 12 safe, 3 caution,
-// and 10 advanced controls. Only safe actions affect the readiness score and
-// the one-click "Apply safe fixes" action.
+// Only low-risk defaults affect the readiness score or run in bulk.
 const actions = [
   regAction({
     id: 'game-mode',
@@ -181,10 +197,10 @@ const actions = [
     id: 'game-dvr',
     name: 'Disable background game recording',
     category: 'Gaming',
-    description: 'Stops Windows Game DVR from recording gameplay in the background. Manual capture tools still work.',
-    note: 'This turns off the built-in background recorder, not the Xbox Game Bar itself.',
+    description: 'Disables Windows game capture for this user.',
+    note: 'Use this if you do not use Xbox Game Bar to record or save clips. Other recording apps have their own settings.',
     impact: 'low',
-    risk: 'safe',
+    risk: 'caution',
     writes: [
       { hive: HKCU, path: GAME_DVR_PATH, name: 'GameDVR_Enabled', kind: 'DWord', value: 0 },
       { hive: HKCU, path: GAME_DVR_APP_PATH, name: 'AppCaptureEnabled', kind: 'DWord', value: 0 },
@@ -219,7 +235,7 @@ const actions = [
       'Enables the DirectX swap-effect upgrade setting that can let borderless and windowed games use modern flip-model presentation on Windows 11 22H2+.',
     note: 'Effect depends on the game, GPU driver, and Windows version. Windows 11 22H2 or newer.',
     impact: 'low',
-    risk: 'safe',
+    risk: 'caution',
     appliesTo: (snapshot) => snapshot.os.build >= 22621,
     writes: [
       { hive: HKCU, path: DIRECTX_USER_GPU_PATH, name: 'DirectXUserGlobalSettings', kind: 'String', value: 'SwapEffectUpgradeEnable=1;' },
@@ -272,12 +288,7 @@ const actions = [
         },
       ];
 
-      const results = await ctx.ps('registry.apply', { operations });
-      const failed = results.filter((r) => !r.ok);
-      if (failed.length) {
-        throw new Error(failed.map((r) => `${r.name}: ${r.error}`).join('; '));
-      }
-      return { kind: 'registry', entries: backup };
+      return applyRegistryOperations(ctx, operations, backup);
     },
   }),
   regAction({
@@ -287,7 +298,7 @@ const actions = [
     description: 'Stops Store apps from running background work when you are not using them.',
     note: 'Some background sync and notification features may be delayed. Reversible.',
     impact: 'low',
-    risk: 'safe',
+    risk: 'caution',
     writes: [{ hive: HKCU, path: BACKGROUND_PATH, name: 'GlobalUserDisabled', kind: 'DWord', value: 1 }],
     isOptimized: (snapshot) => isNumber(snapshot.state.backgroundApps, 1),
     currentValue: (snapshot) => (isNumber(snapshot.state?.backgroundApps, 1) ? 'Restricted (1)' : 'Allowed in background'),
@@ -299,7 +310,7 @@ const actions = [
     description: 'Turns off Windows acrylic and transparency effects. Most useful on integrated graphics.',
     note: 'Purely visual. Easy to undo if you miss the look.',
     impact: 'low',
-    risk: 'safe',
+    risk: 'caution',
     writes: [{ hive: HKCU, path: THEMES_PATH, name: 'EnableTransparency', kind: 'DWord', value: 0 }],
     isOptimized: (snapshot) => isNumber(snapshot.state.transparency, 0),
     currentValue: (snapshot) => (isNumber(snapshot.state?.transparency, 0) ? 'Transparency off (0)' : 'Transparency on (1)'),
@@ -363,16 +374,16 @@ const actions = [
   }),
   {
     id: 'power-plan',
-    name: 'Activate the Nexa Gaming power plan',
+    name: 'Try the Windows High performance plan',
     category: 'Performance',
-    description: 'Creates a high-performance Windows power plan and makes it active. Your original plan is remembered.',
-    note: 'On laptops this increases power use and heat. Plug in for the best experience.',
+    description: 'Switches to the standard Windows High performance plan when it is available.',
+    note: 'Compare frame times and temperatures on your desktop. Undo restores your original power plan.',
     impact: 'medium',
-    risk: 'safe',
+    risk: 'caution',
     requiresAdmin: true,
     requiresReboot: false,
     kind: 'power',
-    appliesTo: () => true,
+    appliesTo: (snapshot) => snapshot.computer?.isLaptop === false && Boolean(snapshot.power?.guid),
     isOptimized: (snapshot) => {
       const name = String(snapshot.power?.name || '').toLowerCase();
       const guid = String(snapshot.power?.guid || '').toLowerCase();
@@ -493,7 +504,7 @@ const actions = [
       'Turns off Delivery Optimization peer-to-peer sharing through the documented Group Policy value, so Windows Update does not upload update fragments to other PCs in the background.',
     note: 'Normal Windows updates still work. This does not disable Windows Update or speed up your connection by itself.',
     impact: 'medium',
-    risk: 'safe',
+    risk: 'caution',
     requiresAdmin: true,
     requiresReboot: false,
     kind: 'registry',
@@ -632,7 +643,7 @@ const actions = [
       'Tells Windows to let older games use true exclusive fullscreen instead of the borderless compatibility layer.',
     note: 'Modern games already use flip-model presentation, so expect little change there. Fully reversible.',
     impact: 'low',
-    risk: 'safe',
+    risk: 'caution',
     requiresAdmin: false,
     requiresReboot: false,
     kind: 'registry',
@@ -680,7 +691,7 @@ const actions = [
     description: 'Disables Windows Fast Startup so shutdown performs a full cold boot, resetting kernel and driver state each time.',
     note: 'Boot may take slightly longer, but drivers and kernel state are refreshed. Reversible.',
     impact: 'medium',
-    risk: 'safe',
+    risk: 'caution',
     requiresAdmin: true,
     requiresReboot: false,
     writes: [
@@ -703,7 +714,7 @@ const actions = [
     description: 'Sets the documented AllowTelemetry policy to 0 to reduce Windows diagnostic data collection.',
     note: 'Windows 10/11 Pro may treat 0 as Basic instead of fully off; Enterprise/Education honor 0. This is a privacy setting, not an FPS tweak.',
     impact: 'medium',
-    risk: 'safe',
+    risk: 'caution',
     requiresAdmin: true,
     requiresReboot: false,
     writes: [
@@ -726,7 +737,7 @@ const actions = [
     description: 'Disables window minimize and maximize animations.',
     note: 'User-level visual setting. Immediate effect.',
     impact: 'low',
-    risk: 'safe',
+    risk: 'caution',
     requiresAdmin: false,
     requiresReboot: false,
     writes: [
@@ -800,7 +811,7 @@ const actions = [
     description: 'Removes the default 400 ms delay before context menus and tooltips appear.',
     note: 'User-level visual setting. Immediate effect.',
     impact: 'low',
-    risk: 'safe',
+    risk: 'caution',
     requiresAdmin: false,
     requiresReboot: false,
     writes: [{ hive: HKCU, path: DESKTOP_PATH, name: 'MenuShowDelay', kind: 'String', value: '0' }],
@@ -1060,9 +1071,9 @@ function serializeAction(action, snapshot, applied = {}) {
   let currentValue = null;
   const isAppliedByNexa = Boolean(applied && applied[action.id]);
   try {
-    applicable = action.appliesTo(snapshot) !== false;
+    applicable = Boolean(action.appliesTo(snapshot));
   } catch {
-    applicable = true;
+    applicable = false;
   }
   try {
     optimized = applicable && (action.isOptimized(snapshot) === true || isAppliedByNexa);

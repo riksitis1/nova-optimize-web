@@ -77,7 +77,7 @@ function experienceCard() {
   return `
     <div class="card card-pad">
       <div class="card-header"><div><h2>Experience</h2><p>Make Nexa feel right for you.</p></div></div>
-      ${toggleRow('runInBackground', 'Run in the background', 'Keeps Nexa active in the background when unfocused or closed, and auto-trims idle RAM under high load. Turn off to pause when unfocused and stop Nexa when you close the window.')}
+      ${toggleRow('runInBackground', 'Run in the background', 'Keeps Nexa active in the background when unfocused or closed. Turn off to pause when unfocused and stop Nexa when you close the window.')}
       ${toggleRow('reduceMotion', 'Reduce motion', 'Turns off ambient animation and smooth transitions. Useful for motion sensitivity or older hardware.')}
       ${toggleRow('compactMode', 'Compact layout', 'Tightens spacing so more information fits on screen.')}
       ${toggleRow('showAdvanced', 'Show the Advanced page', 'Keeps expert-level, higher-risk tweaks in the sidebar. Safe mode stays the default.')}
@@ -298,7 +298,7 @@ export function bindSettings() {
       const gpu = gpuList.length > 0 ? gpuList.join(', ') : 'Unknown GPU';
       const ram = state.snapshot?.memory?.totalGb ? `${state.snapshot.memory.totalGb} GB` : 'Unknown RAM';
       const score = state.scan?.score !== undefined ? `${state.scan.score}/100` : 'Not scanned';
-      const version = `v${state.version || '1.5.0'}`;
+      const version = `v${state.version || '1.6.0'}`;
       const nicMsi = (state.msiMode || []).find((m) => m.deviceType === 'Network')?.msiSupported ? 'Supported' : 'Standard';
 
       const title = encodeURIComponent(`[Review]: ${cpu} + ${gpu} (Score: ${score})`);

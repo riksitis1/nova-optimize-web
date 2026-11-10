@@ -66,6 +66,7 @@ test('only safe actions are scored, while caution and advanced actions are advis
   const scan = analyze(makeSnapshot({
     state: {
       gameMode: { autoGameMode: 0, allowAutoGameMode: 0 },
+      windowed: 0,
       networkThrottling: { exists: true, value: 10, kind: 'DWord' },
       pagingExecutive: { exists: false, value: null, kind: 'DWord' },
     },
@@ -74,6 +75,8 @@ test('only safe actions are scored, while caution and advanced actions are advis
   assert.ok(gameMode);
   assert.equal(gameMode.scored, true);
   assert.equal(gameMode.risk, 'safe');
+
+  assert.equal(scan.findings.find((finding) => finding.id === 'action-windowed-optimizations').scored, false);
 
   const advanced = scan.findings.find((finding) => finding.id === 'action-network-throttling');
   assert.ok(advanced);
@@ -212,9 +215,9 @@ test('informational findings (Windows 10 EOS and base JEDEC RAM clock) do not lo
 });
 
 test('cleanup targets correctly partition stale and active shader caches without double counting', () => {
-  const staleDef = { minAgeHours: 720, maxAgeHours: 0, risk: 'safe' };
+  const staleDef = { minAgeHours: 720, maxAgeHours: 0, risk: 'caution' };
   const activeDef = { minAgeHours: 0, maxAgeHours: 720, risk: 'caution' };
-  assert.equal(staleDef.risk, 'safe');
+  assert.equal(staleDef.risk, 'caution');
   assert.equal(activeDef.risk, 'caution');
 
   // Verify mutually exclusive age bounds
