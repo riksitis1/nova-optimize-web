@@ -611,16 +611,19 @@ async function handleApi(req, res, url) {
   }
 
   if (method === 'GET' && pathname === '/api/games') {
-    sendJson(res, 200, { ok: true, games: await listGames() });
+    sendJson(res, 200, { ok: true, games: await listGames(url.searchParams.get('force') === '1') });
     return;
   }
 
   if (method === 'POST' && pathname === '/api/games/apply') {
     const body = await readBody(req);
     const gameId = cleanId(body.gameId);
-    const settingIds = cleanIdList(body.settingIds);
-    const result = await applyGameSettings(gameId, settingIds);
-    addActivity({
+    if (body.profile !== undefined && (body.profile !== 'max-fps' || body.settingIds !== undefined)) {
+      throw new HttpError(400, 'Choose a valid profile or individual settings.');
+    }
+    const settingIds = body.profile === undefined ? cleanIdList(body.settingIds) : [];
+    const result = await applyGameSettings(gameId, settingIds, body.profile);
+    if (result.applied.length) addActivity({
       type: 'games',
       title: `Applied ${result.applied.length} ${result.name} performance setting${result.applied.length === 1 ? '' : 's'}`,
       detail: 'Backed up the original config. Restore any time from the Games page.',
@@ -811,7 +814,7 @@ function serveStatic(req, res, url) {
 
 const exclusiveRoutes = new Set([
   '/api/actions/apply', '/api/actions/revert', '/api/actions/revert-all',
-  '/api/optional-apps/remove', '/api/update/install',
+  '/api/optional-apps/remove', '/api/update/install', '/api/games/apply', '/api/games/revert',
 ]);
 let changingSystem = false;
 

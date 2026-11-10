@@ -274,6 +274,62 @@ test('handles read-only config files gracefully on apply and revert', async () =
   fs.chmodSync(file, 0o666);
 });
 
+test('Max FPS previews and applies existing Fortnite settings, then restores earlier backups', async () => {
+  const env = makeEnv(tmpDir());
+  const file = path.join(env.localAppData, 'FortniteGame', 'Saved', 'Config', 'WindowsClient', 'GameUserSettings.ini');
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const original = '[ScalabilityGroups]\nsg.ResolutionQuality=55.000000\nsg.TextureQuality=3\nsg.ViewDistanceQuality=3\n[/Script/FortniteGame.FortGameUserSettings]\nFrameRateLimit=120.000000\nbUseNanite=True\n';
+  fs.writeFileSync(file, original);
+  const service = games.createGameService(env);
+  await service.apply('fortnite', ['fn-textures']);
+  const game = await service.describe('fortnite');
+  const pending = game.maxFps.filter((setting) => setting.available && !setting.optimized).map((setting) => setting.id);
+  assert.deepEqual(pending, ['fn-textures', 'fn-view', 'fn-nanite', 'fn-fps']);
+  assert.deepEqual((await service.apply('fortnite', [], 'max-fps')).applied, pending);
+  const text = fs.readFileSync(file, 'utf8');
+  assert.match(text, /sg.ResolutionQuality=55\.000000/);
+  assert.match(text, /sg.TextureQuality=0/);
+  assert.match(text, /sg.ViewDistanceQuality=0/);
+  assert.match(text, /bUseNanite=False/);
+  assert.match(text, /FrameRateLimit=0\.000000/);
+  assert.doesNotMatch(text, /bUseVSync|sg.ShadowQuality/);
+  assert.deepEqual((await service.apply('fortnite', [], 'max-fps')).applied, []);
+  await service.revert('fortnite');
+  assert.equal(fs.readFileSync(file, 'utf8'), original);
+});
+
+test('Max FPS detects pending settings across CS2 accounts and leaves Reflex unchanged', async () => {
+  const env = makeEnv(tmpDir());
+  const files = ['123', '456'].map((account) => path.join(path.dirname(env.appData), 'Steam', 'userdata', account, '730', 'local', 'cfg', 'cs2_video.txt'));
+  for (const [index, file] of files.entries()) {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, '"video.cfg"\n{\n\t"setting.msaa_samples"\t\t"' + (index ? '4' : '0') + '"\n\t"setting.r_csgo_cmaa_enable"\t\t"0"\n\t"setting.r_low_latency"\t\t"2"\n}\n');
+  }
+  const service = games.createGameService(env);
+  const game = await service.describe('cs2');
+  assert.equal(game.maxFps.find((setting) => setting.id === 'cs2-aa').optimized, false);
+  assert.equal(game.maxFps.some((setting) => setting.id === 'cs2-reflex'), false);
+  assert.deepEqual((await service.apply('cs2', [], 'max-fps')).changedFiles, [files[1]]);
+  assert.match(fs.readFileSync(files[1], 'utf8'), /"setting.r_low_latency"\t\t"2"/);
+  assert.equal((await service.describe('cs2')).maxFps.find((setting) => setting.id === 'cs2-aa').optimized, true);
+  await service.revert('cs2', ['cs2-aa']);
+  assert.match(fs.readFileSync(files[1], 'utf8'), /"setting.msaa_samples"\t\t"4"/);
+});
+
+test('Max FPS lowers Minecraft simulation work and preserves an already lower render distance', async () => {
+  const env = makeEnv(tmpDir());
+  const file = path.join(env.appData, '.minecraft', 'options.txt');
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const original = 'renderDistance:4\nsimulationDistance:16\nmaxFps:120\nenableVsync:true\nentityDistanceScaling:0.25\n';
+  fs.writeFileSync(file, original);
+  const service = games.createGameService(env);
+  const result = await service.apply('minecraft', [], 'max-fps');
+  assert.deepEqual(result.applied, ['mc-sim', 'mc-fps', 'mc-vsync']);
+  assert.equal(fs.readFileSync(file, 'utf8'), 'renderDistance:4\nsimulationDistance:5\nmaxFps:260\nenableVsync:false\nentityDistanceScaling:0.25\n');
+  await service.revert('minecraft');
+  assert.equal(fs.readFileSync(file, 'utf8'), original);
+});
+
 test('pre-game boost only accepts apps from the fixed allowlist', () => {
   assert.deepEqual(cleanBoostApps(['onedrive', 'Chrome', 'chrome']), ['OneDrive', 'chrome']);
   assert.deepEqual(cleanBoostApps(undefined), []);

@@ -34,7 +34,7 @@ import {
 } from '../ui.js';
 
 function heroHeadline(score) {
-  if (score >= 90) return 'System configuration is <em>optimized</em>';
+  if (score >= 90) return 'System readiness is <em>high</em>';
   if (score >= 75) return 'System is <em>ready for tuning</em>';
   if (score >= 60) return 'Recommended settings <em>available</em>';
   return 'Multiple settings <em>need attention</em>';
@@ -53,12 +53,12 @@ function heroHtml(scan) {
         <h1>${heroHeadline(scan.score)}</h1>
         <p>${escapeHtml(scan.summary)}</p>
         <div class="hero-actions">
+          <button class="button button-primary button-large" type="button" data-nav="games">${icon('gamepad')} Tune game FPS</button>
           ${unappliedCount > 0
-            ? `<button class="button button-primary button-large" type="button" data-action="apply-safe" style="background:var(--lime);color:#0a0d14;font-weight:700;box-shadow:0 0 24px rgba(184,249,54,0.35);padding:11px 22px">${icon('zap')} Enable Windows Game Mode</button>`
+            ? `<button class="button button-large" type="button" data-action="apply-safe">${icon('zap')} Enable Windows Game Mode</button>`
             : `<button class="button button-large" type="button" data-action="scan" style="border-color:var(--lime);color:var(--lime)">${icon('check')} Run readiness scan</button>`}
           <button class="button button-large" type="button" data-nav="optimize">${icon('sliders')} Review tweaks</button>
           <button class="button button-large" type="button" data-action="trim-ram">${icon('zap')} Pre-game boost</button>
-          <button class="button button-large" type="button" data-nav="games">${icon('gamepad')} Game settings</button>
         </div>
         <div class="hero-note">${icon('shield')} Automatic registry &amp; config backups · ${state.settings.runInBackground !== false ? 'Runs in the background (toggle in sidebar)' : 'Background mode off (exits when closed)'}</div>
       </div>

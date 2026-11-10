@@ -1,14 +1,12 @@
 {
-    "version": "1.6.0",
+    "version": "1.7.0",
     "releasedAt": "2026-11-10",
-    "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v1.6.0.zip",
-    "sha256": "babd3652d8f10fc53bd31442725e0efb508b5c6a68a236ed85999444133710a5",
+    "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v1.7.0.zip",
+    "sha256": "e204540f06cd5580b26632ac71dac8b8e9b1b0a7b51acccf2ca2c714c14f575f",
     "notes": [
-        "Pre-game prep shows sampled CPU use and closes only apps you select.",
-        "Removed automatic RAM trimming and pre-game DNS flushing.",
-        "Windows Game Mode is the only one-click setting. Power and capture changes are opt-in.",
-        "Shader cache cleanup is opt-in to avoid shader rebuilds during play.",
-        "Uninstall selected optional Windows apps from your account in Cleanup.",
-        "Older installs update in place and preserve their undo backups."
+        "Preview and apply Max FPS profiles for Fortnite, Counter-Strike 2, and Minecraft Java.",
+        "Fortnite lowers render scale and quality. CS2 reduces graphics detail and anti-aliasing. Minecraft reduces render and simulation load.",
+        "Profiles preserve original settings for restore and skip options absent from your game configuration.",
+        "Games links to Windows graphics preferences for dual-GPU PCs."
     ]
 }

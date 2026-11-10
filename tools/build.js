@@ -186,12 +186,10 @@ if (fs.existsSync(versionJsonPath)) {
   vJson.downloadUrl = `https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v${VERSION}.zip`;
   vJson.sha256 = zipHash;
   vJson.notes = [
-    'Pre-game prep shows sampled CPU use and closes only apps you select.',
-    'Removed automatic RAM trimming and pre-game DNS flushing.',
-    'Windows Game Mode is the only one-click setting. Power and capture changes are opt-in.',
-    'Shader cache cleanup is opt-in to avoid shader rebuilds during play.',
-    'Uninstall selected optional Windows apps from your account in Cleanup.',
-    'Older installs update in place and preserve their undo backups.',
+    'Preview and apply Max FPS profiles for Fortnite, Counter-Strike 2, and Minecraft Java.',
+    'Fortnite lowers render scale and quality. CS2 reduces graphics detail and anti-aliasing. Minecraft reduces render and simulation load.',
+    'Profiles preserve original settings for restore and skip options absent from your game configuration.',
+    'Games links to Windows graphics preferences for dual-GPU PCs.',
   ];
   fs.writeFileSync(versionJsonPath, JSON.stringify(vJson, null, 4), 'utf8');
   console.log(`==> Step 7: Updated website/version.json with new zip SHA-256 and v${VERSION}`);

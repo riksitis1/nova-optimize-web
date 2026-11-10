@@ -6,7 +6,6 @@ import {
   openModal,
   api,
   requestRender,
-  copyText,
 } from '../core.js';
 import { sectionHead, impactBadge, emptyState } from '../ui.js';
 
@@ -14,7 +13,7 @@ function selectionFor(game) {
   state.gameSelections = state.gameSelections || {};
   if (!state.gameSelections[game.id]) {
     state.gameSelections[game.id] = new Set(
-      game.settings.filter((setting) => setting.defaultOn && !setting.optimized).map((setting) => setting.id),
+      game.settings.filter((setting) => setting.available && setting.defaultOn && !setting.optimized).map((setting) => setting.id),
     );
   }
   return state.gameSelections[game.id];
@@ -33,7 +32,7 @@ function statusBadge(game) {
 }
 
 function formatDisplayValue(val, setting) {
-  if (val === null || val === undefined) return 'not set';
+  if (val === null || val === undefined) return setting.available ? 'not set' : 'Unavailable';
   let s = String(val).trim();
   // Strip trailing .000000 or decimal zeroes from Unreal Engine floats
   if (/^-?\d+\.0+$/.test(s)) s = s.replace(/\.0+$/, '');
@@ -43,6 +42,7 @@ function formatDisplayValue(val, setting) {
   if (s.toLowerCase() === 'true') return 'On';
 
   if (setting.id === 'fn-res' || setting.recommended?.includes('%')) {
+    if (setting.id === 'mc-entities' && /^\d+(?:\.\d+)?$/.test(s)) return `${Number(s) * 100}%`;
     if (/^\d+$/.test(s)) return `${s}%`;
   }
   if (setting.id === 'fn-fps') {
@@ -50,7 +50,7 @@ function formatDisplayValue(val, setting) {
     if (/^\d+$/.test(s)) return `${s} FPS`;
   }
   if (setting.id === 'mc-fps') {
-    if (s === '0' || s === '260') return 'Unlimited';
+    if (s === '260') return 'Unlimited';
     if (/^\d+$/.test(s)) return `${s} FPS`;
   }
   if (setting.id === 'mc-render' || setting.id === 'mc-sim') {
@@ -99,6 +99,7 @@ function formatDisplayValue(val, setting) {
 }
 
 function settingRow(game, setting, selected, locked) {
+  locked = locked || !setting.available;
   const currentFormatted = formatDisplayValue(setting.current, setting);
   const values = setting.optimized
     ? `<div class="game-value-pill is-optimal"><span class="game-ok">${icon('check', 12)} ${escapeHtml(setting.recommended)}</span></div>`
@@ -130,7 +131,7 @@ function settingRow(game, setting, selected, locked) {
 function gameCard(game) {
   const selected = selectionFor(game);
   const locked = !game.installed || game.running;
-  const count = game.settings.filter((setting) => selected.has(setting.id)).length;
+  const count = game.settings.filter((setting) => setting.available && selected.has(setting.id)).length;
   const hasBackup = Boolean(game.applied && game.applied.settingIds?.length);
   const tips = (game.tips || []).map((tip) => `<li>${escapeHtml(tip)}</li>`).join('');
   return `
@@ -159,15 +160,10 @@ function gameCard(game) {
       <div class="game-settings">
         ${game.settings.map((setting) => settingRow(game, setting, selected, locked)).join('')}
       </div>
-      ${game.launchOptions ? `
-        <div class="game-launch">
-          <span class="small muted">Optional Steam launch parameters</span>
-          <code class="mono">${escapeHtml(game.launchOptions)}</code>
-          <button class="button button-small" type="button" data-game-copy="${escapeHtml(game.launchOptions)}">${icon('copy')} Copy</button>
-        </div>` : ''}
       <footer class="game-foot">
         <div class="game-foot-buttons">
-          <button class="button button-primary" type="button" data-game-apply="${escapeHtml(game.id)}" ${locked || !count ? 'disabled' : ''}>${icon('zap')} <span data-game-apply-label="${escapeHtml(game.id)}">Apply ${count} setting${count === 1 ? '' : 's'}</span></button>
+          <button class="button button-primary" type="button" data-game-max-fps="${escapeHtml(game.id)}" ${locked || !game.maxFps?.some((setting) => setting.available && !setting.optimized) ? 'disabled' : ''}>${icon('zap')} Review Max FPS</button>
+          <button class="button" type="button" data-game-apply="${escapeHtml(game.id)}" ${locked || !count ? 'disabled' : ''}>${icon('zap')} <span data-game-apply-label="${escapeHtml(game.id)}">Apply ${count} setting${count === 1 ? '' : 's'}</span></button>
           <button class="button" type="button" data-game-restore="${escapeHtml(game.id)}" ${!hasBackup || game.running ? 'disabled' : ''} title="${hasBackup ? 'Restore all original backed-up settings for this game' : 'Apply settings first to create a restore point for this game'}">${icon('undo')} Restore original${hasBackup ? ` (${game.applied.settingIds.length})` : ''}</button>
         </div>
         <details class="game-tips">
@@ -214,11 +210,15 @@ export function renderGames() {
       <div style="display:flex;align-items:center;gap:12px">
         <span style="font-size:22px">🎮</span>
         <div>
-          <strong style="font-size:13px;font-weight:650;display:block">Per-Game Competitive Tuning</strong>
+          <strong style="font-size:13px;font-weight:650;display:block">Per-game FPS tuning</strong>
           <small style="color:var(--muted);font-size:11px;display:block;margin-top:2px">
-            Optimizes internal video &amp; network configs for lowest input delay and smooth 1% lows. All original values are backed up and restorable with one click.
+            Preview Max FPS to trade visual detail for higher frame rates. Compare average FPS and 1% lows in the same scene before and after. Use Restore original if frame times or visibility get worse.
           </small>
         </div>
+      </div>
+      <div>
+        <a class="button button-small" href="ms-settings:display-advancedgraphics">Windows graphics settings</a>
+        <p class="small muted">On a dual-GPU PC, set the game executable to High performance.</p>
       </div>
     </div>`;
   return `
@@ -232,7 +232,8 @@ export function renderGames() {
 function updateApplyButton(gameId) {
   const game = state.games?.find((item) => item.id === gameId);
   if (!game) return;
-  const count = selectionFor(game).size;
+  const selection = selectionFor(game);
+  const count = game.settings.filter((setting) => setting.available && selection.has(setting.id)).length;
   const button = document.querySelector(`[data-game-apply="${gameId}"]`);
   const label = document.querySelector(`[data-game-apply-label="${gameId}"]`);
   if (label) label.textContent = `Apply ${count} setting${count === 1 ? '' : 's'}`;
@@ -242,7 +243,8 @@ function updateApplyButton(gameId) {
 async function applySelected(gameId) {
   const game = state.games?.find((item) => item.id === gameId);
   if (!game) return;
-  const ids = Array.from(selectionFor(game));
+  const selected = selectionFor(game);
+  const ids = game.settings.filter((setting) => setting.available && selected.has(setting.id)).map((setting) => setting.id);
   if (!ids.length) {
     toast('info', 'Nothing selected', 'Tick at least one setting to apply.');
     return;
@@ -253,12 +255,40 @@ async function applySelected(gameId) {
     const data = await api('/api/games/apply', { method: 'POST', body: { gameId, settingIds: ids } });
     replaceGame(data.game);
     state.history = null;
-    toast('success', `${game.name} is tuned`, `${data.result.applied.length} setting${data.result.applied.length === 1 ? '' : 's'} applied. Original values are backed up and can be restored anytime.`);
+    const count = data.result.applied.length;
+    toast(count ? 'success' : 'info', count ? 'Game settings applied' : 'Already configured', `${count} setting${count === 1 ? '' : 's'} changed.`);
   } catch (error) {
     toast('error', `Could not tune ${game.name}`, error.message);
   } finally {
     requestRender();
   }
+}
+
+function reviewMaxFps(gameId) {
+  const game = state.games?.find((item) => item.id === gameId);
+  if (!game?.installed || game.running) return;
+  const pending = (game.maxFps || []).filter((setting) => setting.available && !setting.optimized);
+  if (!pending.length) return;
+  openModal({
+    title: `Max FPS for ${game.name}`,
+    body: `
+      <p>This profile trades image quality for frame rate. Lower resolution and draw distance can make distant objects harder to see. Turning off V-Sync can cause tearing.</p>
+      <ul class="modal-list">${pending.map((setting) => `<li>${escapeHtml(setting.label)} → ${escapeHtml(setting.recommended)}</li>`).join('')}</ul>
+      ${game.id === 'fortnite' ? '<p>To try Epic’s Performance renderer, set it in Fortnite under Video → Rendering Mode and restart the game.</p>' : ''}
+      ${game.id === 'cs2' ? '<p>CS2’s FPS limit and FidelityFX Super Resolution are configured in the game.</p>' : ''}
+      <p>Restore original is available on the game card.</p>`,
+    confirmLabel: 'Apply Max FPS',
+    onConfirm: async () => {
+      const data = await api('/api/games/apply', { method: 'POST', body: { gameId, profile: 'max-fps' } });
+      replaceGame(data.game);
+      if (state.gameSelections) delete state.gameSelections[gameId];
+      state.history = null;
+      const count = data.result.applied.length;
+      toast(count ? 'success' : 'info', count ? 'Max FPS applied' : 'Already configured',
+        `${game.name} · ${count} setting${count === 1 ? '' : 's'} changed.`);
+      requestRender();
+    },
+  });
 }
 
 async function restoreSingleSetting(gameId, settingId) {
@@ -315,8 +345,8 @@ async function restoreAllGames() {
   }
 }
 
-export async function loadGames() {
-  const data = await api('/api/games');
+export async function loadGames(force = false) {
+  const data = await api(force ? '/api/games?force=1' : '/api/games');
   state.games = data.games;
 }
 
@@ -356,11 +386,14 @@ export function bindGames() {
       if (!game) return;
       const next = new Set();
       for (const setting of game.settings) {
-        if (mode === 'all' || (mode === 'recommended' && setting.defaultOn && !setting.optimized)) next.add(setting.id);
+        if (setting.available && (mode === 'all' || (mode === 'recommended' && setting.defaultOn && !setting.optimized))) next.add(setting.id);
       }
       state.gameSelections[gameId] = next;
       requestRender();
     });
+  });
+  document.querySelectorAll('[data-game-max-fps]').forEach((button) => {
+    button.addEventListener('click', () => reviewMaxFps(button.getAttribute('data-game-max-fps')));
   });
   document.querySelectorAll('[data-game-apply]').forEach((button) => {
     button.addEventListener('click', () => applySelected(button.getAttribute('data-game-apply')));
@@ -379,14 +412,11 @@ export function bindGames() {
   document.querySelectorAll('[data-action="restore-all-games"]').forEach((button) => {
     button.addEventListener('click', restoreAllGames);
   });
-  document.querySelectorAll('[data-game-copy]').forEach((button) => {
-    button.addEventListener('click', () => copyText(button.getAttribute('data-game-copy')));
-  });
   document.querySelectorAll('[data-action="recheck-games"]').forEach((button) => {
     button.addEventListener('click', async () => {
       button.disabled = true;
       try {
-        await loadGames();
+        await loadGames(true);
         toast('success', 'Games re-checked');
       } catch (error) {
         toast('error', 'Could not check games', error.message);

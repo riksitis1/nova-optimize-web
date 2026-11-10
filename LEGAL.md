@@ -1,7 +1,7 @@
 # Legal Terms, Disclaimers & Privacy Policy
 
 **Last Updated:** November 10, 2026  
-**Software:** Nexa Optimize (`v1.6.0`)
+**Software:** Nexa Optimize (`v1.7.0`)
 
 ---
 

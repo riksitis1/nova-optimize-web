@@ -13,6 +13,7 @@
  */
 
 const fs = require('node:fs');
+const { randomUUID } = require('node:crypto');
 const path = require('node:path');
 const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
@@ -246,8 +247,8 @@ const GAMES = [
     files: { config: { format: 'ini', label: 'GameUserSettings.ini' } },
     tips: [
       'Close Fortnite and the Epic launcher overlay before applying. Fortnite rewrites this file when it exits.',
-      'For the biggest gain on weaker PCs, also pick Performance rendering mode inside Fortnite (Settings → Video).',
-      'If your FPS stutters when uncapped, set a frame cap just under your monitor refresh rate instead.',
+      'Try Epic’s Performance renderer in Video → Rendering Mode and restart the game. Compare against DX12 if your PC supports both.',
+      'If uncapped FPS makes frame times less consistent, try a cap the PC can maintain in busy scenes.',
     ],
     settings: [
       fn('fn-shadows', 'Shadows', 'Shadows are one of the most expensive effects and also hide enemies in dark corners.', 'high', 'sg.ShadowQuality', '0', 'Low'),
@@ -258,8 +259,29 @@ const GAMES = [
       fn('fn-aa', 'Anti-aliasing', 'Fastest anti-aliasing mode. Edges look slightly sharper and more jagged.', 'medium', 'sg.AntiAliasingQuality', '0', 'Low'),
       fn('fn-shading', 'Shading', 'Simpler material shading.', 'medium', 'sg.ShadingQuality', '0', 'Low'),
       fn('fn-foliage', 'Foliage', 'Removes most grass and small plants. Also makes players easier to see.', 'low', 'sg.FoliageQuality', '0', 'Low'),
-      fn('fn-textures', 'Textures', 'Medium keeps things readable and fits in less VRAM. Drop to Low only on 4 GB cards.', 'low', 'sg.TextureQuality', '1', 'Medium'),
-      fn('fn-view', 'View distance', 'Kept at Epic on purpose: it lets you spot far-away players and costs little FPS.', 'low', 'sg.ViewDistanceQuality', '3', 'Epic'),
+      fn('fn-textures', 'Textures', 'Lower textures reduce video memory use.', 'medium', 'sg.TextureQuality', '1', 'Medium', { maxFps: { values: ['0'], display: 'Low' } }),
+      fn('fn-view', 'View distance', 'Lower distances reduce scene detail and draw distance.', 'medium', 'sg.ViewDistanceQuality', '3', 'Epic', { defaultOn: false, maxFps: { values: ['0'], display: 'Low' } }),
+      fn('fn-landscape', 'Landscape quality', 'Lowers terrain detail on supported Fortnite builds.', 'medium', 'sg.LandscapeQuality', '0', 'Low', { defaultOn: false, pairs: [{ section: SG, key: 'sg.LandscapeQuality', value: '0', onlyIfPresent: true }] }),
+      {
+        id: 'fn-nanite',
+        label: 'Nanite geometry',
+        description: 'Disables virtualized geometry when the current Fortnite renderer supports this setting.',
+        impact: 'high',
+        file: 'config',
+        pairs: [{ section: FN, key: 'bUseNanite', value: 'False', onlyIfPresent: true }],
+        display: 'Off',
+        defaultOn: false,
+      },
+      {
+        id: 'fn-motion-blur',
+        label: 'Motion blur',
+        description: 'Removes the motion blur pass where this option is available.',
+        impact: 'low',
+        file: 'config',
+        pairs: [{ section: FN, key: 'bMotionBlur', value: 'False', onlyIfPresent: true }],
+        display: 'Off',
+        defaultOn: false,
+      },
       {
         id: 'fn-vsync',
         label: 'V-Sync',
@@ -268,7 +290,7 @@ const GAMES = [
         file: 'config',
         pairs: [{ section: FN, key: 'bUseVSync', value: 'False' }],
         display: 'Off',
-        defaultOn: true,
+        defaultOn: false,
       },
       {
         id: 'fn-fps',
@@ -278,9 +300,9 @@ const GAMES = [
         file: 'config',
         pairs: [{ section: FN, key: 'FrameRateLimit', value: '0.000000' }],
         display: 'Unlimited',
-        defaultOn: true,
+        defaultOn: false,
       },
-      fn('fn-res', '3D resolution', 'Renders at 75% resolution. Big FPS gain on weak GPUs, but the image gets softer.', 'high', 'sg.ResolutionQuality', '75.000000', '75%', { defaultOn: false }),
+      fn('fn-res', '3D resolution', 'Lowers internal render resolution and softens the image.', 'high', 'sg.ResolutionQuality', '75.000000', '75%', { defaultOn: false, maxFps: { values: ['65.000000'], display: '65% or lower', atMost: true } }),
     ],
   },
   {
@@ -289,17 +311,20 @@ const GAMES = [
     tagline: 'cs2_video.txt for every Steam account on this PC',
     processes: ['cs2.exe'],
     files: { video: { format: 'kv', label: 'cs2_video.txt' } },
-    launchOptions: '-novid +fps_max 0',
     tips: [
       'Close CS2 before applying. It rewrites cs2_video.txt when it exits.',
-      'Launch options cannot be changed safely from outside Steam. Copy the suggestion below into Steam → CS2 → Properties → Launch Options.',
+      'If you want uncapped FPS, set the in-game FPS limit or use fps_max 0 in the developer console. Compare frame times before leaving it uncapped.',
+      'If GPU usage is near 100%, try a lower resolution or FidelityFX Super Resolution in Video settings. Both can reduce image clarity.',
       'Launch CS2 at least once first so Steam creates the video config file.',
     ],
     settings: [
-      cs('cs2-shadows', 'Shadow quality', 'Global shadow quality is the single most expensive CS2 video option.', 'high', [{ key: 'setting.videocfg_shadow_quality', value: '0' }], 'Low'),
+      cs('cs2-shadows', 'Shadow quality', 'Lowers the quality of rendered shadows. Dynamic player shadow coverage stays at your current setting.', 'high', [{ key: 'setting.videocfg_shadow_quality', value: '0' }], 'Low'),
+      cs('cs2-shaders', 'Shader detail', 'Uses lower shader detail when this option is present.', 'medium', [{ key: 'setting.shaderquality', value: '0', onlyIfPresent: true }], 'Low', { defaultOn: false }),
+      cs('cs2-textures', 'Model and texture detail', 'Reduces model and texture detail.', 'medium', [{ key: 'setting.videocfg_texture_detail', value: '0', onlyIfPresent: true }], 'Low', { defaultOn: false }),
+      cs('cs2-filtering', 'Texture filtering', 'Uses bilinear filtering to reduce texture sampling.', 'low', [{ key: 'setting.r_texturefilteringquality', value: '0', onlyIfPresent: true }], 'Bilinear', { defaultOn: false }),
       cs('cs2-ao', 'Ambient occlusion', 'Turns off ambient occlusion shading.', 'medium', [{ key: 'setting.videocfg_ao_detail', value: '0' }], 'Off'),
       cs('cs2-particles', 'Particle detail', 'Simpler smoke, fire and impact particles.', 'medium', [{ key: 'setting.videocfg_particle_detail', value: '0' }], 'Low'),
-      cs('cs2-vsync', 'V-Sync', 'Turns V-Sync off to remove its added input latency.', 'high', [{ key: 'setting.mat_vsync', value: '0' }], 'Off'),
+      cs('cs2-vsync', 'V-Sync', 'Turns V-Sync off to remove its added input latency.', 'high', [{ key: 'setting.mat_vsync', value: '0' }], 'Off', { defaultOn: false }),
       cs(
         'cs2-aa',
         'Anti-aliasing',
@@ -310,8 +335,9 @@ const GAMES = [
           { key: 'setting.r_csgo_cmaa_enable', value: '1' },
         ],
         'CMAA2',
+        { maxFps: { values: ['0', '0'], display: 'Off' } },
       ),
-      cs('cs2-reflex', 'NVIDIA Reflex', 'Lower system latency on NVIDIA GPUs. Ignored on AMD and Intel graphics.', 'medium', [{ key: 'setting.r_low_latency', value: '1' }], 'On'),
+      cs('cs2-reflex', 'NVIDIA Reflex', 'Lower system latency on NVIDIA GPUs. Ignored on AMD and Intel graphics.', 'medium', [{ key: 'setting.r_low_latency', value: '1', onlyIfPresent: true }], 'On', { defaultOn: false, maxFps: false }),
     ],
   },
   {
@@ -321,25 +347,25 @@ const GAMES = [
     processes: ['javaw.exe'],
     files: { options: { format: 'options', label: 'options.txt' } },
     tips: [
-      'Close Minecraft first. Nova looks for javaw.exe and will not edit the file while Java is running.',
+      'Close Minecraft first. Nexa looks for javaw.exe and will not edit the file while Java is running.',
       'Only the default .minecraft folder is edited. Custom launcher instances (Prism, MultiMC and so on) keep their own options.txt.',
-      'Restore only puts back the values Nova changed. Your keybinds, resource packs and other options stay as they are.',
+      'Restore only puts back the values Nexa changed. Your keybinds, resource packs and other options stay as they are.',
     ],
     settings: [
-      mc('mc-render', 'Render distance', '8 chunks keeps the world readable and is far cheaper than the default 12 and above.', 'high', [{ key: 'renderDistance', value: '8' }], '8 chunks'),
-      mc('mc-sim', 'Simulation distance', 'Fewer chunks run entity and block ticks, which helps the CPU a lot.', 'high', [{ key: 'simulationDistance', value: '6', onlyIfPresent: true }], '6 chunks'),
+      mc('mc-render', 'Render distance', '8 chunks keeps the world readable and is far cheaper than the default 12 and above.', 'high', [{ key: 'renderDistance', value: '8' }], '8 chunks', { maxFps: { values: ['6'], display: '6 chunks or lower', atMost: true } }),
+      mc('mc-sim', 'Simulation distance', 'Fewer chunks run entity and block ticks, which helps the CPU a lot.', 'high', [{ key: 'simulationDistance', value: '6', onlyIfPresent: true }], '6 chunks', { maxFps: { values: ['5'], display: '5 chunks or lower', atMost: true } }),
       mc('mc-graphics', 'Graphics mode', 'Fast graphics use simpler leaves and water.', 'medium', [
         { key: 'graphicsMode', value: '0', onlyIfPresent: true },
         { key: 'fancyGraphics', value: 'false', onlyIfPresent: true, boolish: true },
       ], 'Fast'),
-      mc('mc-fps', 'Max framerate', 'Removes the cap (260 means unlimited in Minecraft).', 'medium', [{ key: 'maxFps', value: '260' }], 'Unlimited'),
-      mc('mc-vsync', 'V-Sync', 'Turns V-Sync off to remove its added input latency.', 'medium', [{ key: 'enableVsync', value: 'false' }], 'Off'),
+      mc('mc-fps', 'Max framerate', 'Removes the cap (260 means unlimited in Minecraft).', 'medium', [{ key: 'maxFps', value: '260' }], 'Unlimited', { defaultOn: false }),
+      mc('mc-vsync', 'V-Sync', 'Turns V-Sync off to remove its added input latency.', 'medium', [{ key: 'enableVsync', value: 'false' }], 'Off', { defaultOn: false }),
       mc('mc-particles', 'Particles', 'Minimal particles.', 'medium', [{ key: 'particles', value: '2' }], 'Minimal'),
       mc('mc-shadows', 'Entity shadows', 'Stops drawing shadows under mobs, players and items.', 'low', [{ key: 'entityShadows', value: 'false' }], 'Off'),
       mc('mc-ao', 'Smooth lighting', 'Flat lighting instead of smooth ambient occlusion.', 'medium', [{ key: 'ao', value: 'false', onlyIfPresent: true, boolish: true }], 'Off'),
       mc('mc-clouds', 'Clouds', 'Turns clouds off.', 'low', [{ key: 'renderClouds', value: 'false', onlyIfPresent: true }], 'Off'),
       mc('mc-biome', 'Biome blend', 'No colour blending between biomes.', 'low', [{ key: 'biomeBlendRadius', value: '0', onlyIfPresent: true }], 'Off'),
-      mc('mc-entities', 'Entity distance', 'Draws far-away mobs less often.', 'low', [{ key: 'entityDistanceScaling', value: '0.5', onlyIfPresent: true }], '50%', { defaultOn: false }),
+      mc('mc-entities', 'Entity distance', 'Draws far-away mobs less often.', 'low', [{ key: 'entityDistanceScaling', value: '0.5', onlyIfPresent: true }], '50%', { defaultOn: false, maxFps: { display: '50% or lower', atMost: true } }),
     ],
   },
 ];
@@ -505,7 +531,7 @@ function backupOnce(env, game, file, gameState) {
   if (!entry.backupPath || !fs.existsSync(entry.backupPath)) {
     const dir = path.join(env.dataDir, 'game-backups', game.id);
     fs.mkdirSync(dir, { recursive: true });
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const stamp = randomUUID();
     const target = path.join(dir, `${stamp}_${path.basename(file)}`);
     fs.copyFileSync(file, target);
     entry.backupPath = target;
@@ -518,56 +544,52 @@ function backupOnce(env, game, file, gameState) {
 /* Service                                                             */
 /* ------------------------------------------------------------------ */
 
-function specsFor(setting) {
-  return setting.pairs.map((pair) => ({
-    section: pair.section,
-    key: pair.key,
-    value: pair.value,
-    onlyIfPresent: pair.onlyIfPresent === true,
-    boolish: pair.boolish === true,
-  }));
+function maxFpsSettings(game) {
+  return game.settings.filter((setting) => setting.maxFps !== false).map((setting) => {
+    const override = setting.maxFps;
+    return {
+      ...setting,
+      display: override?.display ?? setting.display,
+      pairs: setting.pairs.map((pair, index) => ({
+        ...pair,
+        value: override?.values?.[index] ?? pair.value,
+        onlyIfPresent: true,
+        atMost: override?.atMost === true,
+      })),
+    };
+  });
 }
 
-function describeSetting(setting, format, existingFiles, gameState) {
-  let current = null;
-  let optimized = false;
-  const first = existingFiles[0];
-  if (first) {
-    try {
-      const { text } = readConfig(first);
-      const values = setting.pairs.map((pair) => FORMATS[format].read(text, pair));
-      const present = values.filter((v) => v !== null);
-      current = present.length ? unquote(present[0]) : null;
-      const checkable = setting.pairs
-        .map((pair, i) => ({ pair, value: values[i] }))
-        .filter(({ pair, value }) => !(pair.onlyIfPresent && value === null));
-      optimized = checkable.length > 0 && checkable.every(({ pair, value }) => {
-        const want = pair.boolish && value !== null && /^\d+$/.test(String(value).trim())
-          ? (pair.value === 'false' ? '0' : '1')
-          : pair.value;
-        return sameValue(value, want);
-      });
-    } catch {
-      current = null;
-    }
+function matchesSetting(value, pair) {
+  const current = unquote(value);
+  if (pair.atMost && current !== '' && Number(current) > 0) {
+    return Number(current) <= Number(pair.value);
   }
-  const touched = !!gameState && Array.isArray(gameState.settingIds) && gameState.settingIds.includes(setting.id);
-  let original = null;
-  if (touched && first && gameState?.files?.[first]?.prior) {
-    const id = FORMATS[format].identity(setting.pairs[0]);
-    const rec = gameState.files[first].prior[id];
-    if (rec && rec.existed) original = unquote(rec.raw);
-  }
+  const target = pair.boolish && /^\d+$/.test(current) ? (pair.value === 'false' ? '0' : '1') : pair.value;
+  return sameValue(value, target);
+}
+
+function describeSetting(setting, format, configs, gameState) {
+  const current = configs[0] ? format.read(configs[0].text, setting.pairs[0]) : null;
+  const values = configs.flatMap(({ text }) => setting.pairs.map((pair) => ({ pair, value: format.read(text, pair) })))
+    .filter(({ pair, value }) => value !== null || !pair.onlyIfPresent);
+  const available = values.length > 0;
+  const optimized = available && values.every(({ pair, value }) => matchesSetting(value, pair));
+  const touched = gameState?.settingIds?.includes(setting.id) === true;
+  const key = format.identity(setting.pairs[0]);
+  const record = touched && configs[0] ? gameState.files?.[configs[0].file]?.prior?.[key] : null;
   return {
     id: setting.id,
     label: setting.label,
     description: setting.description,
     impact: setting.impact,
     recommended: setting.display,
-    current,
-    original,
+    current: current === null ? null : unquote(current),
+    original: record?.existed ? unquote(record.raw) : null,
+    available,
     optimized,
     defaultOn: setting.defaultOn !== false,
+    appliedByNexa: touched,
     appliedByNova: touched,
   };
 }
@@ -585,13 +607,19 @@ function createGameService(env = defaultEnv()) {
     const info = await inspect(game);
     const running = await env.findRunning(game.processes);
     const gameState = env.store.get(game.id) || null;
+    const format = FORMATS[info.format];
+    const configs = [];
+    for (const file of info.existing) {
+      try { configs.push({ file, text: readConfig(file).text }); } catch (error) {
+        if (!['ENOENT', 'EPERM', 'EACCES', 'EBUSY'].includes(error.code)) throw error;
+      }
+    }
     return {
       id: game.id,
       name: game.name,
       tagline: game.tagline,
       tips: game.tips,
-      launchOptions: game.launchOptions || null,
-      fileLabel: game.files[info.kind].label,
+        fileLabel: game.files[info.kind].label,
       installed: info.existing.length > 0,
       files: info.existing,
       expectedPath: info.candidates[0] || null,
@@ -600,7 +628,8 @@ function createGameService(env = defaultEnv()) {
       applied: gameState
         ? { at: gameState.at, settingIds: gameState.settingIds || [], fileCount: Object.keys(gameState.files || {}).length }
         : null,
-      settings: game.settings.map((setting) => describeSetting(setting, info.format, info.existing, gameState)),
+      settings: game.settings.map((setting) => describeSetting(setting, format, configs, gameState)),
+      maxFps: maxFpsSettings(game).map((setting) => describeSetting(setting, format, configs, gameState)),
     };
   }
 
@@ -629,11 +658,12 @@ function createGameService(env = defaultEnv()) {
     return promise;
   }
 
-  async function apply(gameId, settingIds) {
+  async function apply(gameId, settingIds, profile) {
     listCache = null;
     const game = getGameDef(gameId);
     if (!game) throw new GameError(404, 'Unknown game.');
-    const chosen = game.settings.filter((setting) => settingIds.includes(setting.id));
+    if (profile !== undefined && profile !== 'max-fps') throw new GameError(400, 'Unknown game profile.');
+    const chosen = profile === 'max-fps' ? maxFpsSettings(game) : game.settings.filter((setting) => settingIds.includes(setting.id));
     if (!chosen.length) throw new GameError(400, 'Select at least one setting to apply.');
 
     const running = await env.findRunning(game.processes);
@@ -646,32 +676,62 @@ function createGameService(env = defaultEnv()) {
     }
 
     const format = FORMATS[info.format];
-    const gameState = env.store.get(game.id) || { at: null, settingIds: [], files: {} };
-    const specs = chosen.flatMap(specsFor);
-    const changedFiles = [];
+    const previous = env.store.get(game.id) || null;
+    const gameState = previous ? structuredClone(previous) : { at: null, settingIds: [], files: {} };
+    const applied = new Set();
+    const planned = [];
 
     for (const file of info.existing) {
       const meta = readConfig(file);
-      const entry = backupOnce(env, game, file, gameState);
+      const specs = [];
+      for (const setting of chosen) {
+        for (const pair of setting.pairs) {
+          const value = format.read(meta.text, pair);
+          if ((value === null && pair.onlyIfPresent) || matchesSetting(value, pair)) continue;
+          specs.push(pair);
+          applied.add(setting.id);
+        }
+      }
+      if (!specs.length) continue;
       const outcome = format.patch(meta.text, specs);
-      for (const prior of outcome.prior) {
-        const id = format.identity(prior);
-        if (!entry.prior[id]) entry.prior[id] = prior;
-      }
-      if (outcome.text !== meta.text) {
-        writeConfig(file, outcome.text, meta);
-        changedFiles.push(file);
-      }
+      if (outcome.text !== meta.text) planned.push({ file, meta, outcome });
     }
 
-    gameState.at = new Date().toISOString();
-    gameState.settingIds = Array.from(new Set([...(gameState.settingIds || []), ...chosen.map((s) => s.id)]));
-    env.store.set(game.id, gameState);
+    const changedFiles = [];
+    if (planned.length) {
+      for (const { file, outcome } of planned) {
+        const entry = backupOnce(env, game, file, gameState);
+        for (const prior of outcome.prior) {
+          const id = format.identity(prior);
+          if (!entry.prior[id]) entry.prior[id] = prior;
+        }
+      }
+      gameState.at = new Date().toISOString();
+      gameState.settingIds = [...new Set([...(gameState.settingIds || []), ...applied])];
+      env.store.set(game.id, gameState);
+      try {
+        for (const { file, meta, outcome } of planned) {
+          changedFiles.push(file);
+          writeConfig(file, outcome.text, meta);
+        }
+      } catch (error) {
+        for (const { file, meta } of planned.slice(0, changedFiles.length).reverse()) {
+          try {
+            if (readConfig(file).text !== meta.text) writeConfig(file, meta.text, meta);
+          } catch {
+            throw new GameError(500, error.message + ' | Use Restore original to recover the saved settings.');
+          }
+        }
+        if (previous) env.store.set(game.id, previous);
+        else env.store.clear(game.id);
+        throw error;
+      }
+    }
 
     return {
       gameId: game.id,
       name: game.name,
-      applied: chosen.map((s) => s.id),
+      applied: chosen.filter((setting) => applied.has(setting.id)).map((setting) => setting.id),
       changedFiles,
       unchanged: info.existing.length - changedFiles.length,
     };
@@ -758,9 +818,9 @@ module.exports = {
   GAMES,
   getGameDef,
   createGameService,
-  listGames: () => service().list(),
+  listGames: (force) => service().list(force),
   describeGame: (id) => service().describe(id),
-  applyGameSettings: (id, ids) => service().apply(id, ids),
+  applyGameSettings: (id, ids, profile) => service().apply(id, ids, profile),
   revertGameSettings: (id, ids) => service().revert(id, ids),
   patchIni,
   patchKv,

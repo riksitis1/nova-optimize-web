@@ -1,7 +1,7 @@
 # Nexa Optimize
 
 [![License: Proprietary Freeware](https://img.shields.io/badge/License-Proprietary%20Freeware-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/Release-v1.6.0-b8ff2c.svg)](https://github.com/riksitis1/nova-optimize-web/releases)
+[![Release](https://img.shields.io/badge/Release-v1.7.0-b8ff2c.svg)](https://github.com/riksitis1/nova-optimize-web/releases)
 [![No Kernel Drivers](https://img.shields.io/badge/No%20Kernel%20Drivers-38ef7d.svg)](SECURITY.md)
 
 A free, local-first Windows gaming performance, latency diagnostics, and system configuration suite. Zero accounts, zero ads, zero telemetry, zero background daemons, and zero paywalls.
@@ -23,7 +23,7 @@ Nexa scans your PC, explains what is actually worth changing, applies only the c
 - **Legacy Undo:** Seven tweaks removed in v1.5.0 (IFEO priorities, MMCSS audio, USB selective suspend, TDR delay, NIC EEE/flow control, PCIe MSI) remain undoable if an older version applied them.
 - **Pre-game prep:** Samples CPU use for supported apps with open windows. Select the apps you want Windows to ask to close.
 - **Cleanup:** Shader caches require explicit selection. Clearing them can cause stutter while games rebuild shaders. Cleanup also lists supported optional Windows apps you can uninstall for your account.
-- **Per-Game Video Profiles:** Clean, reversible visual config editors for **Fortnite** (`GameUserSettings.ini`), **Counter-Strike 2** (`cs2_video.txt`), and **Minecraft: Java Edition** (`options.txt`).
+- **Max FPS profiles:** Preview and apply lower graphics settings for Fortnite, Counter-Strike 2, and Minecraft Java. Nexa keeps the original values for restore. On a dual-GPU PC, use the Windows graphics shortcut to select the high-performance GPU for your game. Compare average FPS and 1% lows in the same scene to decide which profile works best.
 - **Network Lab:** Game-route latency diagnostics over ICMP/TCP, packet jitter, packet loss, DNS benchmark, DNS flush, and speed testing with bufferbloat grading.
 - **Activity & Emergency Restore:** Exact per-action backups stored in `data/state.json`, a full audit trail, and 1-click "Undo all".
 
@@ -35,10 +35,10 @@ To verify the integrity of your downloaded installer or archive using Windows Po
 
 ```powershell
 # For the Self-Extracting Setup
-Get-FileHash .\Nexa-Optimize-Setup-v1.6.0.cmd -Algorithm SHA256
+Get-FileHash .\Nexa-Optimize-Setup-v1.7.0.cmd -Algorithm SHA256
 
 # For the Portable Source Archive
-Get-FileHash .\Nexa-Optimize-v1.6.0.zip -Algorithm SHA256
+Get-FileHash .\Nexa-Optimize-v1.7.0.zip -Algorithm SHA256
 ```
 
 Official SHA-256 checksums are published in `version.json` and on the download page. The built-in updater verifies the checksum before installing an update.
@@ -62,7 +62,7 @@ For detailed security specifications, see [SECURITY.md](SECURITY.md).
 
 1. **Windows 10 or Windows 11 (64-bit)**
 2. **Node.js 18+ LTS** (Installer auto-detects and installs via `winget` if missing)
-3. Run `Nexa-Optimize-Setup-v1.6.0.cmd` or extract `Nexa-Optimize-v1.6.0.zip` and run `Install Nexa.bat`.
+3. Run `Nexa-Optimize-Setup-v1.7.0.cmd` or extract `Nexa-Optimize-v1.7.0.zip` and run `Install Nexa.bat`.
 
 ---
 
