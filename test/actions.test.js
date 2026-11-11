@@ -181,7 +181,7 @@ test('adapter power revert surfaces failure when no adapter could be restored', 
   });
   await assert.rejects(
     action.revert({ ps, snapshot: makeSnapshot() }, { adapters: [{ name: 'Ethernet' }] }),
-    /Ethernet: Driver denied request/,
+    /Backup retained/,
   );
 });
 
@@ -223,7 +223,7 @@ test('adapter power actions only target adapters that are up', async () => {
     if (op === 'net.adapterPowerDisable') {
       return { adapters: [{ name: 'Ethernet', changed: true }, { name: 'Wi-Fi', changed: true }] };
     }
-    if (op === 'net.adapterPowerRestore') return [{ name: 'Ethernet', ok: true }];
+    if (op === 'net.adapterPowerRestore') return [{ name: 'Ethernet', ok: true }, { name: 'Wi-Fi', ok: true }];
     throw new Error(`unexpected op ${op}`);
   });
 
@@ -413,13 +413,13 @@ test('removed tweaks remain resolvable as hidden undo-only legacy actions', () =
   }
 });
 
-test('the active action set is 26 actions with only Game Mode eligible for bulk apply', () => {
-  assert.equal(actions.length, 26);
+test('the active action set is 18 actions with only Game Mode eligible for bulk apply', () => {
+  assert.equal(actions.length, 18);
   const counts = actions.reduce((acc, action) => {
     acc[action.risk] = (acc[action.risk] || 0) + 1;
     return acc;
   }, {});
-  assert.deepEqual(counts, { safe: 1, caution: 15, advanced: 10 });
+  assert.deepEqual(counts, { safe: 1, caution: 12, advanced: 5 });
   assert.deepEqual(actions.filter((action) => action.risk === 'safe').map((action) => action.id), ['game-mode']);
   const laptop = makeSnapshot({ computer: { isLaptop: true } });
   assert.equal(getPublicActions(laptop).find((action) => action.id === 'power-plan').applicable, false);
@@ -480,13 +480,13 @@ test('Optimize PC previews the recommended settings and keeps situational change
 
 test('applied legacy actions appear in the public list only when they have a backup', () => {
   const without = getPublicActions(makeSnapshot(), {});
-  assert.equal(without.length, 26);
+  assert.equal(without.length, 18);
   assert.equal(without.some((action) => action.legacy), false);
 
   const withLegacy = getPublicActions(makeSnapshot(), {
     'game-process-priority': new Date().toISOString(),
   });
-  assert.equal(withLegacy.length, 27);
+  assert.equal(withLegacy.length, 19);
   const legacy = withLegacy.find((action) => action.id === 'game-process-priority');
   assert.ok(legacy);
   assert.equal(legacy.legacy, true);

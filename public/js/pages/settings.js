@@ -298,7 +298,7 @@ export function bindSettings() {
       const gpu = gpuList.length > 0 ? gpuList.join(', ') : 'Unknown GPU';
       const ram = state.snapshot?.memory?.totalGb ? `${state.snapshot.memory.totalGb} GB` : 'Unknown RAM';
       const score = state.scan?.score !== undefined ? `${state.scan.score}/100` : 'Not scanned';
-      const version = `v${state.version || '1.10.0'}`;
+      const version = `v${state.version || '1.11.0'}`;
       const nicMsi = (state.msiMode || []).find((m) => m.deviceType === 'Network')?.msiSupported ? 'Supported' : 'Standard';
 
       const title = encodeURIComponent(`[Review]: ${cpu} + ${gpu} (Score: ${score})`);

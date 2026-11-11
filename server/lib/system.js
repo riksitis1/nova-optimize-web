@@ -311,30 +311,102 @@ async function createRestorePoint() {
 }
 
 const OPTIONAL_APPS = new Map([
-  ['Microsoft.BingNews', 'Microsoft News'],
-  ['Microsoft.BingWeather', 'Microsoft Weather'],
-  ['Microsoft.MicrosoftOfficeHub', 'Microsoft 365 app'],
-  ['Microsoft.MicrosoftSolitaireCollection', 'Microsoft Solitaire Collection'],
-  ['Microsoft.People', 'Microsoft People'],
-  ['Microsoft.WindowsFeedbackHub', 'Feedback Hub'],
-]);
+  ['Microsoft.BingNews', 'Microsoft News', 'Consumer apps'],
+  ['Microsoft.BingWeather', 'Microsoft Weather', 'Consumer apps'],
+  ['Microsoft.Copilot', 'Microsoft Copilot', 'Consumer apps'],
+  ['Microsoft.Getstarted', 'Microsoft Tips', 'Consumer apps'],
+  ['Microsoft.MicrosoftOfficeHub', 'Microsoft 365 app', 'Consumer apps'],
+  ['Microsoft.MicrosoftSolitaireCollection', 'Microsoft Solitaire Collection', 'Consumer apps'],
+  ['Microsoft.People', 'Microsoft People', 'Consumer apps'],
+  ['Microsoft.WindowsFeedbackHub', 'Feedback Hub', 'Consumer apps'],
+  ['Clipchamp.Clipchamp', 'Microsoft Clipchamp', 'Creative tools', 'yxz26nhyzhsrt'],
+  ['Microsoft.Microsoft3DViewer', '3D Viewer', 'Creative tools'],
+  ['Microsoft.WindowsSoundRecorder', 'Windows Sound Recorder', 'Creative tools'],
+  ['Microsoft.MicrosoftStickyNotes', 'Microsoft Sticky Notes', 'Productivity'],
+  ['Microsoft.Office.OneNote', 'OneNote for Windows 10', 'Productivity'],
+  ['Microsoft.OutlookForWindows', 'Outlook for Windows', 'Productivity'],
+  ['Microsoft.PowerAutomateDesktop', 'Power Automate', 'Productivity'],
+  ['Microsoft.Todos', 'Microsoft To Do', 'Productivity'],
+  ['Microsoft.Windows.DevHome', 'Dev Home', 'Productivity'],
+  ['Microsoft.WindowsMaps', 'Windows Maps', 'Productivity'],
+  ['Microsoft.YourPhone', 'Phone Link', 'Communication'],
+  ['MSTeams', 'Microsoft Teams', 'Communication'],
+  ['microsoft.windowscommunicationsapps', 'Mail and Calendar (legacy)', 'Communication'],
+].map(([id, name, category, publisher = '8wekyb3d8bbwe']) => [
+  id, {
+    family: id + '_' + publisher,
+    details: {
+      id,
+      name,
+      category,
+      storeUrl: 'ms-windows-store://search/?query=' + encodeURIComponent(name),
+    },
+  },
+]));
 
 function isOptionalApp(id) {
   return OPTIONAL_APPS.has(id);
 }
 
+function cleanOptionalAppIds(ids) {
+  if (!Array.isArray(ids) || ids.length > OPTIONAL_APPS.size || ids.some((id) => !isOptionalApp(id))) {
+    throw new Error('Choose apps from the optional Windows apps list.');
+  }
+  return [...new Set(ids)];
+}
+
 async function listOptionalApps() {
-  const ids = await runBridge('optionalApps.list', { names: [...OPTIONAL_APPS.keys()] });
-  return ids.filter(isOptionalApp).map((id) => ({ id, name: OPTIONAL_APPS.get(id) }));
+  const apps = [...OPTIONAL_APPS.values()];
+  const families = await runBridge('optionalApps.list', { families: apps.map(({ family }) => family) });
+  const installed = new Set(families);
+  return apps.filter(({ family }) => installed.has(family)).map(({ details }) => details);
+}
+
+async function removeOptionalApps(ids) {
+  const apps = cleanOptionalAppIds(ids).map((id) => OPTIONAL_APPS.get(id));
+  if (!apps.length) return [];
+  let rows;
+  try {
+    rows = await runBridge('optionalApps.removeBatch', {
+      families: apps.map(({ family }) => family),
+    }, { timeout: Math.min(300_000, 30_000 + 15_000 * apps.length) });
+  } catch (error) {
+    const detail = error.message.split(/\r?\n/, 1)[0].slice(0, 240);
+    return apps.map(({ details }) => ({
+      ...details,
+      status: 'failed',
+      error: 'Could not confirm removal. Scan again to check which apps remain. ' + detail,
+    }));
+  }
+
+  const byFamily = new Map(rows.map((row) => [row.family, row]));
+  return apps.map(({ family, details }) => {
+    const result = byFamily.get(family);
+    if (result?.status === 'removed' || result?.status === 'absent') return { ...details, status: result.status };
+    return {
+      ...details,
+      status: 'failed',
+      error: result?.error || 'Windows did not confirm removal. Scan again to check.',
+    };
+  });
 }
 
 async function removeOptionalApp(id) {
-  if (!isOptionalApp(id)) throw new Error('Unknown optional app.');
-  return runBridge('optionalApps.remove', { name: id });
+  const [result] = await removeOptionalApps([id]);
+  if (result.status === 'failed') throw new Error(result.error);
+  return result.status === 'removed';
 }
 
-async function trimMemory() {
-  return runBridge('memory.trim', {}, { timeout: 25_000 });
+function getMemoryStatus() {
+  const totalBytes = os.totalmem();
+  const availableBytes = Math.min(totalBytes, Math.max(0, os.freemem()));
+  return {
+    totalBytes,
+    availableBytes,
+    usedBytes: totalBytes - availableBytes,
+    usagePercent: totalBytes > 0 ? Math.round((totalBytes - availableBytes) / totalBytes * 1000) / 10 : 0,
+    measuredAt: new Date().toISOString(),
+  };
 }
 
 let lastCpuTimes = os.cpus().map((cpu) => ({ ...cpu.times }));
@@ -476,9 +548,11 @@ module.exports = {
   runCleanup,
   getProcesses,
   createRestorePoint,
-  trimMemory,
+  getMemoryStatus,
   listOptionalApps,
   isOptionalApp,
+  cleanOptionalAppIds,
+  removeOptionalApps,
   removeOptionalApp,
   getTelemetry,
 };

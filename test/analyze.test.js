@@ -11,7 +11,7 @@ test('a clean, fully optimized snapshot scores 100 with no issues', () => {
   assert.equal(scan.potentialScore, 100);
   assert.equal(scan.counts.issues, 0);
   assert.equal(scan.rank, 'Dialed in');
-  assert.equal(scan.optimized.length, 24);
+  assert.equal(scan.optimized.length, 16);
   assert.equal(scan.quickWins.length, 0);
   for (const category of ['Performance', 'Gaming', 'Network', 'Security']) {
     assert.equal(scan.categoryScores[category], 100, category);
@@ -83,7 +83,7 @@ test('only safe actions are scored, while caution and advanced actions are advis
   assert.equal(advanced.scored, false);
   assert.equal(advanced.risk, 'advanced');
 
-  const caution = scan.findings.find((finding) => finding.id === 'action-paging-executive');
+  const caution = scan.findings.find((finding) => finding.id === 'action-windowed-optimizations');
   assert.ok(caution);
   assert.equal(caution.scored, false);
   assert.equal(caution.risk, 'caution');

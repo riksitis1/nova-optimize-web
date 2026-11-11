@@ -1,7 +1,7 @@
 # Nexa Optimize
 
 [![License: Proprietary Freeware](https://img.shields.io/badge/License-Proprietary%20Freeware-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/Release-v1.10.0-b8ff2c.svg)](https://github.com/riksitis1/nova-optimize-web/releases)
+[![Release](https://img.shields.io/badge/Release-v1.11.0-b8ff2c.svg)](https://github.com/riksitis1/nova-optimize-web/releases)
 [![No Kernel Drivers](https://img.shields.io/badge/No%20Kernel%20Drivers-38ef7d.svg)](SECURITY.md)
 
 A free, local-first Windows gaming performance, latency diagnostics, and system configuration suite. Zero accounts, zero ads, zero telemetry, zero background daemons, and zero paywalls.
@@ -15,22 +15,31 @@ Nexa scans your PC, explains what is actually worth changing, applies only the c
 ## What It Does
 
 - **Hardware-Aware Readiness Scan:** A transparent configuration score based on safe, reversible settings and real system findings. It does not promise a specific FPS gain.
-- **26 Documented, Reversible Optimizations:**
-  - **One-click (1):** Windows Game Mode.
-  - **Situational (15):** Capture, windowed graphics, background apps, visual effects, Windows power plans, Windows Update sharing, fullscreen behavior, Fast Startup, diagnostics, GPU scheduling, network adapter power saving, and kernel paging.
-  - **Advanced, opt-in (10):** Multimedia network throttling, system responsiveness, mouse acceleration, Nagle/TCP acknowledgements, TCP auto-tuning/RSS, Win32 priority separation, global power throttling, AFD fast datagram, DSCP 46 QoS, and MPO bypass.
-  - Advanced and caution controls are excluded from the readiness score and from the one-click safe fix. Apply them one at a time and undo anything that does not help.
-- **Legacy Undo:** Seven tweaks removed in v1.5.0 (IFEO priorities, MMCSS audio, USB selective suspend, TDR delay, NIC EEE/flow control, PCIe MSI) remain undoable if an older version applied them.
+- **Reviewed Windows settings:** Game Mode is the low-risk default. Capture, windowed graphics, power, visual effects, diagnostic policies, and advanced troubleshooting controls require review. Settings outside the default do not affect the readiness score.
+- **Legacy Undo:** Earlier IFEO, MMCSS, USB, TDR, NIC and PCIe changes remain resolvable. This release also retires eight global overrides, including kernel paging, forced CPU scheduling, global fullscreen behavior, and undocumented UDP tuning. Backups remain available for Undo.
+- **RAM controls:** Measure available system memory, review running apps before asking them to close, and manage startup entries. Before/after readings include activity from the whole system. Forced working-set trimming has been removed.
 - **Optimize PC:** Start on Overview to scan Windows and review available changes. Game Mode and windowed graphics are suggested where supported. Recording, power, and update sharing require a separate selection.
 - **Windows gaming setup:** Inspect your primary display mode, AC power, memory commit, and page-file configuration. Review applicable Windows changes and optionally lower CPU priority for running cloud-sync apps.
 - **Frame-time benchmark:** Import two raw PresentMon CSVs to compare average FPS, 1% lows, and 99th-percentile frame time. Captures are processed locally. [PresentMon capture format](https://github.com/GameTechDev/PresentMon/blob/main/README-CaptureApplication.md#metric-and-csv-column-definitions)
 - **Pre-game prep:** Samples CPU use for supported apps with open windows. Select the apps you want Windows to ask to close.
-- **Cleanup:** Shader caches require explicit selection. Clearing them can cause stutter while games rebuild shaders. Cleanup also lists supported optional Windows apps you can uninstall for your account.
+- **Cleanup:** Shader caches require explicit selection. Clearing them can cause stutter while games rebuild shaders. The Debloat workspace lists optional Windows apps for your account, supports batch removal, and offers Minimal and Standard presets for reversible Windows settings.
 - **Max FPS profiles:** Preview and apply lower graphics settings for Fortnite, Counter-Strike 2, and Minecraft Java. Nexa keeps the original values for restore. On a dual-GPU PC, use the Windows graphics shortcut to select the high-performance GPU for your game. Compare average FPS and 1% lows in the same scene to decide which profile works best.
 - **Network Lab:** Game-route latency diagnostics over ICMP/TCP, packet jitter, packet loss, DNS benchmark, DNS flush, and speed testing with bufferbloat grading.
 - **Activity & Emergency Restore:** Exact per-action backups stored in `data/state.json`, a full audit trail, and 1-click "Undo all".
 
 ---
+
+## Debloat presets
+
+- Open **Debloat & RAM** from the main sidebar.
+- Minimal selects supported policies for ads, suggestions, tips, and feedback prompts. Policy availability varies by edition.
+- Standard adds supported Activity Feed, Widgets, and Windows Update peer-sharing controls.
+- The optional background-task policy uses supported Pro/Enterprise/Education controls. It can interrupt notifications and sync, so it is never preselected.
+- App removal is selected separately and applies to the current Windows account. Reinstall through the Microsoft Store where available. App data may be lost.
+
+These are Nexa-owned presets inspired by the workflow. They are not identical to WinUtil presets and do not run its remote script. See [the performance audit](OPTIMIZATION-AUDIT.md) for the evidence, excluded changes, and validation limits.
+
+[WinUtil workflow reference](https://winutil.christitus.com/guides/tweaks/) · [Windows experience policy documentation](https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-experience)
 
 ## Windows gaming references
 
@@ -46,10 +55,10 @@ To verify the integrity of your downloaded installer or archive using Windows Po
 
 ```powershell
 # For the Self-Extracting Setup
-Get-FileHash .\Nexa-Optimize-Setup-v1.10.0.cmd -Algorithm SHA256
+Get-FileHash .\Nexa-Optimize-Setup-v1.11.0.cmd -Algorithm SHA256
 
 # For the Portable Source Archive
-Get-FileHash .\Nexa-Optimize-v1.10.0.zip -Algorithm SHA256
+Get-FileHash .\Nexa-Optimize-v1.11.0.zip -Algorithm SHA256
 ```
 
 Official SHA-256 checksums are published in `version.json` and on the download page. The built-in updater verifies the checksum before installing an update.
@@ -73,7 +82,7 @@ For detailed security specifications, see [SECURITY.md](SECURITY.md).
 
 1. **Windows 10 or Windows 11 (64-bit)**
 2. **Node.js 18+ LTS** (Installer auto-detects and installs via `winget` if missing)
-3. Run `Nexa-Optimize-Setup-v1.10.0.cmd` or extract `Nexa-Optimize-v1.10.0.zip` and run `Install Nexa.bat`.
+3. Run `Nexa-Optimize-Setup-v1.11.0.cmd` or extract `Nexa-Optimize-v1.11.0.zip` and run `Install Nexa.bat`.
 
 ---
 

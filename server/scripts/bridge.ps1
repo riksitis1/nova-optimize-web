@@ -1,4 +1,4 @@
-param(
+﻿param(
   [Parameter(Mandatory = $true)]
   [string]$Payload
 )
@@ -789,6 +789,15 @@ function Get-Snapshot {
 
   $power = Get-PowerPlan
   $state = [ordered]@{
+    debloat = [ordered]@{
+      'store-background-policy' = Read-RegValue @{ hive = 'HKLM'; path = 'Software\Policies\Microsoft\Windows\AppPrivacy'; name = 'LetAppsRunInBackground' }
+      'advertising-id' = Read-RegValue @{ hive = 'HKLM'; path = 'Software\Policies\Microsoft\Windows\AdvertisingInfo'; name = 'DisabledByGroupPolicy' }
+      'feedback-prompts' = Read-RegValue @{ hive = 'HKLM'; path = 'Software\Policies\Microsoft\Windows\DataCollection'; name = 'DoNotShowFeedbackNotifications' }
+      'consumer-suggestions' = Read-RegValue @{ hive = 'HKLM'; path = 'Software\Policies\Microsoft\Windows\CloudContent'; name = 'DisableWindowsConsumerFeatures' }
+      'windows-tips' = Read-RegValue @{ hive = 'HKLM'; path = 'Software\Policies\Microsoft\Windows\CloudContent'; name = 'DisableSoftLanding' }
+      'windows-widgets' = Read-RegValue @{ hive = 'HKLM'; path = 'Software\Policies\Microsoft\Dsh'; name = 'AllowNewsAndInterests' }
+      'activity-feed' = Read-RegValue @{ hive = 'HKLM'; path = 'Software\Policies\Microsoft\Windows\System'; name = 'EnableActivityFeed' }
+    }
     gameMode = [ordered]@{
       autoGameMode = Read-RegValue @{ hive = 'HKCU'; path = 'Software\Microsoft\GameBar'; name = 'AutoGameModeEnabled' }
       allowAutoGameMode = Read-RegValue @{ hive = 'HKCU'; path = 'Software\Microsoft\GameBar'; name = 'AllowAutoGameMode' }
@@ -965,6 +974,7 @@ function Get-Snapshot {
     username = $env:USERNAME
     os = [ordered]@{
       caption = [string]$os.Caption
+      edition = [string](Get-ItemPropertyValue -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name EditionID -ErrorAction SilentlyContinue)
       version = [string]$os.Version
       build = [int]$os.BuildNumber
       architecture = [string]$os.OSArchitecture
@@ -1085,63 +1095,6 @@ function Get-TcpGlobalState {
   }
 }
 
-function Invoke-MemoryTrim {
-  $cs = @"
-using System;
-using System.Runtime.InteropServices;
-public static class NexaMem {
-  [DllImport("psapi.dll")]
-  public static extern bool EmptyWorkingSet(IntPtr hProcess);
-  [DllImport("user32.dll")]
-  public static extern IntPtr GetForegroundWindow();
-  [DllImport("user32.dll")]
-  public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
-  public static uint GetForegroundProcessId() {
-    IntPtr hwnd = GetForegroundWindow();
-    if (hwnd == IntPtr.Zero) return 0;
-    uint pid = 0;
-    GetWindowThreadProcessId(hwnd, out pid);
-    return pid;
-  }
-}
-"@
-  try { Add-Type -TypeDefinition $cs -ErrorAction SilentlyContinue } catch { }
-  $osBefore = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
-  $beforeFree = if ($osBefore) { [int64]$osBefore.FreePhysicalMemory * 1024 } else { 0 }
-  $fgPid = 0
-  try { $fgPid = [NexaMem]::GetForegroundProcessId() } catch { }
-  $skip = @(
-    'Idle','System','Registry','smss','csrss','wininit','services','lsass','svchost','dwm','explorer',
-    'Memory Compression','audiodg','MsMpEng','NisSrv','SecurityHealthService','vgc','vgtray',
-    'FortniteClient-Win64-Shipping','FortniteLauncher','cs2','javaw','Valorant','VALORANT-Win64-Shipping',
-    'Overwatch','r5apex','ModernWarfare','RobloxPlayerBeta','RobloxPlayerLauncher','RocketLeague',
-    'League of Legends','GTA5','RainbowSix'
-  )
-  $trimmed = 0
-  foreach ($proc in @(Get-Process -ErrorAction SilentlyContinue)) {
-    try {
-      if ($fgPid -gt 0 -and $proc.Id -eq $fgPid) { continue }
-      if ($skip -contains $proc.ProcessName) { continue }
-      if ($proc.WorkingSet64 -lt 15MB) { continue }
-      if ($proc.Handle -and [NexaMem]::EmptyWorkingSet($proc.Handle)) {
-        $trimmed++
-      }
-    } catch { }
-  }
-  try { [System.GC]::Collect() } catch { }
-  Start-Sleep -Milliseconds 180
-  $osAfter = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
-  $afterFree = if ($osAfter) { [int64]$osAfter.FreePhysicalMemory * 1024 } else { $beforeFree }
-  $freed = [Math]::Max([int64]0, $afterFree - $beforeFree)
-  return [ordered]@{
-    ok = $true
-    trimmedProcesses = $trimmed
-    beforeFreeBytes = $beforeFree
-    afterFreeBytes = $afterFree
-    freedBytes = $freed
-  }
-}
-
 function Get-GamingDiagnostics {
   $result = [ordered]@{ display = $null; memory = $null; powerLine = 'Unknown'; highPerformanceAvailable = $null }
   try {
@@ -1220,10 +1173,60 @@ public static class NexaGamingInfo {
 }
 
 function Get-OptionalAppPackages {
-  param([string[]]$Names)
-  Get-AppxPackage -PackageTypeFilter Main,Bundle | Where-Object {
-    $_.Name -in $Names -and $_.PublisherId -eq '8wekyb3d8bbwe' -and
-      -not ($_.NonRemovable -or $_.IsFramework -or $_.IsResourcePackage)
+  param([string[]]$Families)
+  Get-AppxPackage -PackageTypeFilter Main,Bundle -ErrorAction Stop | Where-Object {
+    $_.PackageFamilyName -in $Families -and -not ($_.IsFramework -or $_.IsResourcePackage)
+  }
+}
+
+function Get-OptionalAppTargets {
+  param([object[]]$Packages)
+  $bundles = @($Packages | Where-Object IsBundle)
+  if ($bundles.Count) { $Packages = $bundles }
+  $Packages | Where-Object { $_.NonRemovable -eq $false -and $_.PackageFullName }
+}
+
+function Remove-OptionalApps {
+  param([string[]]$Families)
+  $installed = @(Get-OptionalAppPackages -Families $Families)
+  foreach ($family in $Families) {
+    $packages = @($installed | Where-Object PackageFamilyName -EQ $family)
+    if (-not $packages.Count) {
+      [ordered]@{ family = $family; status = 'absent' }
+      continue
+    }
+    $targets = @(Get-OptionalAppTargets -Packages $packages)
+    if (-not $targets.Count) {
+      [ordered]@{ family = $family; status = 'failed'; error = 'Windows does not allow this app to be removed.' }
+      continue
+    }
+
+    $removed = 0
+    $failures = @()
+    foreach ($package in $targets) {
+      try {
+        Remove-AppxPackage -Package $package.PackageFullName -ErrorAction Stop | Out-Null
+        $removed += 1
+      } catch {
+        $failures += ($_.Exception.Message -split '\r?\n')[0]
+      }
+    }
+    if ($failures.Count) {
+      $errorMessage = $failures -join ' '
+      if ($removed) { $errorMessage = 'Only some installed packages were removed. ' + $errorMessage }
+      [ordered]@{ family = $family; status = 'failed'; error = $errorMessage }
+    } else {
+      try {
+        $remaining = @(Get-OptionalAppPackages -Families @($family))
+        if ($remaining.Count) {
+          [ordered]@{ family = $family; status = 'failed'; error = 'Windows still lists this app. Close it and rescan before retrying.' }
+        } else {
+          [ordered]@{ family = $family; status = 'removed' }
+        }
+      } catch {
+        [ordered]@{ family = $family; status = 'failed'; error = 'Removal was requested but could not be verified. Rescan to check.' }
+      }
+    }
   }
 }
 
@@ -1657,22 +1660,19 @@ try {
     }
     'ping' { Send-Result (Invoke-Ping -HostName ([string]$p.host) -Count ([int]$p.count)) }
     'processes' { Send-Result (Get-ProcessSnapshot) }
-    'memory.trim' { Send-Result (Invoke-MemoryTrim) }
     'gaming.diagnostics' { Send-Result (Get-GamingDiagnostics) }
     'apps.syncPriority.list' { Send-Result @(Get-CloudSyncPriority) }
     'apps.syncPriority.set' { Send-Result @(Set-CloudSyncPriority -Targets @($p.targets) -Restore ($p.restore -eq $true)) }
     'optionalApps.list' {
-      $names = @(Get-OptionalAppPackages -Names @($p.names) | Select-Object -ExpandProperty Name -Unique)
-      Send-Result $names
+      $packages = @(Get-OptionalAppPackages -Families @($p.families))
+      $families = @(foreach ($family in @($p.families)) {
+        $matches = @($packages | Where-Object PackageFamilyName -EQ $family)
+        if (@(Get-OptionalAppTargets -Packages $matches).Count) { $family }
+      })
+      Send-Result $families
     }
-    'optionalApps.remove' {
-      $packages = @(Get-OptionalAppPackages -Names @($p.name))
-      $bundles = @($packages | Where-Object { $_.IsBundle })
-      $targets = if ($bundles.Count) { $bundles } else { $packages }
-      foreach ($package in $targets) {
-        Remove-AppxPackage -Package $package.PackageFullName -ErrorAction Stop
-      }
-      Send-Result ($packages.Count -gt 0)
+    'optionalApps.removeBatch' {
+      Send-Result @(Remove-OptionalApps -Families @($p.families))
     }
     'apps.running' { Send-Result @(Get-RunningApps -Names @($p.names)) }
     'apps.close' { Send-Result @(Close-AppsGracefully -Names @($p.names)) }

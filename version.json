@@ -1,11 +1,15 @@
 {
-    "version": "1.10.0",
-    "releasedAt": "2026-11-10",
-    "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v1.10.0.zip",
-    "sha256": "dd81a2c6771c66c65f35cb6e61eb1d99c172bba1b2671c0aaa8c2a46bc668424",
+    "version": "1.11.0",
+    "releasedAt": "2026-11-11",
+    "downloadUrl": "https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v1.11.0.zip",
+    "sha256": "ff6f56f63e695a515e540bb480f2f564ddcce82a082737a747a302f33aa04bec",
     "notes": [
-        "New Optimize PC button on Overview. Scan Windows, preview available changes, and apply your selection.",
-        "Windows Game Mode and supported windowed graphics are suggested; recording, power, and update sharing are opt-in.",
-        "Nexa checks hardware and permissions again before applying. Each applied setting can be undone."
+        "New Debloat & Cleanup workspace with Minimal and Standard Windows tweak presets.",
+        "Select and remove multiple detected optional Windows apps for the current account in one pass.",
+        "Review each change before confirming, then see individual outcomes and undo supported Windows tweaks.",
+        "Store links help you reinstall supported apps where available. Reinstallation may not recover app data.",
+        "New RAM workspace shows available memory before and after app closure or debloat. Forced working-set trimming is retired.",
+        "Retired eight global overrides after auditing their performance claims. Existing backups remain undoable.",
+        "Incomplete registry backups prevent writes, partial restores retain backups, and interrupted requests do not silently repeat destructive operations."
     ]
 }

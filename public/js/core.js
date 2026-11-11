@@ -75,7 +75,7 @@ export const state = {
     new URLSearchParams(window.location.search).get('token') ||
     document.querySelector('meta[name="nexa-token"]')?.getAttribute('content') ||
     '',
-  version: '1.10.0',
+  version: '1.11.0',
   port: null,
   dataDir: '',
   settings: {},
@@ -237,7 +237,7 @@ export async function api(path, options = {}) {
       body: options.body && typeof options.body !== 'string' ? JSON.stringify(options.body) : options.body,
     });
   } catch (netErr) {
-    if (!options._retried && path !== '/api/health') {
+    if (!options._retried && path !== '/api/health' && ['GET', 'HEAD'].includes((options.method || 'GET').toUpperCase())) {
       await new Promise((resolve) => setTimeout(resolve, 400));
       try {
         const hRes = await fetch('/api/health');

@@ -75,8 +75,8 @@ const PAGE_META = {
     load: loadNetwork,
   },
   cleanup: {
-    title: 'Cleanup',
-    eyebrow: 'DISK HYGIENE',
+    title: 'Debloat & Cleanup',
+    eyebrow: 'WINDOWS MAINTENANCE',
     render: renderCleanup,
     bind: bindCleanup,
     load: loadCleanup,
@@ -277,15 +277,13 @@ async function loadNetwork() {
 }
 
 async function loadCleanup() {
-  await ensureScan();
   if (!state.cleanup) {
     try {
-      const data = await api('/api/cleanup/scan');
+      const [data] = await Promise.all([api('/api/cleanup/scan'), ensureScan()]);
       state.cleanup = data.categories;
       state.cleanupError = null;
-    } catch (err) {
-      state.cleanupError = err.message;
-      throw err;
+    } catch (error) {
+      state.cleanupError = error.message;
     }
   }
 }

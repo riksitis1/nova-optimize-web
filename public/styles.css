@@ -2246,6 +2246,155 @@ summary:focus-visible {
   color: var(--red);
 }
 
+
+.debloat-panel {
+  margin-bottom: 16px;
+}
+
+.debloat-panel .card-header {
+  flex-wrap: wrap;
+}
+
+.debloat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.debloat-column,
+.debloat-options,
+.debloat-preset-list {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.debloat-column {
+  gap: 14px;
+}
+
+.debloat-options {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.debloat-options legend {
+  padding-inline: 5px;
+  font-weight: 650;
+}
+
+.debloat-options p,
+.debloat-footer p {
+  margin: 0;
+}
+
+.debloat-preset-list {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 135px), 1fr));
+}
+
+.debloat-preset,
+.debloat-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+  cursor: pointer;
+}
+
+.debloat-tweak {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.debloat-tweak .debloat-option {
+  flex: 1;
+}
+
+.debloat-preset input,
+.debloat-option input {
+  flex: 0 0 auto;
+  margin: 4px 0 0;
+  accent-color: var(--lime);
+}
+
+.debloat-preset:has(input:checked),
+.debloat-option:has(input:checked) {
+  border-color: var(--lime-line);
+  background: var(--lime-soft);
+}
+
+.debloat-preset:has(input:disabled),
+.debloat-option:has(input:disabled) {
+  cursor: default;
+  color: var(--muted);
+}
+
+.debloat-preset small,
+.debloat-option small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.debloat-option .debloat-option-status {
+  color: var(--amber);
+}
+
+.debloat-actions,
+.debloat-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.debloat-footer {
+  justify-content: space-between;
+  margin-top: 14px;
+}
+
+.debloat-panel a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.debloat-results {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.debloat-results h3 {
+  margin: 0;
+}
+
+.debloat-result-list {
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.debloat-result-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.debloat-result-list li span {
+  max-width: 70%;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
 .cleanup-list {
   display: flex;
   flex-direction: column;

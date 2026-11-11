@@ -34,6 +34,7 @@ const RUNTIME_FILES = [
   'NovaOptimize.vbs',
   'package.json',
   'README.md',
+  'OPTIMIZATION-AUDIT.md',
   'SECURITY.md',
   'Start Nexa.bat',
   'Start Nova.bat',
@@ -62,6 +63,7 @@ const RUNTIME_FILES = [
   'server/lib/boost.js',
   'server/lib/games.js',
   'server/lib/gaming.js',
+  'server/lib/debloat.js',
   'server/lib/network.js',
   'server/lib/ps.js',
   'server/lib/store.js',
@@ -189,9 +191,13 @@ if (fs.existsSync(versionJsonPath)) {
   vJson.downloadUrl = `https://raw.githubusercontent.com/riksitis1/nova-optimize-web/main/downloads/Nexa-Optimize-v${VERSION}.zip`;
   vJson.sha256 = zipHash;
   vJson.notes = [
-    'New Optimize PC button on Overview. Scan Windows, preview available changes, and apply your selection.',
-    'Windows Game Mode and supported windowed graphics are suggested; recording, power, and update sharing are opt-in.',
-    'Nexa checks hardware and permissions again before applying. Each applied setting can be undone.',
+    'New Debloat & Cleanup workspace with Minimal and Standard Windows tweak presets.',
+    'Select and remove multiple detected optional Windows apps for the current account in one pass.',
+    'Review each change before confirming, then see individual outcomes and undo supported Windows tweaks.',
+    'Store links help you reinstall supported apps where available. Reinstallation may not recover app data.',
+    'New RAM workspace shows available memory before and after app closure or debloat. Forced working-set trimming is retired.',
+    'Retired eight global overrides after auditing their performance claims. Existing backups remain undoable.',
+    'Incomplete registry backups prevent writes, partial restores retain backups, and interrupted requests do not silently repeat destructive operations.',
   ];
   fs.writeFileSync(versionJsonPath, JSON.stringify(vJson, null, 4), 'utf8');
   console.log(`==> Step 7: Updated website/version.json with new zip SHA-256 and v${VERSION}`);

@@ -37,6 +37,7 @@ const START_TOOLS = [
   ['games', 'gamepad', 'Tune a game', 'Preview settings for Fortnite, CS2, or Minecraft Java.'],
   ['optimize', 'sliders', 'Review Windows', 'Check display, power, capture, and background activity.'],
   ['benchmark', 'pulse', 'Compare frame times', 'See what changed with two PresentMon captures.'],
+  ['cleanup', 'broom', 'Debloat & RAM', 'Review running apps, startup activity, and optional Windows apps.'],
 ];
 
 function startPanel() {

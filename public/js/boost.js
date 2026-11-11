@@ -1,6 +1,6 @@
 import { icon, escapeHtml, formatBytes, toast, openModal, api, hydrateIcons } from './core.js';
 
-export async function openBoostModal(button) {
+export async function openBoostModal(button, onComplete) {
   if (button?.disabled) return;
   if (button) button.disabled = true;
   let apps;
@@ -24,9 +24,9 @@ export async function openBoostModal(button) {
     : '<p class="small muted">No supported apps with an open window were found.</p>';
 
   openModal({
-    title: 'Pre-game boost',
+    title: 'Close background apps',
     body: `
-      <p>CPU use is sampled for half a second. Close apps only if you can pause their work. Save your work first.</p>
+      <p>Close apps only if you can pause their work. Save your work first. Listed RAM is the process working set and can include shared memory.</p>
       <div class="boost-list" id="boost-apps">${rows}</div>`,
     confirmLabel: apps.length ? 'Close selected apps' : 'Done',
     hideCancel: !apps.length,
@@ -36,12 +36,14 @@ export async function openBoostModal(button) {
       const { result } = await api('/api/boost', { method: 'POST', body: { closeApps } });
       const closed = result.closed.reduce((sum, item) => sum + item.closed, 0);
       const remaining = result.closed.filter((item) => item.stillRunning > 0).map((item) => item.name);
-      const detail = closed ? `${closed} process${closed === 1 ? '' : 'es'} exited.` : 'No selected processes exited.';
+      const measured = result.memory ? ` Available RAM changed from ${formatBytes(result.memory.before.availableBytes)} to ${formatBytes(result.memory.after.availableBytes)}. Other running apps affect this reading.` : '';
+      const detail = (closed ? `${closed} process${closed === 1 ? '' : 'es'} exited.` : 'No selected processes exited.') + measured;
       if (remaining.length) {
         toast('info', 'Some apps are still running', `${detail} Check ${remaining.join(', ')} for save prompts or tray activity.`);
       } else {
         toast(closed ? 'success' : 'info', 'Background app check complete', detail);
       }
+      if (onComplete) onComplete(result);
     } : null,
   });
   hydrateIcons(document.getElementById('modal-root'));

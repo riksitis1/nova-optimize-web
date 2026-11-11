@@ -16,7 +16,7 @@ test('server modules load with the expected public API', () => {
   for (const name of ['getTargets', 'pingTarget', 'benchmarkDns', 'speedTest', 'bufferbloatGrade']) {
     assert.equal(typeof network[name], 'function', name);
   }
-  for (const name of ['getSnapshot', 'getStartup', 'getCleanupScan', 'getProcesses', 'createRestorePoint', 'trimMemory', 'getTelemetry']) {
+  for (const name of ['getSnapshot', 'getStartup', 'getCleanupScan', 'getProcesses', 'createRestorePoint', 'getMemoryStatus', 'getTelemetry']) {
     assert.equal(typeof system[name], 'function', name);
   }
   for (const name of ['getSettings', 'updateSettings', 'getApplied', 'getActivity', 'clearActivity', 'getNetworkState', 'updateNetworkState']) {

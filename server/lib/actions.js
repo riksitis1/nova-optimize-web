@@ -38,6 +38,12 @@ function registryApply(writes) {
 }
 
 async function applyRegistryOperations(ctx, operations, entries) {
+  if (!Array.isArray(entries) || entries.length !== operations.length || entries.some((entry, index) => {
+    const operation = operations[index];
+    return !entry || typeof entry.exists !== 'boolean' ||
+      ['hive', 'path', 'name'].some((key) => String(entry[key]).toLowerCase() !== String(operation[key]).toLowerCase()) ||
+      (entry.exists && (!entry.kind || !Object.hasOwn(entry, 'value')));
+  })) throw new Error('Windows did not return a complete registry backup. No settings were changed.');
   const backup = { kind: 'registry', entries };
   let message;
   let changed = entries;
@@ -81,6 +87,7 @@ function registryRevert(ctx, backup) {
     };
   });
   return ctx.ps('registry.apply', { operations }).then((results) => {
+    if (!Array.isArray(results) || results.length !== operations.length) throw new Error('Windows did not confirm every restored registry value. Backup retained.');
     const failed = results.filter((result) => !result.ok);
     if (failed.length) throw new Error(failed.map((result) => result.error).join('; '));
     return { ok: true };
@@ -173,7 +180,7 @@ function qosPolicyWrites(policyName, exe) {
 }
 
 // Only low-risk defaults affect the readiness score or run in bulk.
-const actions = [
+const configuredActions = [
   regAction({
     id: 'game-mode',
     name: 'Enable Windows Game Mode',
@@ -501,9 +508,8 @@ const actions = [
         names: backup.adapters.map((adapter) => adapter.name),
         adapters: backup.adapters,
       });
-      if (Array.isArray(results) && results.length > 0 && results.every((item) => item.ok === false)) {
-        const prefix = results[0].name ? `${results[0].name}: ` : '';
-        throw new Error(`${prefix}${results[0].error || 'Could not restore adapter power management.'}`);
+      if (!Array.isArray(results) || results.length !== backup.adapters.length || results.some((item) => item.ok !== true)) {
+        throw new Error('Could not confirm restoration of every adapter. Backup retained so you can retry.');
       }
       return { ok: true };
     },
@@ -857,10 +863,20 @@ const actions = [
   }),
 ];
 
-// Actions removed from the public set in v1.5.0. They remain resolvable so
-// existing backups from older versions can still be undone. They are never
-// shown in the normal action list and cannot be applied through the API.
+// Keep old backups resolvable without offering unsupported global overrides again.
+const retiredIds = new Set([
+  'system-responsiveness', 'paging-executive', 'fast-udp', 'dscp-qos',
+  'win32-priority', 'power-throttling', 'fullscreen-optimizations', 'background-apps',
+]);
+const actions = configuredActions.filter((action) => !retiredIds.has(action.id));
 const legacyActions = [
+  ...configuredActions.filter((action) => retiredIds.has(action.id)).map((action) => ({
+    ...action,
+    legacy: true,
+    description: 'An older Nexa version offered this global override. Restore your saved setting with Undo.',
+    note: 'Retired after the performance audit. This setting is undo-only.',
+    currentValue: () => 'Legacy override — original setting saved for Undo',
+  })),
   regAction({
     id: 'game-process-priority',
     name: 'Anti-Cheat-Safe Game CPU & I/O Priority',
@@ -1071,7 +1087,98 @@ const legacyActions = [
   },
 ];
 
-const byId = new Map([...actions, ...legacyActions].map((action) => [action.id, action]));
+const WORKSTATION_EDITIONS = /^(?:Professional(?:N|EducationN?|WorkstationN?)?|Enterprise(?:N|S|SN|G|GN)?|EducationN?|IoTEnterpriseS?)$/i;
+const ENTERPRISE_EDITIONS = /^(?:Enterprise(?:N|S|SN|G|GN)?|EducationN?|IoTEnterpriseS?)$/i;
+const WINDOWS_POLICIES = 'Software\\Policies\\Microsoft\\Windows';
+
+function debloatPolicy({ id, name, description, note, path, key, value, build = 14393, editions = WORKSTATION_EDITIONS }) {
+  return regAction({
+    id,
+    name,
+    description,
+    note,
+    category: 'Performance',
+    risk: 'caution',
+    requiresAdmin: true,
+    appliesTo: (snapshot) => snapshot.os?.build >= build && editions.test(snapshot.os?.edition || ''),
+    writes: [{ hive: HKLM, path, name: key, kind: 'DWord', value }],
+    isOptimized: (snapshot) => isNumber(snapshot.state?.debloat?.[id], value),
+  });
+}
+
+const debloatActions = [
+  debloatPolicy({
+    id: 'store-background-policy',
+    name: 'Restrict Windows app background tasks',
+    description: 'Blocks background work for Windows apps covered by the App Privacy policy.',
+    note: 'Optional. Can interrupt notifications, mail sync, and background audio. Desktop programs are unaffected. Per-app policy exceptions still apply. Restart affected apps after changing this setting.',
+    path: WINDOWS_POLICIES + '\\AppPrivacy',
+    key: 'LetAppsRunInBackground',
+    value: 2,
+    build: 15063,
+  }),
+  debloatPolicy({
+    id: 'advertising-id',
+    name: 'Turn off the Windows advertising ID',
+    description: 'Stops Windows apps from using the shared advertising ID.',
+    note: 'Apps can still show ads. This changes personalization, not frame rate.',
+    path: WINDOWS_POLICIES + '\\AdvertisingInfo',
+    key: 'DisabledByGroupPolicy',
+    value: 1,
+  }),
+  debloatPolicy({
+    id: 'feedback-prompts',
+    name: 'Suppress Windows feedback prompts',
+    description: 'Stops Windows from asking for feedback through notifications.',
+    note: 'Applies on supported Enterprise and Education editions.',
+    path: WINDOWS_POLICIES + '\\DataCollection',
+    key: 'DoNotShowFeedbackNotifications',
+    value: 1,
+    editions: ENTERPRISE_EDITIONS,
+  }),
+  debloatPolicy({
+    id: 'consumer-suggestions',
+    name: 'Turn off Microsoft consumer suggestions',
+    description: 'Disables suggested apps and consumer promotions in Windows.',
+    note: 'Applies on supported Enterprise and Education editions. Installed apps are kept.',
+    path: WINDOWS_POLICIES + '\\CloudContent',
+    key: 'DisableWindowsConsumerFeatures',
+    value: 1,
+    editions: ENTERPRISE_EDITIONS,
+  }),
+  debloatPolicy({
+    id: 'windows-tips',
+    name: 'Hide Windows tips',
+    description: 'Stops the Windows tips and introductory suggestions covered by this policy.',
+    note: 'Applies on supported Enterprise and Education editions.',
+    path: WINDOWS_POLICIES + '\\CloudContent',
+    key: 'DisableSoftLanding',
+    value: 1,
+    editions: ENTERPRISE_EDITIONS,
+  }),
+  debloatPolicy({
+    id: 'activity-feed',
+    name: 'Turn off Windows Activity Feed',
+    description: 'Prevents apps and Windows from publishing activities to Activity Feed.',
+    note: 'This changes activity tracking. It does not erase existing activity history.',
+    path: WINDOWS_POLICIES + '\\System',
+    key: 'EnableActivityFeed',
+    value: 0,
+    build: 16299,
+  }),
+  debloatPolicy({
+    id: 'windows-widgets',
+    name: 'Turn off the Windows 11 Widgets board',
+    description: 'Disables the Widgets board and its taskbar content.',
+    note: 'Undo to use Widgets again. A sign-out may be needed to refresh the taskbar.',
+    path: 'Software\\Policies\\Microsoft\\Dsh',
+    key: 'AllowNewsAndInterests',
+    value: 0,
+    build: 22000,
+  }),
+];
+
+const byId = new Map([...actions, ...legacyActions, ...debloatActions].map((action) => [action.id, action]));
 
 function getAction(id) {
   return byId.get(id) || null;
@@ -1088,9 +1195,9 @@ function serializeAction(action, snapshot, applied = {}) {
     applicable = false;
   }
   try {
-    optimized = applicable && (action.isOptimized(snapshot) === true || isAppliedByNexa);
+    optimized = applicable && action.isOptimized(snapshot) === true;
   } catch {
-    optimized = isAppliedByNexa;
+    optimized = false;
   }
   try {
     if (typeof action.currentValue === 'function') {
@@ -1121,10 +1228,10 @@ function serializeAction(action, snapshot, applied = {}) {
 
 function getPublicActions(snapshot, applied = {}) {
   const active = actions.map((action) => serializeAction(action, snapshot, applied));
-  const legacy = legacyActions
+  const undoable = [...legacyActions, ...debloatActions]
     .filter((action) => applied && applied[action.id])
     .map((action) => serializeAction(action, snapshot, applied));
-  return [...active, ...legacy];
+  return [...active, ...undoable];
 }
 
 module.exports = { actions, legacyActions, getAction, getPublicActions, serializeAction };

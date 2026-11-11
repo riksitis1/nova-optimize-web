@@ -42,10 +42,12 @@ const {
   runCleanup,
   getProcesses,
   createRestorePoint,
-  trimMemory,
+  getMemoryStatus,
   listOptionalApps,
   isOptionalApp,
   removeOptionalApp,
+  cleanOptionalAppIds,
+  removeOptionalApps,
   getTelemetry,
 } = require('./lib/system');
 const {
@@ -73,6 +75,8 @@ const {
   setSyncPriority,
 } = require('./lib/gaming');
 const { cleanBoostApps, listBoostApps, runBoost } = require('./lib/boost');
+
+const { getDebloatPlan, isDebloatAction } = require('./lib/debloat');
 
 const execFileAsync = promisify(execFile);
 const VERSION = require('../package.json').version;
@@ -236,6 +240,96 @@ function checkToken(req, url) {
   }
 }
 
+async function applyWindowsActions(ids, snapshot, { skipRestorePoint, skipBackedUp, powerAvailable = true } = {}) {
+  const settings = getSettings();
+  const pending = ids.filter((id) => !getApplied()[id]);
+  if (settings.autoRestorePoint === true && snapshot.admin && pending.length && !skipRestorePoint) {
+    try {
+      await createRestorePoint();
+      addActivity({ type: 'system', title: 'Created a restore point before applying fixes' });
+    } catch (error) {
+      addActivity({ type: 'system', title: 'Automatic restore point was skipped', detail: error.message });
+    }
+  }
+  const results = [];
+  for (const id of ids) {
+    const action = getAction(id);
+    if (!action) {
+      results.push({ id, ok: false, error: 'Unknown action.' });
+      continue;
+    }
+    if (action.legacy) {
+      results.push({ id, ok: false, error: 'This legacy tweak is undo-only. Use Undo to restore its previous value.' });
+      continue;
+    }
+    const info = serializeAction(action, snapshot);
+    if (!info.applicable) {
+      results.push({ id, ok: false, error: 'This action is unavailable on this PC.' });
+      continue;
+    }
+    const originalBackup = getBackup(id);
+    if (info.optimized || (skipBackedUp && originalBackup)) {
+      results.push({ id, ok: true, skipped: true, message: 'Already configured.' });
+      continue;
+    }
+    if (!snapshot.admin && action.requiresAdmin) {
+      results.push({ id, ok: false, error: 'Administrator access is required.' });
+      continue;
+    }
+    if (id === 'power-plan' && !powerAvailable) {
+      results.push({ id, ok: false, error: 'Connect AC power and check that Windows lists the High performance plan.' });
+      continue;
+    }
+    try {
+      const backup = await action.apply({ ps: runBridge, snapshot, admin: snapshot.admin });
+      if (!originalBackup) setBackup(id, backup);
+      addActivity({
+        type: 'apply',
+        title: `Applied ${action.name}`,
+        detail: action.description,
+        actionId: id,
+        category: action.category,
+      });
+      invalidateSnapshot();
+      results.push({ id, ok: true });
+    } catch (error) {
+      if (error.backup && !originalBackup) setBackup(id, error.backup);
+      invalidateSnapshot();
+      results.push({ id, ok: false, error: error.message });
+    }
+  }
+  return results;
+}
+
+async function undoWindowsAction(id, snapshot) {
+  const action = getAction(id);
+  if (!action) throw new HttpError(404, 'Unknown action.');
+  const backup = getBackup(id);
+  if (!backup) throw new HttpError(404, 'Nexa has no backup for that action.');
+  if (!snapshot.admin && action.requiresAdmin) {
+    throw new HttpError(403, 'Restart Nexa as administrator to undo that change.');
+  }
+  await action.revert({ ps: runBridge, snapshot }, backup);
+  clearApplied(id);
+  clearBackup(id);
+  addActivity({ type: 'revert', title: 'Undid ' + action.name, actionId: id, category: action.category });
+  invalidateSnapshot();
+}
+
+async function debloatResultSnapshot(snapshot, changed) {
+  let fresh = snapshot;
+  let refreshWarning;
+  if (changed) {
+    try {
+      fresh = await getSnapshot(true);
+    } catch {
+      refreshWarning = 'Windows could not be rescanned. Rescan to refresh the displayed settings.';
+    }
+  }
+  const applied = getApplied();
+  return { snapshot: fresh, scan: analyze(fresh, applied), applied, refreshWarning };
+}
+
 async function handleApi(req, res, url) {
   const method = req.method;
   const pathname = url.pathname;
@@ -314,63 +408,11 @@ async function handleApi(req, res, url) {
       const blocked = ids.map(getAction).filter((action) => action && action.requiresAdmin);
       if (blocked.length) throw new HttpError(403, 'Restart Nexa as administrator to apply the selected changes.');
     }
-    const settings = getSettings();
-    const pending = ids.filter((id) => !getApplied()[id]);
-    if (settings.autoRestorePoint === true && snapshot.admin && pending.length && !body.skipRestorePoint) {
-      try {
-        await createRestorePoint();
-        addActivity({ type: 'system', title: 'Created a restore point before applying fixes' });
-      } catch (error) {
-        addActivity({ type: 'system', title: 'Automatic restore point was skipped', detail: error.message });
-      }
-    }
-    const results = [];
-    for (const id of ids) {
-      const action = getAction(id);
-      if (!action) {
-        results.push({ id, ok: false, error: 'Unknown action.' });
-        continue;
-      }
-      if (action.legacy) {
-        results.push({ id, ok: false, error: 'This legacy tweak is undo-only. Use Undo to restore its previous value.' });
-        continue;
-      }
-      const info = serializeAction(action, snapshot);
-      if (!info.applicable) {
-        results.push({ id, ok: false, error: 'This action is unavailable on this PC.' });
-        continue;
-      }
-      const originalBackup = getBackup(id);
-      if (info.optimized || (gaming && originalBackup)) {
-        results.push({ id, ok: true, skipped: true, message: 'Already configured.' });
-        continue;
-      }
-      if (!snapshot.admin && action.requiresAdmin) {
-        results.push({ id, ok: false, error: 'Administrator access is required.' });
-        continue;
-      }
-      if (gaming && id === 'power-plan' && !gamingPowerAvailable(diagnostics)) {
-        results.push({ id, ok: false, error: 'Connect AC power and check that Windows lists the High performance plan.' });
-        continue;
-      }
-      try {
-        const backup = await action.apply({ ps: runBridge, snapshot, admin: snapshot.admin });
-        if (!originalBackup) setBackup(id, backup);
-        addActivity({
-          type: 'apply',
-          title: `Applied ${action.name}`,
-          detail: action.description,
-          actionId: id,
-          category: action.category,
-        });
-        invalidateSnapshot();
-        results.push({ id, ok: true });
-      } catch (error) {
-        if (error.backup && !originalBackup) setBackup(id, error.backup);
-        invalidateSnapshot();
-        results.push({ id, ok: false, error: error.message });
-      }
-    }
+    const results = await applyWindowsActions(ids, snapshot, {
+      skipRestorePoint: body.skipRestorePoint,
+      skipBackedUp: gaming,
+      powerAvailable: !gaming || gamingPowerAvailable(diagnostics),
+    });
     let fresh = snapshot;
     let refreshWarning;
     if (!body.skipSnapshot) {
@@ -389,19 +431,8 @@ async function handleApi(req, res, url) {
   if (method === 'POST' && pathname === '/api/actions/revert') {
     const body = await readBody(req);
     const id = cleanId(body.id);
-    const action = getAction(id);
-    if (!action) throw new HttpError(404, 'Unknown action.');
-    const backup = getBackup(id);
-    if (!backup) throw new HttpError(404, 'Nova has no backup for that action.');
     const snapshot = await getSnapshot();
-    if (!snapshot.admin && action.requiresAdmin) {
-      throw new HttpError(403, 'Restart Nova as administrator to undo that change.');
-    }
-    await action.revert({ ps: runBridge, snapshot }, backup);
-    clearApplied(id);
-    clearBackup(id);
-    addActivity({ type: 'revert', title: `Undid ${action.name}`, actionId: id, category: action.category });
-    invalidateSnapshot();
+    await undoWindowsAction(id, snapshot);
     const fresh = await getSnapshot(true);
     const applied = getApplied();
     sendJson(res, 200, { ok: true, snapshot: fresh, scan: analyze(fresh, applied), applied });
@@ -490,6 +521,85 @@ async function handleApi(req, res, url) {
       });
     }
     sendJson(res, 200, { ok: true, result, startup: await getStartup() });
+    return;
+  }
+
+  if (method === 'GET' && pathname === '/api/debloat') {
+    let appScanWarning;
+    const [snapshot, apps] = await Promise.all([
+      getSnapshot(true),
+      listOptionalApps().catch((error) => {
+        appScanWarning = error.message;
+        return [];
+      }),
+    ]);
+    sendJson(res, 200, { ok: true, ...getDebloatPlan(snapshot, getApplied()), apps, admin: snapshot.admin, appScanWarning });
+    return;
+  }
+
+  if (method === 'POST' && pathname === '/api/debloat') {
+    const body = await readBody(req);
+    let appIds;
+    let tweakIds;
+    try {
+      appIds = cleanOptionalAppIds(body.appIds);
+      if (!Array.isArray(body.tweakIds) || body.tweakIds.length > 50) throw new Error('Choose a valid list of Windows tweaks.');
+      tweakIds = [...new Set(cleanIdList(body.tweakIds))];
+      if (tweakIds.some((id) => !isDebloatAction(id))) throw new Error('Choose tweaks from the debloat list.');
+      if (!appIds.length && !tweakIds.length) throw new Error('Choose an app or a Windows tweak.');
+    } catch (error) {
+      throw new HttpError(400, error.message);
+    }
+
+    const beforeMemory = getMemoryStatus();
+    const snapshot = await getSnapshot(tweakIds.length > 0);
+    const tweaks = await applyWindowsActions(tweakIds, snapshot, { skipBackedUp: true });
+    const apps = appIds.length ? await removeOptionalApps(appIds).catch((error) =>
+      appIds.map((id) => ({ id, name: id, status: 'failed', error: error.message })),
+    ) : [];
+    const removed = apps.filter((app) => app.status === 'removed');
+    if (removed.length) {
+      addActivity({
+        type: 'cleanup',
+        title: 'Removed ' + removed.length + ' optional Windows app' + (removed.length === 1 ? '' : 's'),
+        detail: removed.map((app) => app.name).join(', '),
+      });
+    }
+    sendJson(res, 200, {
+      ok: tweaks.every((result) => result.ok) && apps.every((app) => app.status !== 'failed'),
+      apps,
+      tweaks,
+      memory: { before: beforeMemory, after: getMemoryStatus() },
+      ...(await debloatResultSnapshot(snapshot, tweaks.some((result) => !result.skipped))),
+    });
+    return;
+  }
+
+  if (method === 'POST' && pathname === '/api/debloat/undo') {
+    const body = await readBody(req);
+    let ids;
+    try {
+      if (!Array.isArray(body.ids) || !body.ids.length || body.ids.length > 50) throw new Error('Choose debloat tweaks to undo.');
+      ids = [...new Set(cleanIdList(body.ids))];
+      if (ids.some((id) => !isDebloatAction(id))) throw new Error('Choose tweaks from the debloat list.');
+    } catch (error) {
+      throw new HttpError(400, error.message);
+    }
+    const snapshot = await getSnapshot(true);
+    const tweaks = [];
+    for (const id of ids) {
+      try {
+        await undoWindowsAction(id, snapshot);
+        tweaks.push({ id, ok: true });
+      } catch (error) {
+        tweaks.push({ id, ok: false, error: error.message });
+      }
+    }
+    sendJson(res, 200, {
+      ok: tweaks.every((result) => result.ok),
+      tweaks,
+      ...(await debloatResultSnapshot(snapshot, tweaks.some((result) => result.ok))),
+    });
     return;
   }
 
@@ -726,7 +836,9 @@ async function handleApi(req, res, url) {
     } catch (error) {
       throw new HttpError(400, error.message);
     }
+    const before = getMemoryStatus();
     const result = await runBoost(closeApps);
+    result.memory = { before, after: getMemoryStatus() };
     if (result.closed.length) {
       const closedCount = result.closed.reduce((sum, item) => sum + item.closed, 0);
       addActivity({
@@ -739,19 +851,13 @@ async function handleApi(req, res, url) {
     return;
   }
 
-  if (method === 'POST' && pathname === '/api/memory/trim') {
-    const result = await trimMemory();
-    const freedMb = Math.round(((Number(result.freedBytes) || 0) / 1024 ** 2) * 10) / 10;
-    addActivity({
-      type: 'system',
-      title: 'Trimmed background working-set RAM',
-      detail: freedMb > 0
-        ? `Reclaimed ${freedMb} MB across ${result.trimmedProcesses || 0} background processes.`
-        : `Trimmed ${result.trimmedProcesses || 0} background processes (memory already compact).`,
-    });
-    const telemetry = await getTelemetry();
-    sendJson(res, 200, { ok: true, result, telemetry });
+  if (method === 'GET' && pathname === '/api/memory') {
+    sendJson(res, 200, { ok: true, memory: getMemoryStatus() });
     return;
+  }
+
+  if (method === 'POST' && pathname === '/api/memory/trim') {
+    throw new HttpError(410, 'RAM trimming was retired because it can increase paging. Reopen Nexa and use Close background apps or Debloat & Cleanup.');
   }
 
   if (method === 'POST' && pathname === '/api/restore-point') {
@@ -879,7 +985,7 @@ function serveStatic(req, res, url) {
 
 const exclusiveRoutes = new Set([
   '/api/actions/apply', '/api/actions/revert', '/api/actions/revert-all', '/api/gaming/sync-priority',
-  '/api/optional-apps/remove', '/api/update/install', '/api/games/apply', '/api/games/revert',
+  '/api/debloat', '/api/debloat/undo', '/api/optional-apps/remove', '/api/update/install', '/api/games/apply', '/api/games/revert',
 ]);
 let changingSystem = false;
 
